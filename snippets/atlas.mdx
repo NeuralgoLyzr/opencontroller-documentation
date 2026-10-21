@@ -31,7 +31,7 @@ export const Atlas = () => (
           {ATLAS.categories.map((c) => (
             <tr key={c.id} className={"oc-cat-" + c.id}>
               <th scope="row">
-                <a className="oc-atlas-cat" href={c.pages[0][1]} title={c.line}><i aria-hidden="true" />{c.name}</a>
+                <a className="oc-atlas-cat" href={c.pages[0][1]} title={c.line}><i aria-hidden="true" />{c.name}<svg className="oc-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
               </th>
               {ATLAS.frameworks.map((f) => (
                 <td key={f.id} data-fw-col={f.id}>

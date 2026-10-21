@@ -193,11 +193,11 @@ def system(c):
     c.chip(gx + 20 + cw, 142, cw, 24, "Virtual keys, teams")
     c.chip(gx + 12, 172, cw, 24, "Guardrails")
     c.chip(gx + 20 + cw, 172, cw, 24, "Model providers")
-    c.group(gx, 224, gw, 98, "Watch and improve")
+    c.group(gx, 224, gw, 98, "Watch and evaluate")
     c.chip(gx + 12, 254, cw, 24, "Traces and cost")
     c.chip(gx + 20 + cw, 254, cw, 24, "Findings, posture")
     c.chip(gx + 12, 284, cw, 24, "Evals")
-    c.chip(gx + 20 + cw, 284, cw, 24, "Fine-tuning")
+    c.chip(gx + 20 + cw, 284, cw, 24, "Monitors")
 
     # Hero to the groups: one elbow each.
     c.arrow([(388, 110), (404, 110), (404, 48), (gx, 48)])
@@ -232,7 +232,7 @@ def states(c):
     """Where an asset stands with the organisation, and how it moves."""
     t = c.t
     y, h = 60, 34
-    c.pill(0, y, 112, h, "Shadow", t["alt"], "#ffffff")
+    c.pill(0, y, 112, h, "Shadow", t["alt"], t["primary_fg"])
     c.pill(214, y, 166, h, "Awaiting approval", t["muted"], t["fg"])
     c.pill(484, y, 130, h, "Registered", t["primary"], t["primary_fg"])
     c.arrow([(112, y + h / 2), (214, y + h / 2)], label="register", at=(163, y + h / 2 - 20))
@@ -356,8 +356,8 @@ def render(name, w, h, draw):
     marker = (f'<defs><marker id="head-{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
               f'orient="auto-start-reverse"><path d="M0 0.5L9.5 5L0 9.5z" fill="{TOKENS["line"]}"/></marker></defs>')
     return (f'export const {name.title()} = ({{ alt }}) => (\n'
-            f'  <svg className="oc-diagram" role="img" aria-label={{alt}} viewBox="0 0 {w} {h}" '
-            f'style={{{{ maxWidth: "{w * 1.15:.0f}px" }}}} xmlns="http://www.w3.org/2000/svg">{marker}{body}</svg>\n);\n')
+            f'  <div className="oc-diagram-wrap"><svg className="oc-diagram" role="img" aria-label={{alt}} viewBox="0 0 {w} {h}" '
+            f'style={{{{ maxWidth: "{w * 1.15:.0f}px" }}}} xmlns="http://www.w3.org/2000/svg">{marker}{body}</svg></div>\n);\n')
 
 
 if __name__ == "__main__":
