@@ -1,9 +1,9 @@
 ---
 title: "Map and graph"
-description: "The map draws the whole estate as a graph, account by account, coloured by where each asset stands in the registry, so paths into ungoverned assets stand out."
+description: "The map draws the whole estate as a graph, account by account, colored by where each asset stands in the registry, so paths into ungoverned assets stand out."
 ---
 
-The map is the estate as a graph: every account's agents and what they use, across the clouds. Its default colouring is compliance, so an agent calling a shadow MCP server shows a red edge into it. The same map serves two pages.
+The map is the estate as a graph: every account's agents and what they use, across the clouds. Its default coloring is compliance, so an agent calling a shadow MCP server shows a red edge into it. The same map serves two pages.
 
 **Where it lives:** the map is the **Map** view of both AI Inventory and Shadow AI. On AI Inventory it opens on the whole estate; on Shadow AI it opens with **Non-compliant only** on. The old `/graph` and `/risk-map` addresses redirect to the Shadow AI map. There is no separate graph page.
 
@@ -22,7 +22,7 @@ The default layout, **Layers**, draws the estate left to right in four columns, 
 
 Products and kinds start folded. Opening a product shows its agents; opening a kind shows its assets. Links join only neighbouring columns, so none crosses the map. When more agents or assets exist than fit, a **+N more** tile appears; the rest are in the list view. The first time the map loads, the account with the most agents is opened.
 
-Picking an agent or asset traces its paths and dims the rest. Only what is not compliant is coloured, so risk stands out. Hovering a folded tile says how many of its assets are not compliant.
+Picking an agent or asset traces its paths and dims the rest. Only what is not compliant is colored, so risk stands out. Hovering a folded tile says how many of its assets are not compliant.
 
 ## The toolbar
 
@@ -31,7 +31,7 @@ Picking an agent or asset traces its paths and dims the rest. Only what is not c
 - **Non-compliant only**: keeps only assets that are shadow or awaiting approval, and every asset with a path into one. The count beside it is the number of non-compliant assets. When it is on and nothing is non-compliant, the map says so and tells you to turn it off to see the whole estate.
 - **View** opens a menu:
   - **Show**: **The whole estate**, or **One asset and what it touches** (the focus view).
-  - **Colour by**: **Compliance** (red Shadow, amber Awaiting approval, green Registered, grey Not governed) or **Kind**.
+  - **Color by**: **Compliance** (red Shadow, amber Awaiting approval, green Registered, grey Not governed) or **Kind**.
   - **Layout**: **Layers**, **Neat** or **Graph**. Neat and Graph draw a free map; in those, each account is a group that opens into tiles, capped at 24 with the rest behind a **+N** tile.
   - **Show what agents use**: whether the assets beneath agents are drawn.
   - **Expand every account** / **Collapse every account**.
@@ -56,4 +56,4 @@ Before anything is discovered the map reads "Nothing discovered yet": connect an
 | Method | Path | Returns |
 |---|---|---|
 | `GET` | `/v1/graph` | The asset graph, whole or narrowed to a provider, account or region |
-| `GET` | `/v1/registry/index` | Every asset's registry standing at once, which colours the map |
+| `GET` | `/v1/registry/index` | Every asset's registry standing at once, which colors the map |

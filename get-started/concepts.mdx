@@ -39,7 +39,7 @@ status and registry state.
 ## Connection
 
 A platform OpenController reads: an AWS account, a Microsoft tenant, a Google Cloud project, a Databricks workspace,
-an Anthropic organisation, a Snowflake account. Every connection has a **read credential** for discovery, and may
+an Anthropic organization, a Snowflake account. Every connection has a **read credential** for discovery, and may
 have a **control credential** for actions. The read credential is enough for discovery, governance and posture.
 
 <Card title="Connections and credentials" href="/connect/overview" />
@@ -51,7 +51,7 @@ changed, and reports what it could not read. Scans run on a schedule and on dema
 
 ## Registry state
 
-Where an asset stands with the organisation:
+Where an asset stands with the organization:
 
 | State | Meaning |
 |---|---|
@@ -85,6 +85,10 @@ A part of the product that can be turned on or off per installation. Discover, R
 assistant are the core. The LLM gateway, Guardrails, Observability, Evals and Fine-tuning are modules that connect to a
 service of their own. An installation runs a profile: `discover`, `govern` (adds Control) or `full` (adds every
 module). The sidebar only shows the sections the profile includes.
+
+## Glossary
+
+Every term, one line each, is on the [glossary](/get-started/glossary).
 
 ## Roles
 

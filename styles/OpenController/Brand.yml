@@ -1,0 +1,20 @@
+# The product is OpenController, one word, two capitals. Lowercase is the
+# console's own label in a few places, so only the other spellings are wrong.
+extends: existence
+message: "The product is 'OpenController', not '%s'."
+level: error
+nonword: false
+tokens:
+  - Opencontroller
+  - openController
+  - OPENCONTROLLER
+  - Open Controller
+  - open controller
+  - Open controller
+tests:
+  - name: flags the split spelling
+    input: Open Controller reads every cloud.
+    contains: "The product is 'OpenController'"
+  - name: accepts the product name
+    input: OpenController reads every cloud.
+    want: ""

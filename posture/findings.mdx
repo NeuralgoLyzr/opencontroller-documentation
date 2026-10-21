@@ -9,7 +9,7 @@ A finding is one security policy that matched one asset in your inventory: an ag
 
 ## How findings are produced
 
-The posture runs a catalogue of thirty checks, called security policies, over the inventory. Each policy looks at one kind of risk on the clouds it covers; the full list is on [Security policies](/posture/security-policies). A finding is one policy on one asset, so an asset can carry several findings and a policy can be open on many assets.
+The posture runs a catalog of thirty checks, called security policies, over the inventory. Each policy looks at one kind of risk on the clouds it covers; the full list is on [Security policies](/posture/security-policies). A finding is one policy on one asset, so an asset can carry several findings and a policy can be open on many assets.
 
 - An evaluation starts on its own about thirty seconds after a burst of scans settles, and when you click **Evaluate now**. Each evaluation runs for at most five minutes.
 - A finding is **open** while the latest evaluation still sees it. When a rescan no longer finds it, the posture marks it **resolved** on its own. A resolved finding stays in the report for 30 days and reopens if it comes back. There is no manual resolve, mute or snooze: a finding goes away when the asset changes.

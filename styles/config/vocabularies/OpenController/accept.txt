@@ -1,0 +1,34 @@
+# Names whose casing Vale enforces, and UI labels that may keep their case in a heading.
+Mintlify
+Rekori
+ClickHouse
+OpenTelemetry
+OTLP
+MCP
+AgentCore
+Bedrock
+Copilot Studio
+Agent Builder
+Foundry
+Databricks
+Genie
+Snowflake
+Cortex
+Vertex AI
+Entra
+Okta
+Keycloak
+SCIM
+OIDC
+SAML
+MITRE ATLAS
+OWASP
+NIST
+Vault
+MongoDB
+Helm
+Kubernetes
+OpenAPI
+Swagger
+Manrope
+JetBrains

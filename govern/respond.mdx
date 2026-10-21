@@ -16,10 +16,10 @@ data or is in use.
 | Look first at | Why |
 |---|---|
 | **Critical and High findings on shadow agents** | Reachable, acting, or reading data, with no owner. These are the incidents waiting to happen. |
-| **Agents shared organisation-wide or published to a catalogue** | The widest audience for whatever data sits behind them. |
+| **Agents shared organization-wide or published to a catalog** | The widest audience for whatever data sits behind them. |
 | **Agents acting with their maker's credentials** | A person's permissions, running unattended. |
 | **Identities and keys with no agent** | Keys that never expire or have not been used in 30 days belong to something that is gone or forgotten. |
-| **External MCP servers** | Code from outside the organisation, running on an agent's behalf. |
+| **External MCP servers** | Code from outside the organization, running on an agent's behalf. |
 | **Everything else that is shadow** | Register in bulk by connection once the above is handled, and let approvals do the sorting. |
 
 ## Investigate: the questions for each asset
@@ -41,7 +41,7 @@ Open the asset in **AI Inventory**. Its page answers most of these.
     customer table through a tool is a data access path, and should be reviewed as one.
   </Accordion>
   <Accordion title="Who can use it?">
-    The Access card shows the people and groups it is shared with, and whether sharing is organisation-wide or
+    The Access card shows the people and groups it is shared with, and whether sharing is organization-wide or
     public. On platforms that support it, the same card is where you change that.
   </Accordion>
   <Accordion title="Which findings does it have?">
@@ -56,7 +56,7 @@ Open the asset in **AI Inventory**. Its page answers most of these.
 |---|---|---|
 | **Register** | The agent is needed, has an owner, and its reach is acceptable | Request registration from Shadow AI or the asset; an approver registers it in Approvals |
 | **Reject** | It should not exist as it is; the requester may fix and resubmit | Reject in Approvals, with a reason |
-| **Narrow the audience** | The agent is fine, the sharing is not | On the Access card: end organisation-wide sharing, or remove people and groups |
+| **Narrow the audience** | The agent is fine, the sharing is not | On the Access card: end organization-wide sharing, or remove people and groups |
 | **Block or quarantine** | Stop it now, reversibly, while you investigate | Block on the asset; the dialog can register it as pending in the same step. Unblock when done |
 | **Route through the gateway** | The agent should keep running, under guardrails and a budget | Point its model calls at the LLM gateway with a virtual key |
 | **Delete** | It is abandoned, or must not exist | Delete on the asset; the name must be typed, and it cannot be undone |

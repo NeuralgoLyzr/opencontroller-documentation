@@ -16,6 +16,16 @@ mint dev
 
 Then open http://localhost:3000.
 
+## Check
+
+```
+vale sync && vale .
+mint broken-links
+python3 scripts/check.py
+```
+
+CI runs the same on every pull request.
+
 ## Publish
 
 Mintlify's GitHub app watches this repository: every pull request gets a preview, and `main` is published.

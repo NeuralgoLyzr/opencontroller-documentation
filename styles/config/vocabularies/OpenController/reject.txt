@@ -1,0 +1,10 @@
+# Words that are never right in these pages, whatever the case.
+whitelist
+blacklist
+master
+slave
+end user
+end-user
+e\.g\.
+i\.e\.
+etc\.

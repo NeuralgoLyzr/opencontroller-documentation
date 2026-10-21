@@ -1,0 +1,45 @@
+name: docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # Style: Google's developer documentation style plus our rules and
+  # vocabulary (.vale.ini, styles/). Errors fail the job; warnings and
+  # suggestions are annotated on the pull request.
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the rules
+        run: |
+          curl -sSL https://github.com/vale-cli/vale/releases/download/v3.24.0/vale_3.24.0_Linux_64-bit.tar.gz | tar xz vale
+          ./vale sync
+          ./vale test --coverage styles/OpenController
+      - uses: vale-cli/vale-action@v3
+        with:
+          version: 3.24.0
+          files: all
+          fail_on_error: true
+          filter_mode: nofilter
+          reporter: github-pr-check
+
+  # Links and navigation: every link resolves, every page in docs.json
+  # exists, every page is in docs.json, every page has a title.
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i -g mint
+      - run: mint broken-links
+      - run: python3 scripts/check.py

@@ -1,6 +1,6 @@
 ---
 title: "What is shadow AI"
-description: "AI agents nobody registered, running on platforms the organisation already pays for, and why they are a security problem."
+description: "AI agents nobody registered, running on platforms the organization already pays for, and why they are a security problem."
 ---
 
 ## The problem
@@ -11,8 +11,7 @@ Databricks, Cortex Agents in Snowflake. The agent gets an identity, is pointed a
 with colleagues. None of that passes through a review, and none of the platforms tells anyone.
 
 Shadow AI is the result: every agent, model deployment, MCP server, tool and identity that exists in your clouds
-without anyone having registered it, reviewed it, or taken ownership of it. It is rarely hidden on purpose. It is
-simply uncounted.
+without anyone having registered it, reviewed it, or taken ownership of it. It is rarely hidden on purpose. It is uncounted.
 
 ## The risks, by what is in the shadows
 
@@ -24,13 +23,13 @@ misusing them through prompt injection.
 proof of concept and the person who made it, and often carry the maker's own permissions.
 
 **Shadow MCP servers and tools.** An MCP server is an API exposed to any agent that can reach it. Servers added to
-an agent from outside the organisation run code and read data on its behalf, with nobody having checked what they
+an agent from outside the organization run code and read data on its behalf, with nobody having checked what they
 do.
 
 **Shadow data reach.** Agents are pointed at knowledge bases, tables and document stores. The agent inherits the
 reach, and the people it is shared with inherit it through the agent.
 
-**Shadow sharing.** An agent published to a Microsoft 365 catalogue or shared organisation-wide reaches everyone,
+**Shadow sharing.** An agent published to a Microsoft 365 catalog or shared organization-wide reaches everyone,
 including people who should never see the data behind it.
 
 **Shadow spend.** Every one of these calls a model, and the bill arrives with no owner to send it to.

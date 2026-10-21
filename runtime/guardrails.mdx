@@ -58,7 +58,7 @@ A check switched on with nothing to check (banned topics with no topic, keywords
 the editor points at it and asks you to finish it or turn it off. The eleven built-in checks and their settings are
 in [Guardrail checks](/runtime/guardrail-checks).
 
-The other groups extend the built-in checks: **Custom policies (OPA)** runs Rego policies your organisation writes,
+The other groups extend the built-in checks: **Custom policies (OPA)** runs Rego policies your organization writes,
 **Tool call rules (Cedar)** decides which tools a model may call, and **Cloud provider guardrails** runs an AWS
 Bedrock guardrail, Azure AI Content Safety or Google Model Armor through a connection to that cloud.
 
@@ -115,5 +115,5 @@ deleted until the rule is removed there.
 - `GET /v1/guardrails`, `POST /v1/guardrails`: list and make guardrails.
 - `GET`, `PUT`, `DELETE /v1/guardrails/{guardrail_id}`: read, replace and remove one.
 - `POST /v1/guardrails/{guardrail_id}/test`, `POST /v1/guardrails/test`: try text on a guardrail, or on unsaved settings.
-- `GET /v1/guardrails/checks`: the catalogue of checks and their defaults.
+- `GET /v1/guardrails/checks`: the catalog of checks and their defaults.
 - `GET /v1/guardrails/gateways`: which guardrails are in the gateway and the rules that use them.

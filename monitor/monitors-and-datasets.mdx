@@ -18,11 +18,11 @@ A run's report lists its findings as critical, warning or info; a **Detectors** 
 | Section | Settings |
 |---|---|
 | **What it watches** | **Name**, **Description**, the **Trace store** and a **Project or service** in it |
-| **Detectors** | Built-in measures that need no model: **Errors** (traces that fail, and the failures grouped by step and message, new ones called out), **Latency** (the 95th percentile), **Token bloat** (the tokens a trace spends), **Cost** (where spans record it) and **Loops and retries** (one call made again and again, or a failing one retried) |
+| **Detectors** | Built-in measures that need no model: **Errors** (traces that fail, and the failures grouped by step and message, new ones called out), **Latency** (the p95), **Token bloat** (the tokens a trace spends), **Cost** (where spans record it) and **Loops and retries** (one call made again and again, or a failing one retried) |
 | **Checks** | **Add a check** picks an evaluator; each has **Only records where** (a filter), its **Variables** mapped to fields, and **Thresholds** |
 | **Schedule** | **Hourly**, **Every 6 hours**, **Daily**, **Weekdays** or **Weekly** at a time, or a **Cron** expression, in a **Time zone** |
 | **Judging** | **Records per check** (10 to 1000), **Look back hours** (1 to 720), **Baseline runs** (1 to 30 earlier runs to compare with) and **Tolerance** (0 to 1) |
-| **Alerts** | A **Webhook** URL, **Send a test alert**, and **Alert at**: **Critical only**, **Warnings and worse** or **Every finding**. Slack and Teams incoming webhooks are recognised and formatted for. |
+| **Alerts** | A **Webhook** URL, **Send a test alert**, and **Alert at**: **Critical only**, **Warnings and worse** or **Every finding**. Slack and Teams incoming webhooks are recognized and formatted for. |
 
 A change is reported when the mean moved by at least the tolerance and the difference is significant at the 5% level, with each mean on at least 10 scores.
 

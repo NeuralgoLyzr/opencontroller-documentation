@@ -11,12 +11,40 @@ Assume they have never seen the product.
 
 ## Style
 
-- Second person, active voice, sentence case for headings and UI labels. One idea per sentence.
+The house style is the [Google developer documentation style guide](https://developers.google.com/style), checked
+by Vale (`.vale.ini`, `styles/`), plus these rules of our own:
+
+- Second person, active voice, present tense, sentence case for headings. One idea per sentence, under 25 words.
+- One term, one meaning. The [glossary](get-started/glossary.mdx) is the list; the console's label is the term.
+  `styles/OpenController/Terms.yml` turns the common near-misses into errors.
 - UI labels verbatim as the console shows them, in bold: Click **Register**.
 - Code formatting for file names, commands, paths, environment variables, values keys and API paths.
 - Explain what a thing is for before how to use it, then the procedure or the reference.
 - Where a permission gates a page or action, name it.
-- No em-dashes.
+- No em-dashes, no filler, no hedging, no roadmap. The rules in `styles/OpenController/` say which words.
+
+## Structure
+
+Pages follow [Diátaxis](https://diataxis.fr): each page is one of four kinds, and does not mix them.
+
+| Kind | Answers | Here |
+|---|---|---|
+| Tutorial | "Take me through it once" | The quickstart, the rollout plan |
+| How-to | "How do I do X" | The procedures on each module page, the connection guides |
+| Reference | "What exactly is this" | Columns, settings, checks, policies, the API reference, the glossary |
+| Explanation | "Why is it like this" | What is shadow AI, how it works, responding to discoveries |
+
+A module page may hold a how-to and a reference under separate headings. Explanation never goes on a reference page.
+
+## Checks
+
+```
+vale sync && vale .        # style
+mint broken-links          # links
+python3 scripts/check.py   # navigation, frontmatter, internal links, images
+```
+
+CI runs all three on every pull request and on `main`.
 
 ## Content boundaries
 

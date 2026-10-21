@@ -1,0 +1,17 @@
+extends: existence
+message: "No em-dashes. Start a new sentence, or use a comma."
+level: error
+nonword: true
+tokens:
+  - "—"
+  - " - "
+tests:
+  - name: flags an em-dash
+    input: Discovery reads — it never writes.
+    contains: "No em-dashes"
+  - name: flags a spaced hyphen used as a dash
+    input: Discovery reads - it never writes.
+    contains: "No em-dashes"
+  - name: accepts a hyphenated word
+    input: A read-only credential.
+    want: ""

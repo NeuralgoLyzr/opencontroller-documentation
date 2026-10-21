@@ -19,12 +19,12 @@ One app can do both, but two apps keep the read app read-only. Each surface is g
 | Agent details: instructions, knowledge, topics, tools, model, owner | Properties, Model, Tool | Dataverse application user |
 | Connected agents and the Power Automate flows agents use | Relations, Tool | Dataverse application user |
 | Who each Copilot Studio agent is shared with, and co-authors | Relations `can_use`, `can_edit` | Dataverse application user |
-| Agent 365 catalog: agents published to Microsoft 365, and Microsoft's own | Agent | **CopilotPackages.Read.All**, an Agent 365 license |
-| Entra agent identities | Identity | **AgentIdentity.Read.All** |
+| Agent 365 catalog: agents published to Microsoft 365, and Microsoft's own | Agent | `CopilotPackages.Read.All`, an Agent 365 license |
+| Entra agent identities | Identity | `AgentIdentity.Read.All` |
 | Azure AI Foundry accounts and projects | Registry | Azure **Reader** |
 | Foundry agents (prompt, workflow, hosted), their models, tools, connections and content filters | Agent, Model, Tool, Guardrail | Azure **Foundry User** |
 | Who may use each Foundry agent | Relation `can_use` | Azure **Reader** |
-| Owners, users and groups agents are shared with | Identity | **User.Read.All**, **GroupMember.Read.All** |
+| Owners, users and groups agents are shared with | Identity | `User.Read.All`, `GroupMember.Read.All` |
 
 ## Before you start
 
@@ -63,11 +63,11 @@ Each row is one **Verify** check.
 | Foundry agents | Azure role **Foundry User** (formerly Azure AI User) on the Foundry resources, their subscription or the Tenant Root Group | Same place |
 | Copilot Studio inventory | Entra directory role **AI Reader**. Power Platform admin roles do not grant this | **Entra ID**, **Roles and administrators**, **AI Reader** |
 | Copilot Studio sharing | The read app as an **application user** in each Power Platform environment, with a role that reads agents, teams and users | Power Platform admin center, the environment, **Users + permissions**, **Application users** |
-| Agent 365 catalog | Graph application permission **CopilotPackages.Read.All**, with admin consent, and an Agent 365 license | The app's **API permissions** |
-| Agent identities | **AgentIdentity.Read.All**, with admin consent | Same |
-| People and groups | **User.Read.All** and **GroupMember.Read.All**, with admin consent | Same |
-| Spend: licences | **LicenseAssignment.Read.All**, with admin consent | Same |
-| Spend: licence use | **Reports.Read.All**, with admin consent | Same |
+| Agent 365 catalog | Graph application permission `CopilotPackages.Read.All`, with admin consent, and an Agent 365 license | The app's **API permissions** |
+| Agent identities | `AgentIdentity.Read.All`, with admin consent | Same |
+| People and groups | `User.Read.All` and `GroupMember.Read.All`, with admin consent | Same |
+| Spend: licences | `LicenseAssignment.Read.All`, with admin consent | Same |
+| Spend: licence use | `Reports.Read.All`, with admin consent | Same |
 | Spend: Azure AI costs | Azure role **Cost Management Reader** on the subscriptions | **Access control (IAM)** |
 
 The **Write access** check lists any Graph permission the read app holds that can change something. The read app needs none of them.
@@ -77,9 +77,9 @@ The **Write access** check lists any Graph permission the read app holds that ca
 | To | Grant |
 |---|---|
 | Share, revoke, end org-wide sharing, publish and delete Copilot Studio agents | The control app as an **application user** with **System Administrator** in each Power Platform environment |
-| Find people and groups to share with | **User.Read.All** and **GroupMember.Read.All**, with admin consent |
-| Block Copilot Studio agents | Delegated permission **Power Platform API, CopilotStudio.AdminActions.Invoke**, with admin consent, and the redirect URI below |
-| Block Agent Builder and Agent 365 catalog agents, share catalog agents | Delegated permission **Microsoft Graph, CopilotPackages.ReadWrite.All**, with admin consent, the redirect URI, and an Agent 365 license |
+| Find people and groups to share with | `User.Read.All` and `GroupMember.Read.All`, with admin consent |
+| Block Copilot Studio agents | Delegated permission **Power Platform API**, `CopilotStudio.AdminActions.Invoke`, with admin consent, and the redirect URI below |
+| Block Agent Builder and Agent 365 catalog agents, share catalog agents | Delegated permission **Microsoft Graph**, `CopilotPackages.ReadWrite.All`, with admin consent, the redirect URI, and an Agent 365 license |
 | Disable Foundry hosted agents, delete Foundry agents | **Foundry User** on the Foundry resource |
 | Share Foundry agents | **Role Based Access Control Administrator** on the Foundry project, conditioned to Foundry Agent Consumer only |
 | Route Foundry prompt agents through the LLM gateway | `Microsoft.CognitiveServices/accounts/projects/connections/read`, `write` and `delete`, and **Foundry User** |

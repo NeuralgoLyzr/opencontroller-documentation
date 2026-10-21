@@ -3,7 +3,7 @@ title: "Guardrails API"
 description: "Check a prompt or an answer against your guardrails from any application, with one call, before and after the model."
 ---
 
-Any application can hold what it sends to a model, and what comes back, to the organisation's guardrails without
+Any application can hold what it sends to a model, and what comes back, to the organization's guardrails without
 going through the LLM gateway: one call to `POST /v2/guardrails/inference` before the model, and one after. The
 request carries the completion as the application holds it, in OpenAI's format or Anthropic's; the answer says
 whether it is blocked and what to redact. The completion itself is never rewritten, and the guardrail engine stays
@@ -149,8 +149,8 @@ A request OpenController refuses is a problem (RFC 9457, `application/problem+js
 | 400 | `invalid_json` | A body that is not JSON |
 | 401 | `unauthenticated` | No key, or one not valid |
 | 403 | `forbidden` | A role below Operator |
-| 404 | `not_found` | A guardrail that is not the organisation's; nothing is sent to the engine |
-| 404 | `feature_disabled` | Guardrails are off in this organisation |
+| 404 | `not_found` | A guardrail that is not the organization's; nothing is sent to the engine |
+| 404 | `feature_disabled` | Guardrails are off in this organization |
 | 413 | `request_too_large` | A body over 1 MiB |
 | 502 | `upstream_unavailable` | The guardrail engine failed |
 | 503 | `not_ready` | No guardrail engine in this OpenController |
@@ -183,7 +183,7 @@ The answer holds `blocked`, `reason`, `output` (the text as it would go on, reda
 | `GET /v1/guardrails/{guardrail_id}` | `guardrails:read` | Read one. |
 | `PUT /v1/guardrails/{guardrail_id}` | `guardrails:write` | Replace its name, description and checks. |
 | `DELETE /v1/guardrails/{guardrail_id}` | `guardrails:write` | Remove it; 409 while content rules in the gateway use it. |
-| `GET /v1/guardrails/checks` | `guardrails:read` | The catalogue of checks and their defaults. |
+| `GET /v1/guardrails/checks` | `guardrails:read` | The catalog of checks and their defaults. |
 | `GET /v1/guardrails/gateways` | `guardrails:read` | Which guardrails are in the LLM gateway, and the rules using them. |
 | `GET /v1/guardrails/violations`, `GET /v1/guardrails/violations/users` | `guardrails:violations` | What the gateway's rules blocked or redacted, per caller. |
 

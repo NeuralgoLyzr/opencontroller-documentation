@@ -1,0 +1,16 @@
+extends: existence
+message: "'%s' hedges. Say what the product does, or leave it out."
+level: warning
+ignorecase: true
+tokens:
+  - should work
+  - may or may not
+  - might be able to
+  - generally speaking
+tests:
+  - name: flags a hedge
+    input: The scan should work on most accounts.
+    contains: "hedges"
+  - name: accepts a statement
+    input: The scan reads every account.
+    want: ""
