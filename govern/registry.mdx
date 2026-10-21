@@ -87,14 +87,4 @@ Then state the **Owner** and **Purpose** and click **Add and request registratio
 
 The registry's rules are the registry policy, edited on the [Policies](/govern/policies) page. The old `/settings/registry` address redirects there.
 
-## API
-
-| Method | Path | Returns |
-|---|---|---|
-| `GET` | `/v1/registry/registered` | Registered assets as the inventory has them now, with their registrations |
-| `GET` | `/v1/registry/registrations` | Registrations, filtered by state, kind or text |
-| `GET` | `/v1/registry/registrations/{registration_id}` | One registration |
-| `POST` | `/v1/registry/registrations/{registration_id}/revoke` | Revoke, with a note |
-| `GET` | `/v1/assets/{asset_id}/registration` | One asset's standing, current and past registrations |
-| `POST` | `/v1/registry/external/preview` | Read an A2A agent card |
-| `POST` | `/v1/registry/external` | Register an external agent |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

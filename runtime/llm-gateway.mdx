@@ -95,11 +95,4 @@ own content rules then check the prompt and the answer.
 
 <Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
 
-## API
-
-- `GET /v1/modules`: every module, the kinds it can run on, and its endpoint when set.
-- `PUT /v1/modules/llm_gateway/endpoint`: set the connection.
-- `POST /v1/modules/llm_gateway/endpoint/check`: run the connection checks.
-- `DELETE /v1/modules/llm_gateway/endpoint`: disconnect.
-- `GET /v1/llm-gateway`: the connected gateway's kind and what it can do.
-- `GET /v1/llm-gateway/usage`, `GET /v1/llm-gateway/cost`: the overview's numbers and the spend series.
+The API reference lists the endpoints behind this page.

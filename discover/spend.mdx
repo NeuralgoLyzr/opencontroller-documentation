@@ -53,14 +53,4 @@ A source's state is **Read**, **Needs a permission** (the missing permission is 
 Model calls through the LLM gateway or seen in traces are shown apart from the bills. A call through Bedrock or Azure is already in that cloud's bill.
 </Note>
 
-## API
-
-| Method | Path | Returns |
-|---|---|---|
-| `GET` | `/v1/spend` | The summary over a window: bills, estimates, seats, sources |
-| `GET` | `/v1/spend/breakdown` | Spend by provider, service, account, resource, SKU, kind, source, asset, meter or tier; seats by person, department or SKU |
-| `GET` | `/v1/spend/daily` | Spend day by day |
-| `GET` | `/v1/spend/assets` | Spend by agent or model |
-| `GET` | `/v1/spend/anomalies` | Unusual days |
-| `POST` | `/v1/spend/refresh` | Read every source now |
-| `GET` / `PUT` | `/v1/spend/prices` | Licence prices by SKU |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

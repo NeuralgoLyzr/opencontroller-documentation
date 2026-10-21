@@ -3,7 +3,17 @@
     "service-accounts:write"
   ],
   "/assistant/ask-ctrl": [
-    "chat:ask"
+    "chat:ask",
+    "access:agent"
+  ],
+  "/assistant/mcp": [
+    "chat:ask",
+    "service-accounts:write"
+  ],
+  "/connect/claude-code": [
+    "guardrails:test",
+    "observability:send",
+    "service-accounts:write"
   ],
   "/connect/overview": [
     "connections:read",
@@ -136,5 +146,31 @@
   "/runtime/virtual-keys": [
     "modules:read",
     "modules:govern"
+  ],
+  "/setup/members": [
+    "users:read",
+    "users:write",
+    "me:write",
+    "teams:read",
+    "teams:write",
+    "directory:read",
+    "org:read",
+    "org:write"
+  ],
+  "/setup/secrets": [
+    "secrets:read",
+    "secrets:write",
+    "secrets:sign-in"
+  ],
+  "/setup/service-accounts": [
+    "service-accounts:read",
+    "service-accounts:write",
+    "secrets:sign-in"
+  ],
+  "/setup/sign-in": [
+    "settings:read",
+    "org:sso",
+    "sso:read",
+    "sso:write"
   ]
 }

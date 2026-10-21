@@ -42,10 +42,4 @@ The block links to **Posture, Security policies**, where the posture checks are 
 
 The policy's kinds decide what reaches [Approvals](/govern/approvals): only assets of a governed kind can be requested. Separation of duties decides who may approve. The version in force when a request is made is recorded on the registration as **Policy**, so a later change does not alter what was agreed.
 
-## API
-
-| Method | Path | Returns |
-|---|---|---|
-| `GET` | `/v1/registry/policy` | The policy in force |
-| `PUT` | `/v1/registry/policy` | Replace it; the body's `version` must be the one read |
-| `GET` | `/v1/registry/policy/catalog` | Every asset kind and state, and the default policy |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

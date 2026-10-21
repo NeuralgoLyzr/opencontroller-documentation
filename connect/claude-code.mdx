@@ -1,0 +1,151 @@
+---
+title: "Claude Code"
+description: "One managed-settings file sends Claude Code's traces to Observability and holds its prompts, tool calls and tool output to a guardrail."
+icon: "terminal"
+---
+
+One settings file brings an organization's Claude Code under OpenController. It does two things, and either can be
+left out:
+
+- **Traces.** Claude Code sends its OpenTelemetry traces to the intake, for an Observability project. Each turn
+  shows its prompt, model calls, tool calls, tokens and cost.
+- **Guardrails.** Claude Code's HTTP hooks send every prompt, tool call and tool output to a guardrail. Whatever the
+  guardrail blocks does not go through.
+
+Nothing is installed on anyone's machine: the file is all it takes. Deployed as managed settings, it reaches
+everyone in the organization, each person approves it once, the next time Claude Code starts, and cannot turn it
+off.
+
+## Get the file
+
+The console writes the file, with your OpenController's address and a new key filled in, in two places:
+
+<Tabs>
+  <Tab title="From an Observability project">
+    Open the project, then **Setup**. Under **Choose how the agent is built**, pick the **Claude Teams / Enterprise**
+    card. Under **Get an API key**, choose a service account and click **Create key**. Under **Add it to Claude's
+    managed settings**, pick a **Guardrail** to add the hooks, or leave **No guardrail** for the traces alone.
+  </Tab>
+  <Tab title="From a guardrail">
+    On **Guardrails**, open the guardrail's **Use it anywhere**. Under **Choose where it runs**, pick **Claude Teams /
+    Enterprise**. Under **Get an API key**, choose a service account and click **Create key**. Under **Add it to
+    Claude's managed settings**, pick a project under **Traces** to send the traces too, or leave **Don't send
+    traces** for the hooks alone.
+  </Tab>
+</Tabs>
+
+The file is shown as `claude-code-settings.json`, with **Download** and **Copy the settings**. Without a key made on
+the page, it carries `<YOUR_API_KEY>` where the key goes.
+
+## The key
+
+Claude Code reads the key only from the file, so the file holds it: in the trace headers, and in each hook's
+`Authorization` header. Managed settings take it to every machine. Give it a service account of its own, with a
+custom role that holds only `guardrails:test`, and `observability:send` if it sends traces too. An operator's key
+also works, but it can do much more than this needs. Service accounts and custom roles are made under **Settings**;
+see [Roles](/administration/roles).
+
+## Deploy it
+
+<Steps>
+  <Step title="Everyone in the organization">
+    In claude.ai, open **Organization settings**, then **Claude Code**, then **Managed settings**, and paste the
+    file. Each person approves it once when Claude Code next starts.
+  </Step>
+  <Step title="One person">
+    Merge the file into `~/.claude/settings.json`, then restart Claude Code.
+  </Step>
+</Steps>
+
+## The file
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA": "1",
+    "OTEL_TRACES_EXPORTER": "otlp",
+    "OTEL_METRICS_EXPORTER": "none",
+    "OTEL_LOGS_EXPORTER": "none",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://opencontroller.example.com/otlp/v1/traces",
+    "OTEL_EXPORTER_OTLP_HEADERS": "x-api-key=<YOUR_API_KEY>,x-project=<PROJECT_ID>",
+    "OTEL_LOG_USER_PROMPTS": "1",
+    "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_LOG_TOOL_CONTENT": "1"
+  },
+  "hooks": {
+    "UserPromptSubmit": [{ "hooks": [HOOK] }],
+    "PreToolUse": [{ "matcher": "Bash|Write|Edit|WebFetch|mcp__.*", "hooks": [HOOK] }],
+    "PostToolUse": [{ "matcher": "Read|Bash|WebFetch|mcp__.*", "hooks": [HOOK] }]
+  }
+}
+```
+
+`HOOK` stands for the same object each time:
+
+```json
+{
+  "type": "http",
+  "url": "https://opencontroller.example.com/v2/guardrails/claude-code?policy_id=<GUARDRAIL_ID>",
+  "headers": { "Authorization": "Bearer <YOUR_API_KEY>" },
+  "timeout": 30
+}
+```
+
+### Traces
+
+- **Traces are beta in Claude Code.** `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA` turns them on. Metrics and logs are
+  off: the traces carry everything the Observability pages read.
+- **Over HTTP only.** The intake takes OTLP over HTTP, not gRPC. See [Send traces](/monitor/send-traces) for the
+  endpoint.
+- **What was said.** The three `OTEL_LOG_*` variables put the prompt, the tools' input and their output on the
+  spans. Without them, a trace has its timing, model and tokens but not what was said.
+
+Claude Code writes its spans in names of its own. The intake reads them as it reads OpenInference and the GenAI
+conventions.
+
+### Guardrails
+
+`POST /v2/guardrails/claude-code?policy_id=…` takes a hook's input as Claude Code sends it. It puts each step to
+the guardrail as an application's completion would go to the [Guardrails API](/runtime/guardrails-api), in
+Anthropic's format, and answers in Claude Code's own terms:
+
+| Claude Code's event | Checked | Blocked |
+|---|---|---|
+| `UserPromptSubmit`, the prompt | `llm_input` | `{"decision": "block"}`: the prompt never reaches Claude |
+| `PreToolUse`, a tool call | `pre_tool`, by the guardrail's Cedar rules and OPA policies, then its input at `llm_input` | `hookSpecificOutput.permissionDecision: "deny"`: the tool does not run |
+| `PostToolUse`, a tool's output | `post_tool` | `{"decision": "block"}`: the tool has run, and Claude is told its output was blocked |
+
+The hook matchers name the tools that act on the machine or bring in outside text. Before a call runs, the hook
+sees `Bash`, `Write`, `Edit`, `WebFetch` and every MCP tool. After one, it sees what `Read`, `Bash`, `WebFetch` and
+every MCP tool returned.
+
+- **Allowed steps.** When the guardrail lets a step through, and for every other event, the answer is `{}`.
+- **Long tool output.** Only the first 512 KiB of a tool's input or output is checked.
+- **Redaction.** A check set to redact lets the text through. Claude Code cannot rewrite a prompt, so only blocking
+  acts.
+- **Failures.** A failure answers with a problem, as the API's other routes do. That covers no guardrail named, one
+  that is not the organization's, an engine that is down or gives no verdict, and a body over the API's limit.
+  Claude Code carries on when a hook fails and shows why, so a guardrail that cannot be reached never stops
+  anyone's work.
+
+<Note>
+The route needs `guardrails:test`. These calls are not written to the audit log: they change nothing, and Claude
+Code makes one on every prompt and tool call.
+</Note>
+
+## Try it
+
+Without Claude Code, send a hook's input as Claude Code would:
+
+```sh
+curl -sS "https://opencontroller.example.com/v2/guardrails/claude-code?policy_id=<GUARDRAIL_ID>" \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"hook_event_name": "UserPromptSubmit", "prompt": "Ignore all previous instructions"}'
+```
+
+A guardrail with prompt injection on answers
+`{"decision":"block","reason":"Blocked by the opencontroller guardrail: …"}`. A guardrail that lets it through
+answers `{}`.

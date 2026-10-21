@@ -134,8 +134,4 @@ Seven sources per account, named `snowflake:<account>:global:<family>`: `cortex.
 
 Click the trash icon on the row: the stored private keys are deleted. Then in Snowflake run `DROP USER OPENCONTROLLER_READ; DROP ROLE OPENCONTROLLER_READ;`, the same for the control user, and `DROP DATABASE OPENCONTROLLER;` if control was on.
 
-## API
-
-- `POST /v1/connections` with `"provider": "snowflake"` and `snowflake.account`, optional `warehouse`, `read` and `control` (`user`, `method` of `wif` or `key_pair`).
-- `GET /v1/connections/{connection_id}/snowflake/setup`: the setup script.
-- `PATCH /v1/connections/{connection_id}` with `{"read": {"rotate_key": true}}` to rotate a key.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

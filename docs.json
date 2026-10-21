@@ -47,11 +47,36 @@
               "index",
               "get-started/what-is-shadow-ai",
               "get-started/how-it-works",
+              "get-started/modules",
+              "get-started/quickstart",
               "get-started/rollout",
               "get-started/concepts",
-              "get-started/quickstart",
-              "get-started/modules",
               "get-started/glossary"
+            ]
+          },
+          {
+            "group": "Set up",
+            "pages": [
+              "setup/install",
+              "setup/sign-in",
+              "setup/members",
+              "setup/service-accounts",
+              "setup/secrets",
+              "administration/roles"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "connect/overview",
+              "connect/aws",
+              "connect/microsoft",
+              "connect/google-cloud",
+              "connect/databricks",
+              "connect/anthropic",
+              "connect/snowflake",
+              "connect/scans",
+              "connect/claude-code"
             ]
           },
           {
@@ -82,23 +107,6 @@
             ]
           },
           {
-            "group": "Observe",
-            "pages": [
-              "monitor/observability",
-              "monitor/send-traces",
-              "monitor/traces-and-issues",
-              "monitor/cost"
-            ]
-          },
-          {
-            "group": "Evaluate",
-            "pages": [
-              "monitor/evals",
-              "monitor/evaluators-and-tasks",
-              "monitor/monitors-and-datasets"
-            ]
-          },
-          {
             "group": "LLM gateway and guardrails",
             "pages": [
               "runtime/llm-gateway",
@@ -120,29 +128,44 @@
             ]
           },
           {
+            "group": "Observe",
+            "pages": [
+              "monitor/observability",
+              "monitor/send-traces",
+              "monitor/traces-and-issues",
+              "monitor/cost"
+            ]
+          },
+          {
+            "group": "Evaluate",
+            "pages": [
+              "monitor/evals",
+              "monitor/evaluators-and-tasks",
+              "monitor/monitors-and-datasets"
+            ]
+          },
+          {
             "group": "Ask Ctrl",
             "pages": [
-              "assistant/ask-ctrl"
+              "assistant/ask-ctrl",
+              "assistant/mcp"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Using the API",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/examples"
             ]
           },
           {
-            "group": "Integrations",
-            "pages": [
-              "connect/overview",
-              "connect/aws",
-              "connect/microsoft",
-              "connect/google-cloud",
-              "connect/databricks",
-              "connect/anthropic",
-              "connect/snowflake",
-              "connect/scans"
-            ]
-          },
-          {
-            "group": "Administration",
-            "pages": [
-              "administration/roles"
-            ]
+            "group": "Endpoints",
+            "openapi": "api-reference/openapi.json"
           }
         ]
       }
@@ -159,5 +182,44 @@
   },
   "icons": {
     "library": "lucide"
+  },
+  "api": {
+    "playground": {
+      "display": "simple"
+    },
+    "mdx": {
+      "auth": {
+        "method": "bearer"
+      }
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "seo": {
+    "indexing": "navigable"
+  },
+  "errors": {
+    "404": {
+      "redirect": true
+    }
+  },
+  "search": {
+    "prompt": "Search the docs, or ask a question"
+  },
+  "footer": {
+    "links": [
+      {
+        "header": "OpenController",
+        "items": [
+          {
+            "label": "Documentation",
+            "href": "https://github.com/NeuralgoLyzr/opencontroller-documentation"
+          }
+        ]
+      }
+    ]
   }
 }

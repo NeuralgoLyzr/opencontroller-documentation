@@ -64,9 +64,4 @@ Each event carries the request id it happened in, so it can be matched to the AP
 
 Both logs are kept in the platform's MongoDB database without a time limit; there is no retention setting. The console has no export button. To export, page through the API with `limit` and `offset`.
 
-## API
-
-| Method | Path | Parameters |
-|---|---|---|
-| `GET` | `/v1/actions` | `asset_id`, `limit` (1 to 200, default 50), `offset` |
-| `GET` | `/v1/audit/events` | `kind`, `actor`, `limit` (up to 500, default 100), `offset`. Returns the events, the total, and every kind for a filter |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

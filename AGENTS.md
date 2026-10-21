@@ -43,11 +43,12 @@ vale sync && vale .        # style
 mint broken-links          # links
 python3 scripts/check.py   # navigation, frontmatter, internal links, images
 python3 scripts/flags.py --check   # docs.json matches flags.json
+python3 scripts/openapi.py --check # the API reference file is normalized
 ```
 
 CI runs all four on every pull request and on `main`. `flags.json` turns parts of the site on and off (the API
 reference, for one); apply a change with `python3 scripts/flags.py`. Diagrams are drawn by `scripts/diagrams.py`
-into `snippets/diagrams.mdx`; edit the script, never the snippet. The framework atlas (`scripts/atlas.py`) and the
+into `snippets/diagrams.mdx`; edit the script, never the snippet. The API reference (`scripts/openapi.py`, from the product's OpenAPI file) is generated too; run it after an API change. The framework atlas (`scripts/atlas.py`) and the
 permission table (`scripts/roles.py`, from the platform's source) are generated the same way. Pages never carry a
 "Who can do this" paragraph: list a page's permissions in `scripts/roles-pages.json` instead.
 

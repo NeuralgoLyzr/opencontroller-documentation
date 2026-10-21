@@ -1,0 +1,95 @@
+---
+title: "Members and teams"
+description: "Add the people who sign in with an email and password, set their roles, reset passwords, and make teams that own what OpenController governs."
+icon: "users-round"
+---
+
+**Settings → Members** lists the people who sign in to OpenController with an email and password. An admin adds them, sets their role, disables them and resets their passwords. Their role decides what they see and change. People who sign in through single sign-on are not listed here: your identity provider decides who they are, and their role comes from [role mappings](/administration/roles#how-a-person-gets-a-role).
+
+Reading the list needs `users:read` and changing it `users:write`, both held by the Admin role. Only an owner changes an owner or makes one.
+
+## Add a member
+
+<Steps>
+  <Step title="Open the form">
+    On **Settings → Members**, click **Add user**.
+  </Step>
+  <Step title="Fill in the account">
+    - **Email**: what they sign in with.
+    - **Name** (optional).
+    - **Role**: **Viewer**, **Operator**, **Admin**, or one of your organization's own roles. **Owner** is offered only to owners.
+    - **Initial password**: at least 8 characters. Click **Generate** for a 16-character password made in your browser.
+  </Step>
+  <Step title="Hand over the password">
+    Click **Add user**. The dialog shows the password once, with a copy button. Give it to the person over a channel you trust; they can change it after signing in. Closing the dialog is final.
+  </Step>
+</Steps>
+
+Nobody can sign themselves up. The first account comes from `DISCOVERY_ADMIN_EMAIL` and `DISCOVERY_ADMIN_PASSWORD` when there are no accounts yet, and is the owner.
+
+## Manage a member
+
+Each row shows **User**, **Role**, **Status** (**Active** or **Disabled**), **Last sign-in** (**Never** until their first) and **Added**. Your own row is marked **you**. The row's menu holds the actions.
+
+| Action | What it does |
+|---|---|
+| **Role** | Changes their role from the list. Takes effect on their next request. |
+| **Reset password** | Asks for a **New password**, or **Generate** one, and shows it once. Their current password and their sessions end at once. |
+| **Disable** | They can no longer sign in, and their sessions end. **Enable** lets them sign in again. |
+| **Remove** | Deletes the account and ends their sessions. What they did stays in the audit log. To stop someone for now, disable them instead. |
+
+The menu is unavailable on an owner's row unless you are an owner: only an owner can change an owner.
+
+## Your own password
+
+Everyone signed in with a password can change it, whatever their role. Click the key icon at the foot of the navigation, **Change password**, and fill in **Current password**, **New password** and **New password, again**. A new password is 8 to 128 characters.
+
+## Rules
+
+| Rule | Detail |
+|---|---|
+| No self-signup | Admins add every account. |
+| Passwords | 8 to 128 characters, with no composition rules. Stored as argon2id hashes. |
+| Lockout | Five failed sign-ins in a row lock the account for 15 minutes. One email address gets 20 attempts per 5 minutes. A wrong password and an unknown email fail alike, in the same time. |
+| The last owner stays | Nobody can remove, disable or demote themselves, or the last active owner. There is always at least one active owner. |
+| Sessions | A sign-in ends after 12 hours unused, or 7 days at most, unless the server is set otherwise. See [Sessions](/setup/sign-in#sessions). Disabling someone or resetting their password ends their sessions. |
+| Local accounts are local | They are not checked against SCIM or the email domains. Turn them off with `DISCOVERY_PASSWORD_LOGIN=false` once single sign-on is the only way in. |
+
+## People who sign in through single sign-on
+
+Your identity provider manages them. With SCIM provisioning on, it decides who exists and their groups: deactivating or removing someone at the provider cuts off their next request. Their role is the highest their groups and roles grant under **Settings → Role mappings**, or the default role. See [Sign-in and single sign-on](/setup/sign-in).
+
+## Teams
+
+A team says who owns what OpenController governs. It is linked to your identity provider's groups, each with a role in the team. Whoever is in a linked group is in the team, as the provider says at sign-in and over SCIM. The team owns the assets its rules cover, such as an account or an environment. A role in a team adds to a person's role in the organization and never takes from it. It counts only for permissions marked **Teams**, and only for what the team owns. See [Roles in teams](/administration/roles#roles-in-teams).
+
+**Settings → Teams** lists each team with its **Groups** (each with its role in the team), what it **Owns** and when it was last **Changed**. The header says which teams you are in. Reading teams needs `teams:read`, held by every role; changing them needs `teams:write`, held by the Admin role.
+
+### Make a team
+
+<Steps>
+  <Step title="Open the form">
+    On **Settings → Teams**, click **New team**. Fill in **Name** and, optionally, **Description**.
+  </Step>
+  <Step title="Link groups">
+    Under **Groups**, find a provisioned group by name, or type a group's id or name, and click **Link**. Then choose the role the group has in the team: **Viewer**, **Operator** or **Admin**. Someone in several linked groups gets the highest. Entra ID sends groups by id, so pick them from the list your identity provider provisions. Finding provisioned groups needs `directory:read`.
+  </Step>
+  <Step title="Optional: add people by hand">
+    Turn on **Also people added by hand** to add local accounts, or someone not yet in a group. Enter an email or a local account's id, and give each person a role in the team. Off, who is in the team is your identity provider's to say.
+  </Step>
+  <Step title="Say what it owns">
+    Under **Assets**, choose the accounts or environments that are this team's: a provider, an account, a platform or an environment. A single asset can also be given to a team from its own page.
+  </Step>
+  <Step title="Optional: link the LLM gateway's team">
+    In **LLM gateway team**, enter the id of the gateway's team whose virtual keys and budget are this team's.
+  </Step>
+  <Step title="Create">
+    Click **Create**. **Edit** on a team's row changes any of this later.
+  </Step>
+</Steps>
+
+Deleting a team takes from its members what the team gave them. What it owned is owned by no team, unless another team's rules cover it, and assets pinned to it go back to the rules.
+
+## General
+
+**Settings → General** is the organization itself. **Organization ID** cannot be changed: it is the tenant key on every record, set where OpenController is deployed. An admin can change **Display name** and **Description** and click **Save**; the page says when it was last changed and by whom.

@@ -58,12 +58,4 @@ A block from the Access card on a shadow agent can register it as pending in the
 
 OpenController does not send notifications when a request is made or decided. The queue, and the **Pending** count on this page and on the Overview, are how administrators see what waits.
 
-## API
-
-| Method | Path | Returns |
-|---|---|---|
-| `GET` | `/v1/registry/registrations?state=pending` | The queue |
-| `POST` | `/v1/registry/registrations/{registration_id}/approve` | Approve, with an optional note |
-| `POST` | `/v1/registry/registrations/{registration_id}/reject` | Reject, with a note |
-| `POST` | `/v1/registry/registrations/{registration_id}/withdraw` | Withdraw |
-| `POST` | `/v1/registry/decisions` | Approve or reject several at once |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

@@ -42,6 +42,8 @@ exceptions:
   - OpenController's
   - Ask Ctrl
   - Rekori
+  - Claude Teams / Enterprise
+  - Claude Code
 tests:
   - name: flags title case
     input: "## Connect The Studio"

@@ -99,12 +99,4 @@ OpenController. Training machines connect to the studio directly.
 - An answer from the studio is read up to 16 MiB. Larger trained weights are downloaded from the studio directly:
   use **Open on its own**.
 
-## API
-
-| Method | Path | What it does |
-|---|---|---|
-| `GET` | `/v1/modules/fine_tuning/endpoint` | The studio's endpoint, as set. |
-| `PUT` | `/v1/modules/fine_tuning/endpoint` | Set the provider, base URL, console address and sign-in. |
-| `POST` | `/v1/modules/fine_tuning/endpoint/check` | Run the connection checks. |
-| `DELETE` | `/v1/modules/fine_tuning/endpoint` | Disconnect the studio. |
-| `*` | `/v1/modules/fine_tuning/proxy/{path}` | The studio's own API, through OpenController, by role. |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

@@ -2,7 +2,6 @@
 title: "API overview"
 description: "Base path, authentication with a service-account key, roles and permissions, errors, pagination and health for the OpenController API."
 icon: "code"
-hidden: true
 ---
 
 The console runs on the OpenController API, and anything the console can do, a script can. This page is what every
@@ -36,126 +35,14 @@ usable credential gets `401` with `WWW-Authenticate: Bearer realm="opencontrolle
 
 ### Create a key
 
-<Steps>
-  <Step title="Create the service account">
-    Open **Settings → Service accounts** and click **New service account**. Give it a name, a role (viewer, operator, admin, or
-    one of your organization's own roles) and, if you like, a description. A service account can never be owner.
-  </Step>
-  <Step title="Mint a key">
-    Click the account's keys button in the table (it reads **0 keys** at first), or **Manage keys** in its row menu, then click **Mint key**. The secret appears in a dialog titled **Shown exactly once**.
-    Store it now, then click **I stored it**. It cannot be recovered; to replace it, mint a new key and revoke this
-    one.
-  </Step>
-  <Step title="Revoke or disable when needed">
-    **Revoke** stops one key at once. Disabling the service account stops every key it has. The keys table shows
-    each key's hint, when it was created and by whom, and when it was last used.
-  </Step>
-</Steps>
-
-<Note>
-An installation can also hold static API keys in the secret `platform/api-keys` (`name:role=key`, comma-separated,
-each key at least 32 characters, never the owner role). Changing that secret needs `secrets:sign-in`, which only
-the owner holds by default. Service accounts are the way to go for anything new.
-</Note>
+A key belongs to a service account, made under **Settings → Service accounts** with the role the caller needs; see
+[Service accounts and API keys](/setup/service-accounts). The key is shown once.
 
 ## Roles and permissions
 
-A caller holds one role. Each built-in role includes the ones below it.
-
-| Role | May |
-|---|---|
-| `viewer` | Read the inventory, map, findings, scans and audit log, and ask the assistant. |
-| `operator` | Also run scans and verifications, request registrations, try text on guardrails, and change agent sharing. |
-| `admin` | Also add, change and remove integrations and their credentials, decide registrations, and manage people, teams, secrets and service accounts. |
-| `owner` | Also the organization itself: single sign-on, who gets which role, and the organization's own roles. |
-
-Every route needs one permission, written `resource:action`. A role holds a set of them. `GET /v1/access/policy`
-lists what each route needs, `GET /v1/access/permissions` describes every permission, and `GET /v1/me` says which
-ones you hold. The permissions, with the least built-in role that holds each:
-
-<AccordionGroup>
-  <Accordion title="Inventory, scans and connections">
-
-    | Permission | Least role | Lets a caller |
-    |---|---|---|
-    | `assets:read` | viewer | Read the inventory: every asset and what it uses |
-    | `assets:act` | operator | Change an agent in its own cloud: sharing, publishing, blocking |
-    | `graph:read` | viewer | Read the asset graph |
-    | `scans:read` | viewer | Read scans and their schedule |
-    | `scans:run` | operator | Start a scan |
-    | `scans:schedule` | admin | Set how often each cloud is scanned automatically |
-    | `connections:read` | viewer | Read the integrations and how each is reached |
-    | `connections:verify` | operator | Verify an integration reaches its cloud |
-    | `connections:write` | admin | Add, change and remove integrations and their credentials |
-    | `spend:read` | viewer | Read what the organization spends on AI |
-    | `spend:refresh` | operator | Read every spend source now |
-    | `spend:prices` | admin | Set what each licence costs a month |
-
-  </Accordion>
-  <Accordion title="Registry, ownership, posture and observability">
-
-    | Permission | Least role | Lets a caller |
-    |---|---|---|
-    | `registry:read` | viewer (or a team role) | Read the registry, shadow AI and requests |
-    | `registry:request` | operator (or a team role) | Request, import and withdraw registrations |
-    | `registry:decide` | admin | Approve, reject and revoke registrations |
-    | `registry:govern` | admin | Change the registry policy |
-    | `ownership:write` | admin | Pin an asset to a team, and name its owner and sponsor |
-    | `posture:read` | viewer (or a team role) | Read the security posture: its checks, findings and summary |
-    | `posture:write` | operator | Evaluate the posture now |
-    | `posture:govern` | admin | Turn posture policies on and off and set the model providers allowed |
-    | `observability:read` | viewer (or a team role) | Read the agents' traces and what they cost |
-    | `observability:content` | operator (or a team role) | Read what was asked and answered in the agents' traces |
-    | `observability:send` | operator | Send traces to a project (OTLP, at `/otlp`) |
-    | `observability:projects` | admin | Make, change and remove projects, and choose the agent each stands for |
-
-  </Accordion>
-  <Accordion title="Guardrails and modules">
-
-    | Permission | Least role | Lets a caller |
-    |---|---|---|
-    | `guardrails:read` | viewer | Read the guardrails, their checks, OPA policies and provider connections |
-    | `guardrails:test` | operator | Try text on a guardrail, and check completions with guardrails from apps |
-    | `guardrails:write` | admin | Make, change and remove guardrails, OPA policies and provider connections |
-    | `guardrails:violations` | admin | See who tripped guardrails in the LLM gateway, never the text |
-    | `modules:read` | viewer | Read the modules, what each holds and its activity |
-    | `modules:use` | operator | Change what a module holds, through it: routes, teams, policies |
-    | `modules:check` | operator | Check that a module's endpoint answers |
-    | `modules:govern` | admin | Change what only administrators may in a module: providers, keys |
-    | `modules:endpoint` | admin | Read and set where a module runs and how it is reached |
-    | `chat:read` | viewer | Read what the assistant can do |
-    | `chat:ask` | viewer | Ask the assistant about the estate |
-
-  </Accordion>
-  <Accordion title="Organization, people and access">
-
-    | Permission | Least role | Lets a caller |
-    |---|---|---|
-    | `me:read`, `me:write` | everyone | Read who you are; change your own password |
-    | `org:read` | viewer | Read the organization's name |
-    | `org:write` | admin | Rename the organization and connect its single sign-on |
-    | `org:sso` | admin | Read the single sign-on settings |
-    | `sso:read` | admin | Read which identity providers are offered |
-    | `sso:write` | owner | Connect, change and disconnect single sign-on, and mint SCIM tokens |
-    | `users:read`, `users:write` | admin | Read, add, change and remove accounts |
-    | `teams:read` | viewer | Read the teams |
-    | `teams:write` | admin | Add, change and remove teams, and link them to groups |
-    | `directory:read` | admin | Read the groups the identity provider provisions |
-    | `service-accounts:read`, `service-accounts:write` | admin | Read, add, change and remove service accounts and mint their keys |
-    | `secrets:read`, `secrets:write` | admin | Read which secrets exist; add, change and remove them |
-    | `secrets:sign-in` | owner | Change the secrets that decide who signs in |
-    | `settings:read` | admin | Read how the organization is set up |
-    | `audit:read` | admin | Read who signed in and who changed people, roles and settings |
-    | `access:read` | viewer | Read what each route and permission needs |
-    | `access:rules` | admin | Read who gets which role |
-    | `access:write` | owner | Change who gets which role, and the organization's own roles |
-
-  </Accordion>
-</AccordionGroup>
-
-Some installations run fewer modules; a route of a module that is off answers `404` with the code
-`feature_disabled`. A caller without the permission gets `403` with a detail such as
-`this needs scans:run (the operator role); you have viewer`.
+Every route needs a permission, and a role is a set of permissions. The caller's role must hold the route's
+permission, or the API answers `403` with the permission it needs. The full table of permissions, with the least
+role holding each, is on [Roles](/administration/roles).
 
 ## Errors
 

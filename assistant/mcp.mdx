@@ -1,0 +1,92 @@
+---
+title: "MCP server"
+description: "Connect Claude Code, Claude Desktop, Cursor, Zed or ChatGPT to OpenController's MCP server and read your AI estate with your own access."
+icon: "plug"
+---
+
+OpenController is an MCP server. Any MCP client, such as Claude Code, Claude Desktop, Cursor, Zed or ChatGPT, can
+read the AI estate the way [Ask Ctrl](/assistant/ask-ctrl) does, with the caller's own access, at:
+
+```
+https://opencontroller.example.com/v1/mcp
+```
+
+The server speaks MCP over Streamable HTTP in its simplest form: one JSON-RPC message per `POST`, answered with
+JSON, with no session and no stream. `GET` and `DELETE` answer 405. It speaks protocol versions 2024-11-05 through
+2025-11-25, so current clients connect without settings of their own.
+
+## What it offers
+
+`tools/list` is what Ask Ctrl would be offered for the same caller, minus anything that changes something:
+
+- Ask Ctrl's own tools: the estate summary, asset search, the graph around an asset, findings, scans and traces,
+  each as the caller's role allows. The [lookups table](/assistant/ask-ctrl#what-it-can-answer) lists them with the
+  permission each needs.
+- One tool per API operation that reads, such as `get_assets`, `get_findings` and `get_observability_projects`,
+  offered only when both the caller and Ask Ctrl's role hold its permission. Ask Ctrl's role is set with
+  `PUT /v1/access/agent`; see [Ask Ctrl's role](/administration/roles#ask-ctrls-role).
+
+Every call runs through the API as the caller via MCP, so it is authorized, bounded and logged as any request, and
+the audit log shows what the client read. Operations that change something are never offered; a call to one is
+refused as an unknown tool. A change is made in the console, or asked of Ask Ctrl there, which proposes it for the
+person to confirm. Operations about credentials are not offered either, as for Ask Ctrl.
+
+With Ask Ctrl's role set to `none`, the server lists no tools.
+
+## Signing in
+
+The route is inside `/v1`, so it takes what the API takes: a bearer token. For a client on someone's machine, use a
+service account's API key, which starts with `cpk_`, with the role the person holds; see
+[Service accounts](/setup/service-accounts) for making one. The key goes in the `Authorization` header. Some clients
+send it as `X-API-Key`, which works too.
+
+The route needs `chat:ask`, which every built-in role holds.
+
+OAuth sign-in, which the hosted connectors of claude.ai and ChatGPT use when the client has no key of its own, is
+not available. Those clients connect with a key as the others do.
+
+## Connect a client
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```sh
+    claude mcp add --transport http opencontroller https://opencontroller.example.com/v1/mcp \
+      --header "Authorization: Bearer <YOUR_API_KEY>"
+    ```
+  </Tab>
+  <Tab title="Cursor, Claude Desktop, Zed">
+    In the client's MCP settings, add the server with the same URL and header. The entry's type is `http` or
+    `streamable-http`, whichever the client calls it:
+
+    ```json
+    {
+      "mcpServers": {
+        "opencontroller": {
+          "type": "http",
+          "url": "https://opencontroller.example.com/v1/mcp",
+          "headers": { "Authorization": "Bearer <YOUR_API_KEY>" }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+The key is written into the client's settings file in clear. Give it a service account of its own, with no more
+than the role the person holds, and rotate it from **Settings**, then **Service accounts** when the person leaves.
+</Warning>
+
+## Try it
+
+Without a client, send the server one message as a client would:
+
+```sh
+curl -sS https://opencontroller.example.com/v1/mcp \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
+```
+
+The answer lists the tools the key's role and Ask Ctrl's role both allow. An empty list means one of the two holds
+nothing it may read with.

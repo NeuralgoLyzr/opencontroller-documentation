@@ -83,7 +83,4 @@ A few details worth knowing when you read a finding:
 - **OBS-1** counts an agent as traced when a project stood for it in the last 30 days; **OBS-2** counts it as evaluated when a result scored it in the last 90 days.
 - **RT-1** applies to platforms where agents are built in code, where a guardrail or the gateway is the only runtime protection.
 
-## API
-
-- `GET /v1/posture/policy`: which policies are off and the allowed model providers.
-- `PUT /v1/posture/policy`: set them; the body is `{"disabled": [...], "model_providers": [...]}`.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

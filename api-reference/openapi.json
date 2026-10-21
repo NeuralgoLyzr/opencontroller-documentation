@@ -260,6 +260,67 @@
         }
       }
     },
+    "/v1/access/agent": {
+      "put": {
+        "tags": [
+          "access"
+        ],
+        "summary": "Choose Ask Ctrl's role",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/accessapi.AgentRequest"
+              }
+            }
+          },
+          "description": "Ask Ctrl's role",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/accessapi.RulesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/httpapi.Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The role holds more than the caller's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/httpapi.Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The configuration sets the rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/httpapi.Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/access/permissions": {
       "get": {
         "tags": [
@@ -1621,7 +1682,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/assistant.Status"
+                  "$ref": "#/components/schemas/bridge.Status"
                 }
               }
             }
@@ -1629,32 +1690,25 @@
         }
       },
       "post": {
-        "description": "Streams server-sent events: a \"step\" (Step) for each lookup as it happens, a \"navigate\" (Navigate) when the assistant opens a console page, an \"action\" (Action) when it proposes a scan or verification for the user to confirm, then one \"answer\" (Answer), or an \"error\" (ErrorEvent).",
+        "description": "An AG-UI 1.0 run (https://docs.ag-ui.com): the conversation, the console's commands on screen as tools, and what the person sees as context. Ask Ctrl answers as the caller, narrowed by its role. Streams AG-UI events as server-sent events: RUN_STARTED, text and tool calls, a CUSTOM \"ask_ctrl.step\" for each lookup with the assets it touched, then RUN_FINISHED (with pendingToolCallIds when it asks the console to run its commands, or interrupts for the changes it proposes, each answered by the next run's resume) or RUN_ERROR.",
         "tags": [
           "chat"
         ],
-        "summary": "Ask about the AI estate",
+        "summary": "Run Ask Ctrl (AG-UI)",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/assistantapi.AskRequest"
+                "$ref": "#/components/schemas/agui.RunAgentInput"
               }
             }
           },
-          "description": "Conversation",
+          "description": "The run",
           "required": true
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/assistant.Answer"
-                }
-              }
-            }
+            "description": "OK"
           },
           "400": {
             "description": "Bad Request",
@@ -1680,6 +1734,77 @@
             "description": "Service Unavailable",
             "content": {
               "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/httpapi.Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/tools": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "The assistant's own tools",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/assistantapi.ToolsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/tools/{name}": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Run one of the assistant's own tools",
+        "parameters": [
+          {
+            "example": "search_assets",
+            "description": "Tool",
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "{\"query\":\"bedrock\"}",
+            "description": "The tool's input, as JSON",
+            "name": "input",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/assistant.Result"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/httpapi.Problem"
                 }
@@ -5036,6 +5161,44 @@
         }
       }
     },
+    "/v1/mcp": {
+      "post": {
+        "description": "An MCP server (Streamable HTTP, JSON answers, no session): the assistant's own tools, and one tool per API operation that changes nothing, each offered only when both the caller and the agent role hold its permission. Connect Claude, Cursor, ChatGPT or any MCP client with the API's own sign-in: a person's token, or an API key as a bearer token. Each call runs through the API as the caller via MCP, so it is authorized and logged as any request. Nothing changes through it: a change is made in the console, or asked of Ask Ctrl there.",
+        "tags": [
+          "chat"
+        ],
+        "summary": "The assistant's tools, as an MCP server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "One JSON-RPC 2.0 message: initialize, ping, tools/list or tools/call",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The JSON-RPC answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "A notification, taken"
+          },
+          "405": {
+            "description": "GET and DELETE: this server has no stream and no session"
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "tags": [
@@ -5938,7 +6101,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -6120,7 +6283,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -6278,7 +6441,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -6666,7 +6829,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -6804,7 +6967,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -7046,7 +7209,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -7218,7 +7381,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -7311,7 +7474,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -7544,7 +7707,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -7676,7 +7839,7 @@
             }
           },
           {
-            "description": "A project's id, or - for traces of no project",
+            "description": "A project's id, or `-` for traces of no project",
             "name": "project",
             "in": "query",
             "schema": {
@@ -9620,7 +9783,7 @@
         "summary": "Rotate or redescribe a secret",
         "parameters": [
           {
-            "description": "Secret name, e.g. platform/anthropic-api-key",
+            "description": "Secret name, e.g. platform/assistant-gateway-key",
             "name": "name",
             "in": "path",
             "required": true,
@@ -11157,7 +11320,7 @@
     },
     "/version": {
       "get": {
-        "description": "Version (git tag), commit, build date and dirty flag of the running binary — what to quote when reporting or comparing deployments.",
+        "description": "Version (git tag), commit, build date and dirty flag of the running binary: what to quote when reporting or comparing deployments.",
         "tags": [
           "health"
         ],
@@ -11312,7 +11475,8 @@
           "viewer",
           "operator",
           "admin",
-          "owner"
+          "owner",
+          "none"
         ],
         "x-enum-comments": {
           "Admin": "also add, change and remove integrations and their credentials",
@@ -11325,14 +11489,16 @@
           "read the inventory, graph, findings, scans, audit log; ask Ctrl, the assistant",
           "also run scans and verifications, change agent sharing",
           "also add, change and remove integrations and their credentials",
-          "also the organization itself: single sign-on, the access rules, who is owner"
+          "also the organization itself: single sign-on, the access rules, who is owner",
+          ""
         ],
         "x-enum-varnames": [
           "None",
           "Viewer",
           "Operator",
           "Admin",
-          "Owner"
+          "Owner",
+          "AgentOff"
         ]
       },
       "access.RouteNeed": {
@@ -11391,12 +11557,26 @@
           }
         }
       },
+      "accessapi.AgentRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "description": "Role is the most Ask Ctrl may do for anyone: a built-in role other\nthan owner, one of the organization's own, or \"none\" to stop it doing\nanything. It never does more than the person asking may.",
+            "type": "string",
+            "maxLength": 32,
+            "example": "operator"
+          }
+        }
+      },
       "accessapi.Me": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "id": {
             "description": "ID and Email identify a local account (method \"password\").",
@@ -11417,7 +11597,7 @@
           },
           "name": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "org_id": {
             "description": "OrgID is the organization this server serves.",
@@ -11508,6 +11688,14 @@
       "accessapi.RulesResponse": {
         "type": "object",
         "properties": {
+          "agent_role": {
+            "description": "Agent is the role Ask Ctrl holds: whoever it acts for, it does no\nmore than this role and they both allow. Clean makes it viewer when\nunset; AgentOff takes everything from it; it is never owner.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/access.Role"
+              }
+            ]
+          },
           "default_role": {
             "description": "Default is the role of a signed-in person nothing else grants a role\nto; None refuses them. It never applies to services.",
             "allOf": [
@@ -11558,7 +11746,7 @@
           },
           "email": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "id": {
             "type": "string",
@@ -11617,7 +11805,7 @@
           "email": {
             "type": "string",
             "maxLength": 320,
-            "example": "ops@acme.com"
+            "example": "ops@lyzr.ai"
           },
           "name": {
             "type": "string",
@@ -11645,7 +11833,7 @@
           "email": {
             "type": "string",
             "maxLength": 320,
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "password": {
             "type": "string",
@@ -11704,7 +11892,7 @@
           },
           "base_url": {
             "type": "string",
-            "example": "https://rekori.dev.opencontroller.sh/v1"
+            "example": "https://gateway.opencontroller.example.com/v1"
           },
           "by": {
             "type": "string",
@@ -11786,6 +11974,203 @@
           }
         }
       },
+      "agui.Context": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 8192
+          }
+        }
+      },
+      "agui.FunctionCall": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "arguments": {
+            "type": "string",
+            "maxLength": 16000
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      },
+      "agui.Message": {
+        "type": "object",
+        "required": [
+          "id",
+          "role"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 16000
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "role": {
+            "description": "Role is the person's, Ask Ctrl's or a tool's: developer and system\nnotes are the platform's alone, so a client sends none.",
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "tool"
+            ]
+          },
+          "toolCallId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "toolCalls": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "$ref": "#/components/schemas/agui.ToolCall"
+            }
+          }
+        }
+      },
+      "agui.ResumeEntry": {
+        "type": "object",
+        "required": [
+          "interruptId",
+          "status"
+        ],
+        "properties": {
+          "interruptId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "payload": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "resolved",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "agui.RunAgentInput": {
+        "type": "object",
+        "required": [
+          "runId",
+          "threadId"
+        ],
+        "properties": {
+          "context": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "$ref": "#/components/schemas/agui.Context"
+            }
+          },
+          "forwardedProps": {
+            "description": "ForwardedProps is the platform's to set for the runtime; what a\nclient sends there is dropped.",
+            "type": "object"
+          },
+          "messages": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/agui.Message"
+            }
+          },
+          "parentRunId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "resume": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "$ref": "#/components/schemas/agui.ResumeEntry"
+            }
+          },
+          "runId": {
+            "type": "string",
+            "maxLength": 128,
+            "example": "run_4a1b"
+          },
+          "state": {
+            "type": "object"
+          },
+          "threadId": {
+            "type": "string",
+            "maxLength": 128,
+            "example": "thr_9f2c"
+          },
+          "tools": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "$ref": "#/components/schemas/agui.Tool"
+            }
+          }
+        }
+      },
+      "agui.Tool": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 48,
+            "example": "inventory_filter"
+          },
+          "parameters": {
+            "type": "object"
+          }
+        }
+      },
+      "agui.ToolCall": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "function": {
+            "$ref": "#/components/schemas/agui.FunctionCall"
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "app.BatchItem": {
         "type": "object",
         "required": [
@@ -11800,7 +12185,7 @@
           "owner": {
             "type": "string",
             "maxLength": 200,
-            "example": "alice@acme.com"
+            "example": "jane@lyzr.ai"
           }
         }
       },
@@ -12109,7 +12494,7 @@
           }
         }
       },
-      "assistant.Answer": {
+      "assistant.Result": {
         "type": "object",
         "properties": {
           "assets": {
@@ -12118,107 +12503,39 @@
               "type": "string"
             }
           },
-          "text": {
+          "content": {
+            "type": "string"
+          },
+          "is_error": {
+            "type": "boolean"
+          },
+          "label": {
             "type": "string"
           }
         }
       },
-      "assistant.Message": {
+      "assistant.Tool": {
         "type": "object",
-        "required": [
-          "role"
-        ],
         "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant"
-            ],
-            "example": "user"
+          "description": {
+            "type": "string"
           },
-          "text": {
-            "type": "string",
-            "maxLength": 8000,
-            "example": "Which agents can reach the internet?"
+          "input_schema": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
-      "assistant.PageContext": {
+      "assistantapi.ToolsResponse": {
         "type": "object",
         "properties": {
-          "asset_id": {
-            "type": "string",
-            "maxLength": 128,
-            "example": "ast_3f1c9a2b7d4e8f60"
-          },
-          "connection_id": {
-            "type": "string",
-            "maxLength": 128,
-            "example": "con_ab4eef8f4e3e"
-          },
-          "page": {
-            "description": "Page is the path and query string.",
-            "type": "string",
-            "maxLength": 512,
-            "example": "/inventory?kind=agent"
-          },
-          "project_id": {
-            "description": "ProjectID, TraceID and SessionID are the trace project, the run and the\nconversation open on an Observability page.",
-            "type": "string",
-            "maxLength": 128,
-            "example": "prj_9f2c4a1b7d3e"
-          },
-          "scan_id": {
-            "type": "string",
-            "maxLength": 128,
-            "example": "scn_4dd7f73b4110"
-          },
-          "session_id": {
-            "type": "string",
-            "maxLength": 200,
-            "example": "conv_8812"
-          },
-          "trace_id": {
-            "type": "string",
-            "maxLength": 128,
-            "example": "0af7651916cd43dd8448eb211c80319c"
-          }
-        }
-      },
-      "assistant.Status": {
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "example": true
-          },
-          "model": {
-            "type": "string",
-            "example": "claude-sonnet-5"
-          },
-          "reason": {
-            "description": "Reason says why it cannot answer, when it cannot.",
-            "type": "string",
-            "example": "Add the Anthropic API key in Settings → Secrets to enable the assistant."
-          }
-        }
-      },
-      "assistantapi.AskRequest": {
-        "type": "object",
-        "required": [
-          "messages"
-        ],
-        "properties": {
-          "context": {
-            "$ref": "#/components/schemas/assistant.PageContext"
-          },
-          "messages": {
+          "tools": {
             "type": "array",
-            "maxItems": 40,
-            "minItems": 1,
             "items": {
-              "$ref": "#/components/schemas/assistant.Message"
+              "$ref": "#/components/schemas/assistant.Tool"
             }
           }
         }
@@ -12229,7 +12546,7 @@
           "actor": {
             "description": "Actor is who did it: a person's email or subject, a service account's\nname, \"console\" with authentication off, or, for a sign-in, the\nperson signing in.",
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "actor_kind": {
             "type": "string",
@@ -12466,6 +12783,21 @@
           }
         }
       },
+      "bridge.Status": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "model": {
+            "type": "string",
+            "example": "anthropic/claude-sonnet-5-5"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
       "buildinfo.Info": {
         "type": "object",
         "properties": {
@@ -12533,7 +12865,7 @@
           "trusted_principal": {
             "description": "TrustedPrincipal is the identity of this deployment the account's role\nwas set up to trust: the principal in the setup the connection was\nmade with, then the one each successful verification used.",
             "type": "string",
-            "example": "arn:aws:iam::123456789012:role/opencontroller-discover-api"
+            "example": "arn:aws:iam::182399701833:role/opencontroller-discover-api"
           }
         }
       },
@@ -12564,7 +12896,7 @@
           "template_url": {
             "description": "TemplateURL is where the template is downloaded from: this service.",
             "type": "string",
-            "example": "https://dev.opencontroller.sh/setup/aws/discover-role.yaml"
+            "example": "https://opencontroller.example.com/setup/aws/discover-role.yaml"
           }
         }
       },
@@ -12595,7 +12927,7 @@
           "principal_arn": {
             "description": "PrincipalARN is the identity this deployment reaches accounts as: the\nrole (its Pod Identity, on EKS) the customer's roles must trust.",
             "type": "string",
-            "example": "arn:aws:iam::123456789012:role/opencontroller-discover-api"
+            "example": "arn:aws:iam::182399701833:role/opencontroller-discover-api"
           },
           "role_name": {
             "type": "string",
@@ -12608,7 +12940,7 @@
           "template_url": {
             "description": "TemplateURL is where the template is downloaded from: this service.",
             "type": "string",
-            "example": "https://dev.opencontroller.sh/setup/aws/discover-role.yaml"
+            "example": "https://opencontroller.example.com/setup/aws/discover-role.yaml"
           }
         }
       },
@@ -12992,7 +13324,7 @@
           "principal": {
             "description": "Principal is this deployment's AWS identity, which users signing in by\nworkload identity federation trust; empty when it is not known.",
             "type": "string",
-            "example": "arn:aws:iam::123456789012:role/opencontroller-discover-api"
+            "example": "arn:aws:iam::182399701833:role/opencontroller-discover-api"
           },
           "script": {
             "description": "Script is the SQL, to run as a role that can create users and roles,\nsuch as ACCOUNTADMIN.",
@@ -13056,7 +13388,7 @@
           "principal": {
             "description": "Principal is who the service reached the account from, for AWS: its\nown identity, which the account's role trusts.",
             "type": "string",
-            "example": "arn:aws:iam::123456789012:role/opencontroller-discover-api"
+            "example": "arn:aws:iam::182399701833:role/opencontroller-discover-api"
           }
         }
       },
@@ -13561,7 +13893,7 @@
           },
           "actor": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "actor_kind": {
             "type": "string",
@@ -13715,7 +14047,7 @@
         "properties": {
           "email": {
             "type": "string",
-            "example": "sam@acme.com"
+            "example": "sri@lyzr.com"
           },
           "name": {
             "type": "string",
@@ -13934,7 +14266,7 @@
           "set_by": {
             "description": "SetBy and SetAt say who set the connection's own interval, and when.",
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           }
         }
       },
@@ -14275,7 +14607,7 @@
           },
           "by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "note": {
             "type": "string"
@@ -14311,7 +14643,7 @@
           },
           "updated_by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "version": {
             "type": "integer",
@@ -14336,7 +14668,7 @@
           },
           "decided_by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "history": {
             "type": "array",
@@ -14358,7 +14690,7 @@
           },
           "owner": {
             "type": "string",
-            "example": "alice@acme.com"
+            "example": "jane@lyzr.ai"
           },
           "owner_from_platform": {
             "description": "OwnerFromPlatform says the owner is the one the asset's platform\nnames, not one the requester stated.",
@@ -14386,7 +14718,7 @@
           },
           "requested_by": {
             "type": "string",
-            "example": "alice@acme.com"
+            "example": "jane@lyzr.ai"
           },
           "state": {
             "enum": [
@@ -15033,7 +15365,7 @@
           },
           "created_by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "google": {
             "$ref": "#/components/schemas/guardrails.GoogleSettings"
@@ -15073,7 +15405,7 @@
           },
           "updated_by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "used_by": {
             "description": "UsedBy are the guardrails whose checks run with it.",
@@ -15954,7 +16286,7 @@
           "principal_arn": {
             "description": "PrincipalARN is the identity the guardrail engine runs as, which the\nrole trusts.",
             "type": "string",
-            "example": "arn:aws:iam::123456789012:role/acme-guardrails-core"
+            "example": "arn:aws:iam::182399701833:role/acme-guardrails-core"
           },
           "role_name": {
             "type": "string",
@@ -15967,7 +16299,7 @@
           "template_url": {
             "description": "TemplateURL is where the template is downloaded from: this service.",
             "type": "string",
-            "example": "https://dev.opencontroller.sh/setup/aws/discover-role.yaml"
+            "example": "https://opencontroller.example.com/setup/aws/discover-role.yaml"
           }
         }
       },
@@ -16874,7 +17206,7 @@
           },
           "environment": {
             "type": "string",
-            "example": "Acme (default)"
+            "example": "Lyzr (default)"
           },
           "provider": {
             "type": "string",
@@ -17638,7 +17970,7 @@
         "properties": {
           "actor": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "actor_kind": {
             "type": "string",
@@ -19371,12 +19703,12 @@
           },
           "display_name": {
             "type": "string",
-            "example": "Acme"
+            "example": "Lyzr"
           },
           "id": {
             "description": "ID is the tenant key, set where the server is deployed\n(DISCOVERY_ORG_ID); it never changes.",
             "type": "string",
-            "example": "acme"
+            "example": "lyzr"
           },
           "updated_at": {
             "type": "string"
@@ -20459,7 +20791,7 @@
           "owner": {
             "type": "string",
             "maxLength": 200,
-            "example": "alice@acme.com"
+            "example": "jane@lyzr.ai"
           },
           "protocol": {
             "type": "string",
@@ -20579,7 +20911,7 @@
             "description": "Owner is used only when the asset\\'s platform names no owner: when it\ndoes, the platform\\'s owner is the registration\\'s.",
             "type": "string",
             "maxLength": 200,
-            "example": "alice@acme.com"
+            "example": "jane@lyzr.ai"
           },
           "purpose": {
             "type": "string",
@@ -20627,11 +20959,11 @@
           },
           "by": {
             "type": "string",
-            "example": "jane@acme.com"
+            "example": "khush@lyzr.ai"
           },
           "secret": {
             "type": "string",
-            "example": "platform/anthropic-api-key"
+            "example": "platform/assistant-gateway-key"
           },
           "version": {
             "type": "integer",
@@ -20693,7 +21025,7 @@
           "env": {
             "description": "Env is the environment variable that seeds a platform secret.",
             "type": "string",
-            "example": "ANTHROPIC_API_KEY"
+            "example": "ASK_CTRL_GATEWAY_KEY"
           },
           "kind": {
             "type": "string",
@@ -20734,7 +21066,7 @@
             "type": "string"
           },
           "used_by": {
-            "description": "UsedBy names what reads it, e.g. \"Integration acme (Microsoft)\".",
+            "description": "UsedBy names what reads it, e.g. \"Integration lyzr (Microsoft)\".",
             "type": "string"
           },
           "version": {
@@ -20950,14 +21282,14 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "Acme"
+            "example": "Lyzr"
           },
           "oidc_issuer": {
             "type": "string"
           },
           "public_url": {
             "type": "string",
-            "example": "https://opencontroller.example.com"
+            "example": "https://opencontroller.lyzr.ai"
           },
           "sessions": {
             "$ref": "#/components/schemas/settings.Sessions"

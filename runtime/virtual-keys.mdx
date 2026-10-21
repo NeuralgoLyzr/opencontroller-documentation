@@ -83,11 +83,4 @@ it.
 
 Every key created, changed, rotated or deleted is recorded in OpenController's audit log by name, never by value.
 
-## API
-
-- `GET /v1/llm-gateway/virtual-keys`: list keys, with `search`, `limit` (1 to 200, default 50) and `offset`.
-- `POST /v1/llm-gateway/virtual-keys`: create a key; the answer holds its value in full.
-- `PUT /v1/llm-gateway/virtual-keys/{id}`: replace a key's settings.
-- `POST /v1/llm-gateway/virtual-keys/{id}/rotate`: a new value, in full in the answer.
-- `DELETE /v1/llm-gateway/virtual-keys/{id}`: delete a key.
-- `GET /v1/llm-gateway/providers`, `GET /v1/llm-gateway/identity-providers`: what the form picks from.
+The API reference lists the endpoints behind this page.

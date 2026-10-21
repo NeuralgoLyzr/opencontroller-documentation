@@ -1,16 +1,20 @@
 ---
 title: "Guardrails"
-description: "Make a named set of checks for prompts and answers, try it on sample text, and use it from the LLM gateway or any app."
+description: "Make a named set of checks for prompts, tool calls and answers, try it on sample text, and use it from the LLM gateway, any app or Claude Code."
 icon: "shield-check"
 ---
+
+import { Diagram } from '/snippets/diagrams.mdx'
 
 A guardrail is a named set of checks that text is held to: personal data, secrets, prompt injection, toxicity,
 topics, keywords and more, each with its own settings. The guardrail engine inside your OpenController keeps the
 guardrails and runs the checks; nothing it reads leaves it. A guardrail can block a text, or let it through with
 values redacted or masked.
 
-A guardrail is used in two ways. The LLM gateway's content rules can run it on every call, with no code. Any
-application can call it directly through the [guardrails API](/runtime/guardrails-api).
+A guardrail is used in three ways. The LLM gateway's content rules can run it on every call, with no code. Any
+application can hold what it sends to a model, and what comes back, to it through one API call. And an
+organization's Claude Code can send it every prompt, tool call and tool result through hooks in its managed
+settings. [Use it anywhere](#use-it-anywhere) shows each.
 
 ## The list
 
@@ -84,10 +88,48 @@ guardrail; **Load their version** takes theirs instead.
 
 Trying needs the Operator role (`guardrails:test`). Creating and saving a guardrail needs Admin (`guardrails:write`); anyone else sees the editor read-only.
 
-## Use it in the gateway
+## Where a guardrail runs
 
-Every saved guardrail is put in the connected LLM gateway, usually at once and otherwise within minutes, as a
-guardrail provider named after it with "(OpenController)" appended. The gateway's content rules can then use it.
+An exchange with a model has four points where text arrives that nobody has read yet. Before the model: the prompt.
+Before a tool runs: the call the model asked for. Before the model reads it: the tool's result. Before it is shown:
+the answer. A guardrail runs at any of them. Whatever calls it sends the completion as it holds it, in OpenAI's format
+or Anthropic's, and names the point with a hook. The engine judges the text at that point and answers with a verdict:
+blocked, or let through with the values to redact.
+
+<Diagram name="guardrail" alt="An application or the gateway sends its completion at one of four points: the prompt, a tool call, a tool result or the answer. The guardrail engine inside the cell checks it and answers blocked, or let through with redactions" />
+
+| Hook | Send | It judges |
+|---|---|---|
+| `llm_input` | The request you are about to send | The last message, when the user sent it |
+| `llm_output` | The model's response | The reply's text |
+| `pre_tool` | The model's response | Each tool call in it, before it is made |
+| `post_tool` | The request carrying tool results | Each tool result, before the model reads it |
+
+Only the current message is checked, so sending the whole conversation is fine. Which checks act at each point
+follows from the guardrail's settings. The checks that read prompts act at `llm_input` and at `post_tool`, because a
+tool's result is input the model has not seen. The checks that also read answers act at `llm_output`. **Tool call
+rules (Cedar)** and **Custom policies (OPA)** act at `pre_tool`. A guardrail with no check at a point lets everything through there. The **Use it anywhere** sheet says **Checks here**
+or **No check here** beside each hook for the guardrail you opened.
+
+The completion is never rewritten. A verdict says whether the text is blocked and, when it is not, where the values
+to redact are, so the caller decides what each becomes. The LLM gateway applies its content rule's action for you;
+an application applies the redactions itself. What the gateway blocks or redacts is counted on
+[Guardrail violations](/runtime/guardrail-violations).
+
+## Use it anywhere
+
+**Use it anywhere**, on a row of the list or on a guardrail's page, shows its **Policy ID**. Under **Choose where it
+runs** it offers four places: **Claude Teams / Enterprise**, **OpenAI**, **Anthropic** and **LLM Gateway**. The sheet
+fills in this guardrail's id and your OpenController's address. Every place but the gateway signs in with a service
+account's key, made under **Get an API key**. The account's role must hold `guardrails:test`: the Operator role or
+above, or a custom role with only that permission. The examples below read the key from `OPENCONTROLLER_KEY` and use
+`https://opencontroller.example.com` as the address.
+
+### LLM Gateway
+
+Calls through the LLM gateway need no code. Every saved guardrail is put in the connected gateway, usually at once
+and otherwise within minutes, as a guardrail provider named after it with "(OpenController)" appended. A content
+rule then runs it on the calls the rule applies to.
 
 <Steps>
   <Step title="Open the content rules">
@@ -104,14 +146,257 @@ guardrail provider named after it with "(OpenController)" appended. The gateway'
   </Step>
 </Steps>
 
-From then on the gateway runs the guardrail on the calls the rule applies to, and what it blocks or redacts is
-counted on [Guardrail violations](/runtime/guardrail-violations). A guardrail used by a content rule cannot be
-deleted until the rule is removed there.
+From then on the gateway runs the guardrail on those calls and counts what it blocks or redacts on
+[Guardrail violations](/runtime/guardrail-violations). A guardrail used by a content rule cannot be deleted until
+the rule is removed there.
 
-## API
+### OpenAI
 
-- `GET /v1/guardrails`, `POST /v1/guardrails`: list and make guardrails.
-- `GET`, `PUT`, `DELETE /v1/guardrails/{guardrail_id}`: read, replace and remove one.
-- `POST /v1/guardrails/{guardrail_id}/test`, `POST /v1/guardrails/test`: try text on a guardrail, or on unsaved settings.
-- `GET /v1/guardrails/checks`: the catalog of checks and their defaults.
-- `GET /v1/guardrails/gateways`: which guardrails are in the gateway and the rules that use them.
+An application that holds its completions in OpenAI's format posts each one to `POST /v2/guardrails/inference`, with
+the guardrail's `policy_id` and the `hook` for where it is. The request goes with `llm_input` before the model, and
+the response with `llm_output` before it is shown. When `blocked` is true, the application stops and reports
+`block_reason`. Otherwise it applies `redactions` to the texts they point at, then sends the completion on. The
+sheet shows the same code in **Python**, **TypeScript** and **curl**.
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+from openai import OpenAI
+
+client = OpenAI()
+
+
+def check(hook, completion):
+    verdict = requests.post(
+        "https://opencontroller.example.com/v2/guardrails/inference",
+        headers={"Authorization": f"Bearer {os.environ['OPENCONTROLLER_KEY']}"},
+        json={"policy_id": "<guardrail id>", "hook": hook, "completion": completion},
+        timeout=30,
+    ).json()
+    if verdict["blocked"]:
+        raise PermissionError(verdict["block_reason"])
+    # Otherwise apply verdict["redactions"] to the texts they point at.
+    return verdict
+
+
+request = {
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "system", "content": "You are a support agent."},
+    {"role": "user", "content": "My name is Priya Raman. Where is my order?"}
+  ]
+}
+check("llm_input", request)
+response = client.chat.completions.create(**request)
+check("llm_output", response.model_dump())
+```
+
+```typescript TypeScript
+import OpenAI from "openai"
+
+const client = new OpenAI()
+
+async function check(hook: string, completion: unknown) {
+  const res = await fetch("https://opencontroller.example.com/v2/guardrails/inference", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENCONTROLLER_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ policy_id: "<guardrail id>", hook, completion }),
+  })
+  const verdict = await res.json()
+  if (verdict.blocked) throw new Error(verdict.block_reason)
+  // Otherwise apply verdict.redactions to the texts they point at.
+  return verdict
+}
+
+const request = {
+  "model": "gpt-4o",
+  "messages": [
+    {"role": "system", "content": "You are a support agent."},
+    {"role": "user", "content": "My name is Priya Raman. Where is my order?"}
+  ]
+}
+await check("llm_input", request)
+const response = await client.chat.completions.create(request)
+await check("llm_output", response)
+```
+
+```bash curl
+# The prompt, before it goes to the model
+curl -sS https://opencontroller.example.com/v2/guardrails/inference \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "policy_id": "<guardrail id>",
+    "hook": "llm_input",
+    "completion": {
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "You are a support agent."},
+        {"role": "user", "content": "My name is Priya Raman. Where is my order?"}
+      ]
+    }
+  }'
+
+# The model's answer, before it is shown
+curl -sS https://opencontroller.example.com/v2/guardrails/inference \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "policy_id": "<guardrail id>",
+    "hook": "llm_output",
+    "completion": {
+      "object": "chat.completion",
+      "choices": [
+        {"index": 0, "message": {"role": "assistant", "content": "Your order ships today, Priya."}}
+      ]
+    }
+  }'
+```
+
+</CodeGroup>
+
+To check several guardrails in one call, send `policy_ids`, a list, in place of `policy_id`. The full request and
+response are in the [Guardrails API](/runtime/guardrails-api).
+
+### Anthropic
+
+An application that holds its completions in Anthropic's format makes the same calls with one more header,
+`X-Completion-Format: anthropic`. The engine then reads the `system` field and the content blocks as the Anthropic SDK
+writes them.
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+from anthropic import Anthropic
+
+client = Anthropic()
+
+
+def check(hook, completion):
+    verdict = requests.post(
+        "https://opencontroller.example.com/v2/guardrails/inference",
+        headers={"Authorization": f"Bearer {os.environ['OPENCONTROLLER_KEY']}", "X-Completion-Format": "anthropic"},
+        json={"policy_id": "<guardrail id>", "hook": hook, "completion": completion},
+        timeout=30,
+    ).json()
+    if verdict["blocked"]:
+        raise PermissionError(verdict["block_reason"])
+    # Otherwise apply verdict["redactions"] to the texts they point at.
+    return verdict
+
+
+request = {
+  "model": "claude-sonnet-5-5",
+  "max_tokens": 1024,
+  "system": "You are a support agent.",
+  "messages": [
+    {"role": "user", "content": [{"type": "text", "text": "My name is Priya Raman. Where is my order?"}]}
+  ]
+}
+check("llm_input", request)
+response = client.messages.create(**request)
+check("llm_output", response.model_dump())
+```
+
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk"
+
+const client = new Anthropic()
+
+async function check(hook: string, completion: unknown) {
+  const res = await fetch("https://opencontroller.example.com/v2/guardrails/inference", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENCONTROLLER_KEY}`,
+      "Content-Type": "application/json",
+      "X-Completion-Format": "anthropic",
+    },
+    body: JSON.stringify({ policy_id: "<guardrail id>", hook, completion }),
+  })
+  const verdict = await res.json()
+  if (verdict.blocked) throw new Error(verdict.block_reason)
+  // Otherwise apply verdict.redactions to the texts they point at.
+  return verdict
+}
+
+const request = {
+  "model": "claude-sonnet-5-5",
+  "max_tokens": 1024,
+  "system": "You are a support agent.",
+  "messages": [
+    {"role": "user", "content": [{"type": "text", "text": "My name is Priya Raman. Where is my order?"}]}
+  ]
+}
+await check("llm_input", request)
+const response = await client.messages.create(request)
+await check("llm_output", response)
+```
+
+```bash curl
+# The prompt, before it goes to the model
+curl -sS https://opencontroller.example.com/v2/guardrails/inference \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Completion-Format: anthropic" \
+  -d '{
+    "policy_id": "<guardrail id>",
+    "hook": "llm_input",
+    "completion": {
+      "model": "claude-sonnet-5-5",
+      "max_tokens": 1024,
+      "system": "You are a support agent.",
+      "messages": [
+        {"role": "user", "content": [{"type": "text", "text": "My name is Priya Raman. Where is my order?"}]}
+      ]
+    }
+  }'
+
+# The model's answer, before it is shown
+curl -sS https://opencontroller.example.com/v2/guardrails/inference \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Completion-Format: anthropic" \
+  -d '{
+    "policy_id": "<guardrail id>",
+    "hook": "llm_output",
+    "completion": {
+      "type": "message",
+      "role": "assistant",
+      "content": [{"type": "text", "text": "Your order ships today, Priya."}]
+    }
+  }'
+```
+
+</CodeGroup>
+
+An agent that makes tool calls adds two more checks in the same loop. It sends the model's response with `pre_tool`
+before it runs a tool the model asked for. Then it sends the request carrying the tool's result with `post_tool`,
+before the model reads it.
+
+### Claude Teams / Enterprise
+
+Claude Code needs no code and nothing installed. The sheet writes a settings file for the organization's managed settings, with the key and this guardrail's id filled
+in. Its HTTP hooks send every prompt before Claude reads it, each tool call before it runs, and each tool's output
+before Claude reads it. A blocked prompt never reaches
+Claude, a blocked tool call does not run, and Claude is told when a tool's output is blocked.
+[Connect Claude Code](/connect/claude-code) has the file and what each hook does.
+
+### What the answer holds
+
+Whichever place calls it, the engine answers with the same verdict, and an application reads four fields of it:
+
+| Field | What it holds |
+|---|---|
+| `blocked` | Whether the completion may go on. When true, do not send it, or do not show it. |
+| `block_reason` | Why, in words, from the first check that blocked. `blocked_by_policy_id` names its guardrail. |
+| `redactions` | Values your application replaces before the completion goes on. Each has the `text`, its `category` (`PERSON`, `SECRET`, `KEYWORD` and so on), and `start` and `end` in characters, not bytes. They point into the text at its `path`, a JSON Pointer into the completion. The completion comes back unchanged. |
+| `results` | The verdict on each text or tool call checked, at its path: `blocked`, `block_reason`, the checks' `detections`, and `warnings` for any check that could not run. |
+
+A request OpenController refuses (a guardrail that is not yours, an unknown hook, a key without the role) answers with a problem. One the guardrail engine refuses (a completion it cannot read) answers with its own `error` and `message`. The [Guardrails API](/runtime/guardrails-api) lists every field and error.

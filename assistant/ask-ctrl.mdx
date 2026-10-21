@@ -1,12 +1,13 @@
 ---
 title: "Ask Ctrl"
-description: "The assistant in the console answers questions about your AI estate by looking it up, and changes nothing without your click."
+description: "The assistant in the console answers questions about your AI estate by looking it up, steers the console for you, and changes nothing until you confirm."
 icon: "message-circle-question"
 ---
 
-Ctrl is the assistant built into the console. You ask in plain language, it looks things up in your inventory,
-scans, connections, findings and traces, and answers with links to the pages and assets it names. It can open a
-console page to show you the answer, and it can propose a scan or a verification, which runs only when you click.
+Ctrl is the assistant built into the console. You ask in plain language, and it looks things up in your inventory,
+scans, connections, findings, traces and the rest of the API. It answers with links to the pages and assets it
+names, and can open a console page to show you the answer. When a change would help, it proposes one, and the change
+runs only when you click **Confirm**.
 
 ## Where to find it
 
@@ -26,9 +27,11 @@ page does not cover.
 
 ## What it can answer
 
-Each answer is at most eight lookups, each shown as a step above the answer, such as `▸ search "bedrock" → 4
-matches`. The assistant is only offered the lookups whose data you could read yourself, so a role that may not read
-connections, say, does not see them through the assistant either.
+An answer is built from lookups, each shown as a step above the answer, such as `▸ search "bedrock" → 4 matches`.
+One answer may make up to 40 lookups, over at most 12 round trips to the model. The model's thinking streams to the
+panel as it works, as **Thinking…**, and folds to **Thought for** and the time it took once it is done.
+
+Ask Ctrl has two kinds of lookup. The first is its own, built for the questions people ask most:
 
 | Lookup | What it reads | Needs |
 |---|---|---|
@@ -39,65 +42,117 @@ connections, say, does not see them through the assistant either.
 | Findings | The open posture findings on the assets you may see | `posture:read` |
 | Trace projects, find traces, get trace, get session, trace issues, trace usage | Your agents' runs: projects, failures, latency, tokens and cost, and a run step by step | `observability:read` |
 
+The second is one tool per read operation of the API, made from the API's own description. Through them Ask Ctrl
+can read anything the console can show: the registry, approvals, the audit log, the LLM gateway's keys and logs,
+guardrails, spend, and so on.
+
+A tool is offered only when two roles both hold its permission: yours, and Ask Ctrl's own. A role that may not read
+connections, say, does not see them through the assistant either, whatever Ask Ctrl's role allows. Ask Ctrl's role
+is Viewer until an administrator sets it with `PUT /v1/access/agent`; see
+[Ask Ctrl's role](/administration/roles#ask-ctrls-role). Every lookup runs through the API as you, so it is
+authorized, bounded and logged as any request.
+
 What agents were asked and answered appears in trace lookups only when you hold `observability:content`. Without
 it, the assistant is told the content is hidden and says so rather than guessing.
 
 Scans and findings are part of the assistant only in an installation that runs discovery and posture; traces only
 in one that runs observability.
 
-## What it cannot do
+Credentials never pass through the model. Operations about them, such as secret values, minted keys and tokens,
+passwords and interactive sign-ins, are not offered, and credential fields are stripped from every other
+operation.
 
-The assistant has no lookup that writes. It cannot change an asset, a connection, a registration, a policy or a
-setting. When a scan or a verification would help, it proposes one: a card with **Run** and **Dismiss** appears
-under the answer. **Run** needs `scans:run` and makes the same API call the console's own button makes, as you.
-Nothing runs on the assistant's word alone, and it is told never to say a proposal ran.
+## Steering the console
+
+Ask Ctrl can also act on what is on your screen. The console offers it the commands of the page you are on. One is
+always there: **Open a page of the console**. An Observability project adds **Show this project's traces, spans or
+sessions over a window, filtered** and **Turn the live updates of this view on or off**. These commands change only
+what you see: a view, a filter, a selection. When Ask Ctrl uses one, the console runs it and tells Ask Ctrl what changed.
+
+## Proposed changes
+
+Ask Ctrl never makes a change. When an answer calls for one, such as running a scan, verifying a connection or
+approving a registration, the operation becomes a proposal. A card appears under the answer with what the change
+is, in words, and the API call it would make, with **Confirm** and **Dismiss**.
+
+- A proposal waits 15 minutes. After that it expires, and Ask Ctrl has to propose it again.
+- Only the person it was proposed to can confirm it, and only once.
+- **Confirm** makes the call as you, with your permissions as they are at that moment. The audit log records the
+  change as you, via Ask Ctrl.
+- **Dismiss** lets it go. Nothing is made.
+
+Either way, Ask Ctrl is told what you did and how the API answered, and goes on from there. It is told never to say
+a proposal ran before you confirmed it, and the API refuses any unconfirmed change from it, whatever its role.
+
+## How it runs
+
+Ask Ctrl's runtime is a service of its own, deployed beside the API. It runs the assistant's agent on Codex, through
+Codex's app-server, with every built-in tool turned off, and holds no credentials, no data and no conversations.
+For each answer the API opens a turn with a token good for that answer alone. The runtime uses it to call back
+into the API for its tools, and for the model.
+
+The model is called through the organization's LLM gateway: the module connected under **Settings**, then
+**Modules**, or the address in `ASK_CTRL_GATEWAY_URL`. The gateway's key for these calls is the secret
+`platform/assistant-gateway-key` under **Settings**, then **Secrets**, seeded once from `ASK_CTRL_GATEWAY_KEY` on
+first start, then set and rotated in Settings. A new value applies at once.
 
 ## Configuration
 
-The assistant is the `assistant` feature of the platform. It answers with Anthropic's Messages API.
-
 | Setting | Where | Default |
 |---|---|---|
-| The API key | **Settings → Secrets**, the secret `platform/anthropic-api-key` ("Anthropic API key the assistant answers with"). Seeded once from `ANTHROPIC_API_KEY` on first start, then set and rotated in Settings. A new value applies at once. | none |
-| The model | `DISCOVERY_CHAT_MODEL` | `claude-sonnet-5` |
-| Where the API is called | `ANTHROPIC_BASE_URL`: Anthropic, or a gateway in front of it | `https://api.anthropic.com` |
+| The runtime | `ASK_CTRL_URL`, and `ASK_CTRL_CALLBACK_URL` for how it reaches the API | none |
+| The LLM gateway | **Settings**, then **Modules**; or `ASK_CTRL_GATEWAY_URL` | the connected module |
+| The gateway key | The secret `platform/assistant-gateway-key` under **Settings**, then **Secrets**; seeded from `ASK_CTRL_GATEWAY_KEY` | none |
+| The model, as the gateway names it | `DISCOVERY_CHAT_MODEL` | `anthropic/claude-sonnet-5-5` |
+| How much the model thinks | `ASK_CTRL_REASONING_EFFORT`: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` | `medium` |
+| How much of that thinking you see | `ASK_CTRL_REASONING_SUMMARY`: `none`, `auto`, `concise`, `detailed` | `auto` |
+| Round trips to the model in one answer | `ASK_CTRL_MAX_TURNS` | `12` |
 | Time allowed for one answer, lookups included | `DISCOVERY_CHAT_TIMEOUT` | `2m` |
 | Answers one person may have running at once | `DISCOVERY_CHAT_IN_FLIGHT` | `3` |
 | Questions one person may ask per window | `DISCOVERY_CHAT_RATE` per `DISCOVERY_CHAT_RATE_WINDOW` | `60` per `10m` |
 | Conversation sent with a question | `DISCOVERY_CHAT_MAX_CHARS`; the oldest turns past it are left out | `64000` |
 
-Setting any of the limits to `0` leaves that one unbounded.
+Setting any of the last four limits to `0` leaves that one unbounded.
 
-Without a key, the panel shows **The assistant is off.** with the reason: "Add the Anthropic API key in Settings →
-Secrets to enable the assistant." The input reads **Ctrl is unavailable** until a key is set.
+### When it is off
 
-## Privacy: what is sent to the model provider
+Without its runtime or a gateway, the panel shows **The assistant is off.** with the reason, and the input reads
+**Ctrl is unavailable**:
 
-Every question is one or more requests to the Messages API at `ANTHROPIC_BASE_URL`, signed with the key above.
-Each request carries:
+- "Ask Ctrl's runtime is not deployed in this organization (ASK_CTRL_URL, ASK_CTRL_CALLBACK_URL)." The runtime is
+  not deployed, or the API does not know where it is.
+- "Connect the LLM gateway in Settings → Modules to enable the assistant." No gateway is connected and
+  `ASK_CTRL_GATEWAY_URL` is not set.
 
-- A brief that describes the console and its pages, the page you are on, and the ids of the asset, scan,
-  connection, project, run or conversation open on it.
+## Privacy: what is sent to the model
+
+Every question is one or more requests to the LLM gateway, and from there to the provider behind the virtual key
+the gateway uses for the assistant. Each request carries:
+
+- A brief that describes the console and its pages, the page you are on, what is on your screen, and the ids of
+  the asset, scan, connection, project, run or conversation open on it.
 - Your conversation, up to the most recent 64,000 characters.
-- The definitions of the lookups you may use.
+- The definitions of the tools you may use: Ask Ctrl's own lookups, the API reads both roles allow, and the
+  console's commands on screen.
 - The result of every lookup made for the answer. For assets: name, kind, platform, provider, account, region,
   status, up to 60 properties, and the assets they use and are used by. For scans: each source, what it found and
   why it failed. For connections: id, name, provider, account, whether enabled, and the last verification's checks.
   For findings: the check, its severity and the assets it is open on. For traces: project, run and span names,
   timing, status, errors, models, tokens and cost, and what was asked and answered, clipped to 300 characters,
-  only when you hold `observability:content`.
+  only when you hold `observability:content`. For an API read: the operation's answer, up to 48 KiB.
+- For a confirmed change: how the API answered it.
 
-Nothing is sent while the assistant is off. The conversation is kept in your browser for the current session, and
-restored when you reopen the panel.
+Nothing is sent while the assistant is off. The conversation is kept in your browser and restored when you reopen
+the panel.
 
 <Note>
 The model is told that everything a lookup returns is data from your estate, never instructions to it, and to link
 only console pages. Treat its answers as a reading of the data, and check the page it links before you act.
 </Note>
 
-## API
+## The same tools from other clients
 
-| Method | Path | What it does |
-|---|---|---|
-| `GET` | `/v1/chat` | Whether the assistant can answer, with which model, and why not. |
-| `POST` | `/v1/chat` | Ask. The body is the conversation so far, ending with your question, and the page you are on; the answer streams back as server-sent events: `step`, `navigate`, `action`, then `answer` or `error`. |
+The tools Ask Ctrl reads with are also served to any MCP client, such as Claude Code, Claude Desktop or Cursor,
+with a service account's key; see [MCP server](/assistant/mcp). Ask Ctrl itself is also available in editors that
+speak the Agent Client Protocol, such as Zed and JetBrains IDEs, through the same `POST /v1/chat` endpoint the
+console uses.

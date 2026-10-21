@@ -16,7 +16,7 @@ The evals service is its own container with its own MongoDB database. Until it i
 
 <Steps>
 <Step title="Deploy it">
-With the Helm chart, `evals.enabled` installs it; `evals.existingSecret` names the secret `<release>-evals-env` that holds its keys, `evals.database` the MongoDB database (default `evals`) and `evals.workers` how many judging workers run. Run on its own, it reads `PORT` (default `8080`), `MONGODB_URI`, `MONGODB_DATABASE`, `EVALS_API_KEY` (what the platform signs in with), `EVALS_SECRET_KEY` (what it seals connection secrets with), `EVALS_WORKERS` (default 2), `EVALS_MODEL_CALLS` (default 4 at a time), `EVALS_MODEL_CALLS_PER_MINUTE` (default 60), and `EVALS_CODE_EVALUATORS=true` to allow code evaluators. `EVALS_WEBHOOK_HTTP` and `EVALS_WEBHOOK_PRIVATE` let monitor alerts reach plain-HTTP or private-network webhooks.
+With the Helm chart, `evals.enabled` installs it; `evals.existingSecret` names the Secret that holds its keys (by default `oc-<org id>-evals-env`, as [Install](/setup/install) names it), `evals.database` the MongoDB database (default `evals`) and `evals.workers` how many judging workers run. Run on its own, it reads `PORT` (default `8080`), `MONGODB_URI`, `MONGODB_DATABASE`, `EVALS_API_KEY` (what the platform signs in with), `EVALS_SECRET_KEY` (what it seals connection secrets with), `EVALS_WORKERS` (default 2), `EVALS_MODEL_CALLS` (default 4 at a time), `EVALS_MODEL_CALLS_PER_MINUTE` (default 60), and `EVALS_CODE_EVALUATORS=true` to allow code evaluators. `EVALS_WEBHOOK_HTTP` and `EVALS_WEBHOOK_PRIVATE` let monitor alerts reach plain-HTTP or private-network webhooks.
 </Step>
 <Step title="Open Settings, then Evals">
 Set **Provider** to **opencontroller evals**. Enter the **Base URL**, for example `https://evals.example.com`, or `http://evals:8080` beside a local stack. Choose **Token** as the sign-in and paste the service's API key, or **No sign-in** when the network does the authentication. The token is kept in the secrets manager and cannot be read back.
@@ -62,7 +62,4 @@ Judge on a schedule and alert on change, test against a dataset with known answe
 | **Prompts** | The prompt hub: versioned prompts you can try on a dataset |
 | **Connections** | The trace stores evals reads records from, and the models it judges with |
 
-## API
-
-- `GET`, `POST`, `PUT`, `PATCH`, `DELETE /v1/modules/evals/proxy/{path}`: the platform signs in and forwards to the service; anyone signed in reads, and changes need `modules:use`.
-- `GET`, `PUT`, `DELETE /v1/modules/evals/endpoint`: where the service runs; `POST /v1/modules/evals/endpoint/check` probes it.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

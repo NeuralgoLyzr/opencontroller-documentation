@@ -219,8 +219,4 @@ Each account, region and resource family is one source, `aws:<account>:<region>:
 
 Click the trash icon on the row. Scans stop reading the account; what was discovered stays until later scans retire it. The role is not deleted: remove the `opencontroller-discover` and `opencontroller-control` stacks in the account to do that.
 
-## API
-
-- `POST /v1/connections/aws/setup`: the principal, and a new external ID, template address and commands for each role.
-- `POST /v1/connections` with `"provider": "aws"` and `aws.read` (`account_id` or `role_arn`, `external_id`), optional `aws.control` and `aws.regions`.
-- `GET /v1/connections/{connection_id}/setup`: the connection's own setup, for a trust update.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

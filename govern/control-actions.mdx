@@ -88,12 +88,4 @@ Anything not in these tables, including every Databricks and Anthropic asset, ha
 
 A Copilot Studio agent can be blocked in Microsoft 365 as well; the card says **Blocked in Microsoft 365** and links to the admin center, since only it lifts that block.
 
-## API
-
-| Method | Path | Returns |
-|---|---|---|
-| `GET` | `/v1/assets/{asset_id}/actions/available` | Which actions apply now, and why not |
-| `POST` | `/v1/assets/{asset_id}/actions` | Run an action; `publish` query defaults to true |
-| `GET` | `/v1/assets/{asset_id}/principals?q=` | People and groups to share with, where the cloud has a directory |
-| `GET` | `/v1/assets/{asset_id}/actions/delete/dependents` | What a delete with cascade can remove too |
-| `GET` | `/v1/actions` | The audit log of actions |
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

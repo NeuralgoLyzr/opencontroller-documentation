@@ -1,0 +1,176 @@
+---
+title: "Sign-in and single sign-on"
+description: "The ways people and machines sign in, how long a session lasts, and how to connect your identity provider over OpenID Connect or SAML 2.0 with SCIM provisioning."
+icon: "log-in"
+---
+
+People sign in to OpenController with an email and password, or through your organization's identity provider. Machines sign in with a key. **Settings → Authentication** shows which of these are on, and how long a sign-in lasts. Single sign-on is connected under **Settings → Single sign-on**; the rest is set in the server's configuration.
+
+## Sign-in methods
+
+**Settings → Authentication** lists each method with **on** or **off** beside it.
+
+| Method | What it is | Where it is set |
+|---|---|---|
+| **Email and password** | Accounts kept in OpenController, managed under [**Members**](/setup/members). On by default. | `DISCOVERY_PASSWORD_LOGIN` |
+| **Single sign-on (OpenID Connect)** | Tokens from your identity provider. The console signs in with Authorization Code and PKCE; the API verifies each token's signature, issuer, expiry and audience against the provider's published keys. The row names the issuer. | **Settings → Single sign-on**, or `DISCOVERY_OIDC_*` |
+| **Single sign-on (SAML)** | Assertions from your identity provider. OpenController is the service provider: it sends signed requests and accepts signed assertions at `/saml/acs`, then opens a session. | **Settings → Single sign-on**, or `DISCOVERY_SAML_*` |
+| **SCIM provisioning** | Your identity provider decides who exists and their groups. With a token set, only provisioned, active people sign in through single sign-on. | **Settings → Single sign-on**, or `DISCOVERY_SCIM_TOKEN` |
+| **Service-account keys** | `cpk_` keys for automation, managed under [**Service accounts**](/setup/service-accounts). | Always on |
+| **Static API keys** | Keys kept in the secret `platform/api-keys`. The row counts them, or says the secret is not set. | [**Settings → Secrets**](/setup/secrets), seeded from `DISCOVERY_API_KEYS` |
+
+A person who signs in with a password, or a service account, is not the identity provider's: email domains and SCIM do not apply to them.
+
+## Sessions
+
+The **Sessions** section of **Settings → Authentication** shows three values.
+
+| Value | Meaning | Setting |
+|---|---|---|
+| **Idle timeout** | How long a password sign-in lasts unused. 12 hours by default. | `DISCOVERY_SESSION_IDLE` |
+| **Longest session** | How long any sign-in lasts at most. 168 hours (7 days) by default. A SAML sign-in lasts this long. | `DISCOVERY_SESSION_MAX` |
+| **Console address** | Where browsers reach the console. The redirect, SAML and SCIM addresses hang off it. Shows `not set (DISCOVERY_PUBLIC_URL)` until it is set. | `DISCOVERY_PUBLIC_URL` |
+
+A sign-in opens a server-side session behind an HttpOnly, `SameSite=Lax` cookie, `Secure` on https. Only a SHA-256 hash of the cookie is stored. `DISCOVERY_SAML_SESSION_IDLE`, off by default, also ends a SAML sign-in that has gone unused that long.
+
+## Connect single sign-on
+
+Connecting, changing and disconnecting single sign-on needs `sso:write`, which only the Owner role holds. Before you start, set the console address: the identity provider needs it for the redirect URI, `https://opencontroller.example.com/auth/callback`, and for the SAML and SCIM addresses.
+
+<Steps>
+  <Step title="Choose the identity provider">
+    Open **Settings → Single sign-on**. Under **Identity provider**, click the kind you use: **Okta**, **Microsoft Entra ID**, **Google Workspace**, **Keycloak**, **OpenID Connect** or **SAML 2.0**. The link **Setup guide for** the provider opens its guide in the console, with the steps to take at the provider.
+
+    Where the provider offers both protocols, choose **OpenID Connect** or **SAML 2.0** under **Signs in with**.
+  </Step>
+  <Step title="Fill in the provider's fields">
+    Each kind asks for what it needs to find the provider, listed under [Provider fields](#provider-fields) below. For OpenID Connect, two more fields follow:
+
+    - **Client id**: the console's public client at the provider. It signs in with Authorization Code and PKCE, so there is no client secret.
+    - **Audience** (optional): what the provider puts in tokens for this API. The client id when left empty.
+  </Step>
+  <Step title="Name the email domains">
+    In **Email domains**, enter the domains your people sign in with, comma-separated, such as `example.com, example.co.uk`. Anyone the provider signs in from another domain is refused.
+  </Step>
+  <Step title="Connect">
+    Click **Connect** followed by the provider's name. For OpenID Connect, the provider's discovery document is read at once and sign-in is on. The badge reads **IdP connected**, and the sign-in page's button names the provider. If the provider could not be read, the badge reads **IdP unreachable**; check it is reachable, then reconnect.
+
+    For SAML, the badge reads **awaiting IdP metadata** until the next two steps are done.
+  </Step>
+  <Step title="SAML: create the application at the provider">
+    Under **1. In your identity provider, create a SAML application with these values**, copy each value into the provider's application. The values are **Reply URL (Assertion Consumer Service)**, **Identifier (Entity ID)**, **Service provider metadata URL** and **Sign-on URL**. Have the provider send the email address as the NameID, and the person's groups as a `groups` attribute, for role mappings.
+  </Step>
+  <Step title="SAML: give OpenController the provider's metadata">
+    Under **2. Give opencontroller your identity provider's metadata**, paste the provider's **Identity provider metadata URL** and click **Save metadata**. The URL must be https, because the provider's signing certificate comes from that document. The metadata is read when you save, and sign-in starts working at once.
+  </Step>
+  <Step title="Optional: turn on provisioning">
+    Under **3. Provisioning (SCIM 2.0, optional)**, copy the **SCIM base URL (Tenant URL)** into the provider's provisioning settings, then click **Generate token**. The token is shown exactly once: paste it into the provider as the SCIM secret token. Only its hash is kept.
+
+    From then on, your identity provider decides who exists and their groups. Only provisioned, active people can sign in through single sign-on; deactivating someone at the provider cuts off their next request. **Replace token** mints a new token and stops the old one.
+  </Step>
+</Steps>
+
+<Note>
+When `DISCOVERY_OIDC_*`, `DISCOVERY_SAML_*` or `DISCOVERY_SCIM_TOKEN` set the provider in the server's configuration, **Settings → Single sign-on** shows it read-only, and it is changed there.
+</Note>
+
+### Change or disconnect
+
+Click **Change provider** to connect another kind. Switching keeps the email domains, the SAML signing key and the SCIM token. People signed in through the current provider are signed out on their next request, so do this signed in as a local administrator.
+
+Click **Disconnect** to turn single sign-on off. OpenController forgets the provider and the SCIM token. People can no longer sign in through the provider, and provisioning stops. Members with a password, and service accounts, are not affected. To change the domains alone, edit **Email domains** and click **Save domains**.
+
+### Provider fields
+
+Each kind asks for a few fields, and its guide in the console says where to find them and what to set up at the provider. The guide opens from **Setup guide** on **Settings → Single sign-on**.
+
+<AccordionGroup>
+  <Accordion title="Okta">
+    **Before you start.** Your Okta org URL, an Okta administrator who can create applications and edit the authorization server, and the console address.
+
+    **OpenController asks for** the **Okta org URL**, and for OpenID Connect the **Authorization server** (`default`, or the id of a custom one) with the **Client id** and **Audience**. For SAML it asks for the **SAML app id**, from the app's metadata URL.
+
+    Groups arrive in the `groups` claim when the authorization server's claim is set up on the token the API receives, not only the id token. Okta has no app roles, so roles come from group mappings. Okta provisions over SCIM from the application's **Provisioning** settings.
+  </Accordion>
+  <Accordion title="Microsoft Entra ID">
+    **Before you start.** The directory (tenant) id, a GUID; a Global Administrator or Application Administrator; and the console address.
+
+    **OpenController asks for** the **Tenant id**, and for OpenID Connect the **Client id** of the app registration and the **Audience** (its Application ID URI). For SAML it also asks for the **Enterprise application id**, so the metadata is the application's.
+
+    Group object ids arrive in the `groups` claim; app roles arrive in `roles`, and a role valued `viewer`, `operator` or `admin` grants that role without a mapping. Entra provisions over SCIM from the enterprise application's **Provisioning** settings.
+  </Accordion>
+  <Accordion title="Google Workspace">
+    **Before you start.** A Google Workspace super administrator, and the console address.
+
+    **OpenController asks for** the **Client id** of the OAuth web client for OpenID Connect; the audience is the client id. For SAML it asks for the **SAML app's IdP id**, from the custom SAML app's SSO URL.
+
+    Google's tokens carry the email and the hosted domain, never groups. Roles come from SCIM-provisioned groups, from a `groups` attribute over SAML, or from the default role. The email domains keep sign-in to your users. Google provisions over SCIM through a custom SAML app's autoprovisioning.
+  </Accordion>
+  <Accordion title="Keycloak">
+    **Before you start.** The Keycloak URL and the realm, and a realm administrator.
+
+    **OpenController asks for** the **Keycloak URL** and the **Realm**, and for OpenID Connect the **Client id** of a public client with PKCE and the **Audience**.
+
+    Realm roles arrive in the `roles` claim with the realm's mapper, and groups in `groups`. A realm role named `viewer`, `operator` or `admin` is honoured as is. When the API reaches Keycloak at another address than the browser does, set `DISCOVERY_OIDC_DISCOVERY_URL`. Keycloak has no SCIM client of its own.
+  </Accordion>
+  <Accordion title="OpenID Connect">
+    For any provider that publishes a discovery document and signs tokens with published keys: Ping, OneLogin, Auth0, JumpCloud, Duo.
+
+    **Before you start.** The issuer, exactly as the provider writes it in its tokens (Auth0's ends in `/`). A public client with PKCE for the console, with the redirect URI `https://opencontroller.example.com/auth/callback`. The audience the provider puts in tokens for this API.
+
+    **OpenController asks for** the **Issuer**, the **Client id** and the **Audience**. It reads `groups` and `roles` claims from the token, so configure the provider to send them.
+  </Accordion>
+  <Accordion title="SAML 2.0">
+    For any provider that publishes federation metadata over https: ADFS, Ping, OneLogin, Shibboleth.
+
+    **Before you start.** The provider's metadata URL, over https, and an administrator at the provider who can add a service provider.
+
+    **OpenController asks for** the **Metadata URL**. To make the service provider first and add the provider's metadata after, connect with no provider kind chosen. OpenController then shows the service provider's values to give the provider, and asks for the **Identity provider metadata URL** afterwards. Have the provider send the email address (`emailaddress`, `mail` or `email`) and group or role attributes (`groups`, `memberOf`, `role`).
+  </Accordion>
+</AccordionGroup>
+
+## How what the provider sends becomes a role
+
+A person signed in through the provider gets the highest role granted by any of three things. A role claim or attribute valued `viewer`, `operator` or `admin` (or `opencontroller.admin`, and so on) is honoured as is. A group, by id or name, from the `groups` claim or attribute or from SCIM, grants the role **Settings → Role mappings** maps it to. The default role covers anyone signed in whom nothing else covers; with no default role, they are refused. [How a person gets a role](/administration/roles#how-a-person-gets-a-role) has the mappings, the default role and how ties are decided.
+
+## Email domains
+
+Connecting single sign-on names the email domains it covers. A person the provider signs in with an address outside them is refused with a 403, whatever groups they carry. The sign-in page says they signed in with an email address outside this organization's domains. Add every domain your people use. Local accounts, service accounts and API keys are not the provider's and are not checked.
+
+## What is stored, and what is never
+
+| Kept | Never kept |
+|---|---|
+| The provider kind, its fields, the client id and audience, and the email domains. | A client secret: the console's client is public, with PKCE. |
+| For SAML, a signing key OpenController makes, in the secrets manager as `sso/saml-signing-key`. | The provider's tokens or assertions: each is verified against the provider's published keys or certificate, then dropped. |
+| The SCIM token, as a hash only. | The provider's signing certificate: it is read from the metadata URL over https. |
+| A SHA-256 hash of each session cookie. | A password for anyone who signs in through the provider. |
+
+## Where sign-in shows
+
+Every sign-in, failed sign-in, refused sign-in and sign-out is an event in the audit log, under **Identity & access**, with who, the outcome and the request it happened in. Connecting, changing and disconnecting single sign-on, and minting a SCIM token, are events there too. See [Audit log](/govern/audit-log#identity-access).
+
+## Turn password sign-in off
+
+Once single sign-on is the only way in, set `DISCOVERY_PASSWORD_LOGIN=false` and restart. **Email and password** then shows **off** under **Settings → Authentication**, and the sign-in page offers the provider and the **API credential** field. Service-account keys and static API keys still work.
+
+<Warning>
+Before turning passwords off, sign in once through the provider as someone whose group or role maps to **Owner**. Otherwise nobody can change single sign-on or the role mappings afterwards.
+</Warning>
+
+## Configuration reference
+
+| Variable | What it sets |
+|---|---|
+| `DISCOVERY_PASSWORD_LOGIN` | Email and password sign-in. Default `true`. |
+| `DISCOVERY_ADMIN_EMAIL`, `DISCOVERY_ADMIN_PASSWORD` | The first administrator, created only when there are no accounts yet. That account is the owner. |
+| `DISCOVERY_SESSION_IDLE`, `DISCOVERY_SESSION_MAX` | How long a password sign-in lasts unused (`12h`) and at most (`168h`). A SAML sign-in lasts `DISCOVERY_SESSION_MAX`. |
+| `DISCOVERY_SAML_SESSION_IDLE` | How long a SAML sign-in lasts unused. Off (`0`) by default. |
+| `DISCOVERY_PUBLIC_URL` | Where browsers reach the console, such as `https://opencontroller.example.com`. |
+| `DISCOVERY_OIDC_ISSUER`, `DISCOVERY_OIDC_AUDIENCE`, `DISCOVERY_OIDC_CLIENT_ID`, `DISCOVERY_OIDC_SCOPES` | An OpenID Connect provider set from the configuration: the issuer exactly as its discovery document writes it, the token audience, the console's public client, and the scopes. |
+| `DISCOVERY_OIDC_DISCOVERY_URL` | Where the API reads discovery and keys when it reaches the provider at another address than the browser does. |
+| `DISCOVERY_SAML_IDP_METADATA_URL` | A SAML provider set from the configuration: its federation metadata URL. |
+| `DISCOVERY_SAML_CERT_FILE`, `DISCOVERY_SAML_KEY_FILE` | The service provider's signing certificate and RSA key, when not made by OpenController. |
+| `DISCOVERY_ROLE_ADMINS`, `DISCOVERY_ROLE_OPERATORS`, `DISCOVERY_ROLE_VIEWERS`, `DISCOVERY_DEFAULT_ROLE` | Role mappings set from the configuration. Set, **Settings → Role mappings** shows them read-only. |
+| `DISCOVERY_SCIM_TOKEN` | Turns on SCIM with this bearer token. Seeds the secret `platform/scim-token`. |
+| `DISCOVERY_API_KEYS` | Static API keys, `name:role=key,…`. Seeds the secret `platform/api-keys`. |

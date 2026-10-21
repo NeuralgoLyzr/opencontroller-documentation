@@ -3,7 +3,9 @@
 The customer documentation for OpenController, published with [Mintlify](https://mintlify.com).
 
 - Pages are MDX files; navigation and settings are in `docs.json`.
-- The API reference is generated from `api-reference/openapi.json`, which comes from the product's OpenAPI file.
+- The API reference is generated from `api-reference/openapi.json`, which `scripts/openapi.py` builds from the product's
+  OpenAPI file (`services/platform/docs/swagger.json`, beside this site when it is checked out as the product's submodule).
+  Run it after the product's API changes, and commit the result.
 - The product repository pins this repository as the submodule `docs/site`, so a checkout of the product carries the
   docs that match it.
 
@@ -23,6 +25,7 @@ vale sync && vale .
 mint broken-links
 python3 scripts/check.py
 python3 scripts/flags.py --check
+python3 scripts/openapi.py --check
 ```
 
 CI runs the same on every pull request.

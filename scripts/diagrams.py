@@ -285,6 +285,36 @@ def gateway(c):
     c.text(0, 26, "The key decides the providers, models, budget and rate limits.", size=10.5, weight=600, color=t["muted_fg"])
 
 
+def guardrail(c):
+    """Where a guardrail runs: the four points in an exchange, the engine
+    inside the cell that judges them, and the verdict that comes back."""
+    t = c.t
+    c.text(0, 14, "A guardrail reads text at four points. The completion itself is never rewritten.", size=10.5, weight=600, color=t["muted_fg"])
+    c.node(0, 92, 140, 56, "Your application", "or the LLM gateway")
+    # The four hooks, in the order an exchange meets them.
+    gx, gy, gw = 210, 30, 300
+    c.group(gx, gy, gw, 170, "Where a guardrail runs")
+    points = [("Prompt, before the model", "llm_input"), ("Tool call, before it is made", "pre_tool"),
+              ("Tool result, before it is read", "post_tool"), ("Answer, before it is shown", "llm_output")]
+    for i, (what, hook) in enumerate(points):
+        y = gy + 30 + i * 34
+        c.chip(gx + 12, y, gw - 24, 24, what)
+        c.text(gx + gw - 22, y + 16, hook, size=10, weight=500, color=t["muted_fg"], anchor="end", mono=True)
+    c.arrow([(140, 110), (gx, 110)], label="completion", at=(175, 92))
+    c.arrow([(gx, 130), (140, 130)], label="verdict", at=(175, 150))
+    # The engine, inside the cell: nothing it reads leaves it.
+    c.hero(580, 20, 72, 180, ["Guardrail", "engine"])
+    c.text(616, 222, "inside your cell", size=10, weight=600, color=t["muted_fg"], anchor="middle")
+    c.arrow([(gx + gw, 100), (580, 100)], label="the text", at=(545, 82))
+    c.arrow([(580, 130), (gx + gw, 130)], label="checked", at=(545, 150))
+    # The verdict: blocked, or let through with redactions for the app to apply.
+    c.arrow([(310, gy + 170), (310, 230)], dashed=True)
+    c.arrow([(425, gy + 170), (425, 230)], dashed=True)
+    c.pill(262, 230, 96, 28, "Blocked", t["alt"], t["primary_fg"])
+    c.pill(370, 230, 110, 28, "Let through", t["primary"], t["primary_fg"])
+    c.text(492, 248, "with redactions to apply, or none", size=10, weight=600, color=t["muted_fg"])
+
+
 def traces(c):
     """How a trace gets from an agent to the pages that show it."""
     t = c.t
@@ -332,6 +362,7 @@ DIAGRAMS = {
     "states": (720, 190, states),
     "credentials": (720, 250, credentials),
     "gateway": (720, 276, gateway),
+    "guardrail": (720, 276, guardrail),
     "traces": (720, 190, traces),
     "evals": (720, 244, evals),
 }

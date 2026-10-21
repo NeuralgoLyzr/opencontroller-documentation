@@ -1,21 +1,60 @@
 ---
 title: "Observability"
-description: "Where your agents' traces are kept, how projects organize them, and what the Overview shows for a window of time."
+description: "How your agents' traces reach OpenController, what the observability pages make of them, how to connect the trace store, and how projects organize what is sent."
 icon: "telescope"
 ---
 
 import { Diagram } from '/snippets/diagrams.mdx'
 
-Observability is the record of what your agents did at runtime: every run, its model calls, tools, tokens, cost and failures, read from an OpenTelemetry trace store. The posture tells you what an agent could do; observability tells you what it did. The policies **OBS-1** and **OBS-2** on [Findings](/posture/findings) read the same data to say which agents nobody traces or evaluates.
+Observability is the record of what your agents did at runtime. The posture tells you what an agent could do; observability tells you what it did: every run, its model calls, tool calls, tokens, cost and failures. The policies **OBS-1** and **OBS-2** on [Findings](/posture/findings) read the same record to say which agents nobody traces or evaluates.
 
-## The connection
+## Traces, spans and runs
 
-OpenController does not store traces itself. An OpenTelemetry Collector writes them to ClickHouse, and the console reads them from there with a read-only user. Until a store is connected, every observability page says **No trace store connected** and links to the settings.
+A trace is one run of an agent: a request in, the steps it took, and the answer out. Each step is a span: a model call, a tool call, a retrieval, or a function of the agent's own. A span carries the model, the tokens, what was asked and answered, how long it took and whether it failed. Spans that share a session id make a session, one conversation turn by turn.
+
+OpenController reads traces in two vocabularies, the OpenTelemetry GenAI semantic conventions and OpenInference, and treats them the same. An agent built on any framework with an OpenTelemetry instrumentor sends traces without an OpenController library. [Send traces](/monitor/send-traces) has the setup for each framework.
+
+## How the pieces fit
+
+OpenController does not store traces itself, and it never writes the store. An agent sends OTLP over HTTP to the intake at `https://opencontroller.example.com/otlp`. A service-account key and the project go in the headers. The intake checks the key, stamps the project and its agent onto every span, and forwards the trace to an OpenTelemetry Collector in your cell. The collector writes ClickHouse. The observability pages and the evals service read ClickHouse with a read-only user.
 
 <Diagram name="traces" alt="An agent sends OTLP traces to the collector, which writes ClickHouse, which the pages and evals read" />
 
+The LLM gateway sends its own spans the same way. A model call made through the gateway joins the run of the agent that made it, and the gateway's span carries the price.
+
+When you deploy with the Helm chart, `observability.enabled` installs the collector and ClickHouse beside the platform. `observability.existingSecret` names the Secret that holds `OC_CLICKHOUSE_PASSWORD`, `OC_CLICKHOUSE_READER_PASSWORD` and `OC_COLLECTOR_TOKEN`. `observability.collector.token` turns on the bearer token the API presents to the collector; its value is `OC_COLLECTOR_TOKEN` in that Secret. With it off, any pod that reaches the collector can write traces past the intake's keys. `observability.clickhouse.retention` (default `720h`) is how long traces are kept. The store is then at `http://oc-<org id>-clickhouse:8123` with the user `opencontroller`.
+
+## What you get
+
+| Page | What it shows |
+|---|---|
+| **Projects** | Every project with its Traces, Error rate, Model calls, Cost, share of spend and Last trace. See [Projects](#projects). |
+| **Overview** | One window of time summed up: resources, metrics, a latency heatmap, activity over time, and the top issues, slowest runs and costliest runs. See [The overview](#the-overview). |
+| **Traces**, **Spans**, **Sessions** | Each run, each step and each conversation as a row, with a query bar and saved views. A run opens step by step. See [Traces and issues](/monitor/traces-and-issues). |
+| **Issues** | The failures, grouped: each step failing with one error is one issue, however many runs it broke. See [Traces and issues](/monitor/traces-and-issues#issues). |
+| **Cost** | What the model calls cost, by project, model, provider, agent, team, user, customer and gateway key. See [Cost](/monitor/cost). |
+| **Evals** | Evaluators judge the same traces, from the same store. See [Evals](/monitor/evals). |
+
+### The overview
+
+The front page, and each project's **Overview**, sums up one window of time: **Last hour**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The window is fixed when you choose it, and each number is compared with the window before.
+
+| Panel | What it shows |
+|---|---|
+| **Resources** | Counts of Projects (or Spans in a project), Sessions, Issues, Agents, Models, Providers, Tools, MCP servers, Teams, Users, Customers and Gateway keys. |
+| **Cost by project** and **Cost by model** | Where the spend went; a project's page shows **Project details** instead. |
+| Metrics | Traces, Error rate, Model calls, Cost, P99 latency and the share of calls made **Through the gateway**. |
+| Latency heatmap | Every run of the window by when it started and how long it took; red where a run failed, a dotted line at the p99. A column opens the traces of those minutes. |
+| **Activity** | A chart of Requests, Tokens, Prompt cache, Cost, Model calls or Latency over time, split by model. |
+| **Top issues**, **Slowest runs**, **Costliest runs** | Jump-offs into the lists. |
+| **Breakdown** | Models, Providers, Agents, Tools & MCP, Teams, Users, Customers and Gateway keys. |
+
+## Connect the trace store
+
+Until a store is connected, every observability page says **No trace store connected** and links to the settings.
+
 <Steps>
-<Step title="Open Settings, then Observability">
+<Step title="Open Settings, then Modules, then Observability">
 Set **Provider** to **ClickHouse**, the only kind offered. Enter the **Base URL** of its HTTP interface, for example `https://clickhouse.example.com:8443`, or `http://clickhouse:8123` beside a local stack. Give it a read-only user.
 </Step>
 <Step title="Name the database and table">
@@ -32,11 +71,11 @@ The console warns when the credential would go over plain HTTP to a host outside
 
 **Disconnect** forgets the endpoint and deletes its credential. The traces stay in the store.
 
-When you deploy with the Helm chart, `observability.enabled` installs a collector and a ClickHouse beside the platform; `observability.existingSecret` names the secret that holds `OC_CLICKHOUSE_PASSWORD`, `OC_CLICKHOUSE_READER_PASSWORD` and `OC_COLLECTOR_TOKEN`, and `observability.clickhouse.retention` (default `720h`) is how long traces are kept. The store is then at `http://<release>-clickhouse:8123` with the user `opencontroller`.
-
 ## Projects
 
-A project is where traces are sent: an agent, an app, or one environment of one. A sender names the project in every request, so a project is also the unit of ownership and cost. The **Projects** page lists each project's Traces, Error rate, Model calls, Cost, share of spend and Last trace, with a **Set up** link on projects that have none yet. Filter with **All**, **With errors** or **No traces**, or **Find a project**. An **Unassigned** row holds traces sent to no project, such as the LLM gateway's own or what a collector forwards. A removed project stays listed as **Removed: nothing can send to it; its traces stay.**
+A project is where traces are sent: an agent, an app, or one environment of one. A sender names the project in every request, so a project is also the unit of ownership and cost. A project can stand for an agent in the inventory, and its traces then count for that agent, in cost and on the agent's page.
+
+The **Projects** page lists each project's Traces, Error rate, Model calls, Cost, share of spend and Last trace, with a **Set up** link on projects that have none yet. Filter with **All**, **With errors** or **No traces**, or **Find a project**. An **Unassigned** row holds traces sent to no project, such as the LLM gateway's own or what a collector forwards. A removed project stays listed as **Removed: nothing can send to it; its traces stay.**
 
 To create one, click **New project** and fill in:
 
@@ -47,23 +86,8 @@ To create one, click **New project** and fill in:
 | **Agent** | Optional. An agent from the inventory; the project's traces then count for that agent, in cost and on its page. |
 | **Team** | Optional. The team's members read the project's traces, even with no role in the organization. |
 
-Creating a project opens its **Setup** page; see [Send traces](/monitor/send-traces). Each project has its own **Overview**, **Traces**, **Spans**, **Sessions**, **Issues**, **Cost**, **Setup** and **Settings** pages, and a project switcher (⌘P). **Settings** holds **General** (Name, Description, Project id, Made), the **Agent** and **Team** panels, **Sending traces** with the `x-project` id to copy, and **Remove the project**.
+Creating a project opens its **Setup** page, which writes the environment and code for the agent's framework; see [Send traces](/monitor/send-traces). Each project has its own **Overview**, **Traces**, **Spans**, **Sessions**, **Issues**, **Cost**, **Setup** and **Settings** pages, and a project switcher (⌘P). **Settings** holds **General** (Name, Description, Project id, Made), the **Agent** and **Team** panels, **Sending traces** with the `x-project` id to copy, and **Remove the project**.
 
-## The overview
-
-The front page, and each project's **Overview**, sums up one window of time: **Last hour**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The window is fixed when you choose it, and each number is compared with the window before.
-
-| Panel | What it shows |
-|---|---|
-| **Resources** | Counts of Projects (or Spans in a project), Sessions, Issues, Agents, Models, Providers, Tools, MCP servers, Teams, Users, Customers and Gateway keys. |
-| **Cost by project** and **Cost by model** | Where the spend went; a project's page shows **Project details** instead. |
-| Metrics | Traces, Error rate, Model calls, Cost, P99 latency and the share of calls made **Through the gateway**. |
-| Latency heatmap | Every run of the window by when it started and how long it took; red where a run failed, a dotted line at the p99. A column opens the traces of those minutes. |
-| **Activity** | A chart of Requests, Tokens, Prompt cache, Cost, Model calls or Latency over time, split by model. |
-| **Top issues**, **Slowest runs**, **Costliest runs** | Jump-offs into the lists. |
-| **Breakdown** | Models, Providers, Agents, Tools & MCP, Teams, Users, Customers and Gateway keys. |
-
-## API
-
-- `GET /v1/observability/projects`, `POST`, `PATCH /v1/observability/projects/{id}`, `DELETE`: the projects.
-- `GET /v1/observability/usage`, `/series`, `/heatmap`, `/project-stats`: the Overview's numbers.
+<Note>
+Changing a project's agent applies to traces sent from then on. Traces already sent keep the agent they came with.
+</Note>

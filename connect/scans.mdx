@@ -60,10 +60,4 @@ A failed source keeps what the last good scan recorded. Nothing is removed from 
 
 Scan records are kept for 30 days.
 
-## API
-
-- `GET /v1/scans`: list scans, newest first, with `provider`, `limit` and `offset`.
-- `POST /v1/scans` with `{"provider": "aws"}`: start a scan. It runs in the background.
-- `GET /v1/scans/{scan_id}`: one scan, with its sources.
-- `GET /v1/scans/schedule`: when each connection is next due.
-- `PUT /v1/scans/schedule` with `connections`, and `every_seconds` or `default`: set the interval.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

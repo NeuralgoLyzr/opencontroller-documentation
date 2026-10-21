@@ -68,8 +68,4 @@ An issue is one step failing with one error, however many runs it broke. OpenCon
 
 Clicking an issue opens Spans with the query `name = '<step>' and status = 'error'`, so you can read every occurrence. The Overview's **Top issues** panel shows the same list cut short.
 
-## API
-
-- `GET /v1/observability/traces`, `/traces/{id}`, `/spans`, `/sessions`, `/sessions/{id}`: the lists and one run; `q[]` carries each query.
-- `GET /v1/observability/issues`: the grouped failures.
-- `GET /v1/observability/fields`, `/values`: the query bar's suggestions.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

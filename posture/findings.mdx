@@ -50,7 +50,4 @@ Evidence shows what was found, not secret values. A credential policy reports th
 
 **Export** downloads the open findings as a CSV named `findings-<timestamp>.csv`, with the columns Policy, Title, Severity, Asset, Kind, Cloud, Account, Owner, First seen, Evidence and Frameworks. The export is the usual way to hand an audit the evidence for a framework; see [Frameworks](/posture/frameworks).
 
-## API
-
-- `GET /v1/posture`: the report; `?team=` scopes it to one team.
-- `POST /v1/posture/evaluate`: start an evaluation now; answers `202`.
+The [API reference](/api-reference/overview) lists the endpoints behind this page.

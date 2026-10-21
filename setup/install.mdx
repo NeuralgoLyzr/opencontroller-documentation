@@ -1,0 +1,303 @@
+---
+title: "Install"
+description: "Deploy one OpenController cell for your organization with the Helm chart, connect its database and secrets manager, and sign in as the first administrator."
+icon: "server"
+---
+
+OpenController runs as one **cell** per organization: the API and the console, in a namespace of their own, on their own MongoDB database, behind their own host. Cells share nothing else. A NetworkPolicy lets only the cell's own console and the ingress controller reach its API, and the API reaches out to MongoDB, the connected clouds and the identity providers.
+
+The Helm chart deploys one cell. Beside the API and the console, it can run the services the modules need, each turned on by one value:
+
+| Service | What it is for | Value |
+|---|---|---|
+| The LLM gateway (Rekori) | The endpoint agents call instead of model providers, with virtual keys, logs and content rules | `rekori.enabled` |
+| The guardrail engine | Keeps the guardrails and runs their checks, with an inference engine and an OPA server behind it | `guardrails.enabled` |
+| The OpenTelemetry Collector and ClickHouse | Observability's trace store and the collector that fills it | `observability.enabled` |
+| The evals service | Judges agents' traces with evaluators | `evals.enabled` |
+| Ask Ctrl's runtime | The assistant's agent, which answers through the cell's LLM gateway | `askCtrl.enabled` |
+
+Each optional service reads its credentials from a Kubernetes Secret you make once by hand. Their names start with the cell's name, `oc-<org.id>`: for the organization `acme`, `oc-acme-rekori-env`, `oc-acme-guardrails-env`, `oc-acme-observability-env` and `oc-acme-evals-env`.
+
+## Before you start
+
+You need:
+
+- A Kubernetes cluster and Helm. Each cell is one Helm release in its own namespace.
+- A MongoDB. In production, point `mongo.uri` at a managed one. Cells can share a MongoDB, each on its own database. For an evaluation, `mongo.deploy: true` runs a single-replica MongoDB on a persistent volume inside the cell.
+- An ingress controller and a TLS certificate for the cell's host. The chart makes the Ingress (`ingress.host`, `ingress.tls`).
+- A secrets manager. The product keeps every secret in one store, chosen by `SECRETS_PROVIDER`: HashiCorp Vault (`vault`), AWS Secrets Manager (`aws_secrets_manager`), Azure Key Vault (`azure_keyvault`) or Google Secret Manager (`gcp_secret_manager`). With no provider set, secrets are sealed into MongoDB with `DISCOVERY_SECRET_KEY`, which is meant for development and single-node installs. The `vault` block of the chart sets up Vault without any stored token.
+- The images in a registry the cluster can pull from: the API's and the console's, plus one image per optional service you turn on. Set each in `image.<service>.repository` and, for a private registry, `imagePullSecrets`.
+- A cloud identity for the API, so that discovery can assume the roles in connected accounts without keys. On EKS, use EKS Pod Identity or IRSA (`serviceAccount.annotations`); on GKE and AKS, annotate the service account with the cluster's workload identity.
+
+<Note>
+The API needs no cloud permissions of its own. It reaches every connected account, tenant and workspace with that connection's credentials. On AWS, its role may only assume the connected accounts' `opencontroller-discover` roles, and their `opencontroller-control` roles where control is set up.
+</Note>
+
+## Install a cell
+
+The chart is `deploy/helm/opencontroller` in the product repository. The steps below install it as the release `opencontroller` in the namespace `acme`.
+
+<Steps>
+  <Step title="Write a values file">
+    Set the organization, the host, the database and the secrets manager. With Vault, the API signs in as its Kubernetes service account through Vault's Kubernetes auth method, so no Vault token is stored anywhere.
+
+    ```yaml values.yaml
+    org:
+      id: acme
+      name: Acme
+
+    publicURL: https://acme.opencontroller.example
+
+    ingress:
+      host: acme.opencontroller.example
+      tls:
+        - secretName: acme-tls
+          hosts: [acme.opencontroller.example]
+
+    image:
+      api:
+        repository: registry.example.com/opencontroller/api
+        tag: v0.110.0
+      console:
+        repository: registry.example.com/opencontroller/console
+        tag: v0.110.0
+
+    # A Secret you made, holding MONGO_URI and the sensitive settings.
+    existingSecret: oc-acme-env
+
+    vault:
+      enabled: true
+      address: https://vault.vault.svc:8200
+      role: opencontroller
+      caConfigMap: vault-ca
+
+    env:
+      DISCOVERY_ADMIN_EMAIL: admin@acme.example
+    ```
+
+    `existingSecret` names a Secret made elsewhere, by hand or by External Secrets or Sealed Secrets. It holds `MONGO_URI` and the sensitive settings the API reads at start: `DISCOVERY_ADMIN_PASSWORD`, and `DISCOVERY_SECRET_KEY` when no secrets manager is set. With `mongo.deploy: true`, it also holds `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD`.
+
+    Without `existingSecret`, the chart writes its own Secret from `mongo.uri` and the `secrets` map:
+
+    ```yaml
+    mongo:
+      uri: mongodb://opencontroller:<password>@mongo.acme.internal:27017/?tls=true
+    secrets:
+      DISCOVERY_ADMIN_PASSWORD: <password>
+    ```
+
+    Vault needs a Kubernetes auth role (`vault.role`, default `opencontroller`) bound to the cell's service account, and a policy that allows the cell's prefix (`vault.mount`, `vault.pathPrefix`). The policy is `deploy/vault/policies/opencontroller.hcl` in the product repository. `vault.caConfigMap` names a ConfigMap with Vault's CA certificate as `ca.crt`; set it to `""` to trust the system's CAs instead.
+
+    For another store, leave `vault.enabled` off and set `SECRETS_PROVIDER` and its settings in `env`. AWS Secrets Manager takes `SECRETS_AWS_REGION` and `SECRETS_PREFIX`, Azure Key Vault takes `AZURE_KEYVAULT_URL`, and Google Secret Manager takes `GCP_PROJECT` and `SECRETS_PREFIX`. The API reaches those stores with its cloud identity.
+  </Step>
+  <Step title="Name the first administrator">
+    There is no self-signup. When the cell starts with no accounts, it creates the first administrator from `DISCOVERY_ADMIN_EMAIL` and `DISCOVERY_ADMIN_PASSWORD`. The first account is the organization's owner. Passwords are 8 to 128 characters.
+
+    Put the email in `env` and the password in the Secret, as above. On first start the API moves the password into the secrets manager, and from then on it is managed in **Settings**, then **Secrets**. Once the administrator exists, these two variables do nothing more. Administrators add everyone else under **Settings**, then **Members**.
+  </Step>
+  <Step title="Install the chart">
+    From the directory that holds the chart:
+
+    ```sh
+    helm upgrade --install opencontroller ./opencontroller -n acme --create-namespace -f values.yaml
+    ```
+
+    The release makes the API's and the console's Deployments and Services, the Ingress, the service account, the NetworkPolicy and, without `existingSecret`, the cell's Secret.
+  </Step>
+  <Step title="Check it">
+    Wait for the pods to be ready:
+
+    ```sh
+    kubectl -n acme get pods
+    ```
+
+    The API answers three endpoints without sign-in, and the console proxies them to it, so they work on the cell's host:
+
+    | Endpoint | Says |
+    |---|---|
+    | `/healthz` | The process is alive. The chart's liveness probe. |
+    | `/readyz` | The API can serve requests. The chart's readiness probe. |
+    | `/version` | The version, commit and build date stamped into the image. |
+
+    ```sh
+    curl https://acme.opencontroller.example/readyz
+    curl https://acme.opencontroller.example/version
+    ```
+
+    The version is SemVer: `v0.110.0` on a release, `v0.110.0+<sha>` on any other build.
+  </Step>
+  <Step title="Sign in">
+    Open `https://acme.opencontroller.example` and sign in with the administrator's email and password. A password sign-in lasts 12 hours unused and 7 days at most, by default.
+  </Step>
+</Steps>
+
+### What to do next
+
+- [Connect a cloud](/connect/overview) to start discovery. Each connection carries its own credentials.
+- [Set up sign-in](/setup/sign-in): single sign-on with OIDC or SAML, role mappings, and SCIM provisioning. Once SSO is the only way in, `DISCOVERY_PASSWORD_LOGIN=false` turns passwords off.
+- [Add members](/setup/members) and set their roles.
+- [Manage secrets](/setup/secrets): what the cell keeps in the secrets manager, and how to rotate it.
+
+## Turn on the optional services
+
+Each service runs beside the API, in the same namespace, and reads its credentials from a Secret made once by hand. After the release is up, connect the module in **Settings** under **Modules**. Settings only shows a module whose feature the cell's profile includes (`FEATURES_PROFILE`).
+
+### LLM Gateway
+
+`rekori.enabled` deploys Rekori as one Deployment and Service. Its configuration and request logs live in a PostgreSQL you provide, named in `rekori.postgres` (`host`, `port`, `user`, `database`, `sslMode`). The Secret `oc-acme-rekori-env` holds:
+
+| Key | What it is |
+|---|---|
+| `REKORI_PG_PASSWORD` | The PostgreSQL user's password |
+| `BIFROST_ENCRYPTION_KEY` | The gateway's encryption key for the provider keys it stores |
+| `BIFROST_ADMIN_USERNAME`, `BIFROST_ADMIN_PASSWORD` | The administrator's sign-in to its console and management API |
+
+Keep `rekori.auth.enabled` on: off, anyone who reaches the gateway can change it. Virtual keys guard inference either way. To show the gateway's own console framed inside OpenController's, give it a host of its own in `ingress.gatewayUI.host` and add that host to `ingress.tls`. On the AWS Load Balancer Controller, `ingress.gatewayUI.sourceCIDRs` lists who may reach that host.
+
+Then go to **Settings**, then **LLM Gateway**: **Provider** is **Rekori**, **Base URL** is `http://oc-acme-rekori:8080`, and **Sign in** is **Username and password** with the administrator's. See [LLM gateway](/runtime/llm-gateway).
+
+### The guardrail engine
+
+`guardrails.enabled` deploys three parts. srs-core-go keeps the guardrail policies and gives the verdicts. It calls the inference engine for the checks that need a model, and an OPA server for your own Rego policies (`guardrails.opa`). The inference engine's image carries its models, and each ONNX session holds a copy of them in memory. One session (`guardrails.engine.sessions`, the default) needs about 5.5 GiB, two about 9. The chart requests 6 GiB and limits the engine at 8 GiB; make sure a node can hold it.
+
+The Secret `oc-acme-guardrails-env` holds:
+
+| Key | What it is |
+|---|---|
+| `GUARDRAILS_MODEL_TOKEN` | At least 16 characters. Signs srs-core-go's calls to the inference engine. |
+| `GUARDRAILS_SERVICE_TOKEN` | At least 16 characters. Signs srs-core-go's calls to the API for Azure and Google connections' keys. Optional: without it, those connections cannot be used for guardrails and everything else runs. |
+| `GUARDRAILS_OPA_TOKEN` | Optional. Signs its calls to OPA. |
+
+Policies go in the cell's MongoDB, in databases of their own (`guardrails.database`, `guardrails.auditDatabase`; by default `guardrails_<org.id>` and `guardrails_audit_<org.id>`). For AWS Bedrock guardrails, `guardrails.awsPrincipal` is the AWS role the engine runs as, which the connected accounts' `opencontroller-guardrails` roles trust; empty, the API's own AWS identity is offered.
+
+Guardrails need a secrets manager. **Settings**, then **Guardrails**, shows whether the engine is answering. See [Guardrails](/runtime/guardrails).
+
+### Observability
+
+`observability.enabled` deploys the OpenTelemetry Collector and a ClickHouse on a persistent volume (`observability.clickhouse.storage`, default `20Gi`). `observability.clickhouse.retention` (default `720h`) is how long traces are kept. The Secret `oc-acme-observability-env` holds:
+
+| Key | What it is |
+|---|---|
+| `OC_CLICKHOUSE_PASSWORD` | The password the collector writes with, as the user `otel` |
+| `OC_CLICKHOUSE_READER_PASSWORD` | The password OpenController reads with, as the user `opencontroller`, read-only |
+| `OC_COLLECTOR_TOKEN` | With `observability.collector.token: true`: the bearer token the collector requires, which the API sends. Off, any pod that reaches the collector can write traces. |
+
+Agents send traces to the API's `/otlp` with a service account's key and the project's id, and the API forwards them to the collector. Then go to **Settings**, then **Observability**: **Provider** is **ClickHouse**, **Base URL** is `http://oc-acme-clickhouse:8123`, and the user is `opencontroller` with the reader's password. See [Observability](/monitor/observability).
+
+### Evals
+
+`evals.enabled` deploys the evals service. Only the API reaches it. Its records go in the cell's MongoDB, in a database of their own (`evals.database`, default `evals`), and `evals.workers` (default `2`) is how many monitors and tasks run at once. The Secret `oc-acme-evals-env` holds:
+
+| Key | What it is |
+|---|---|
+| `EVALS_API_KEY` | The credential the Evals module signs in with, which you enter in Settings |
+| `EVALS_SECRET_KEY` | 32 bytes, base64. Seals the model and trace-store keys the service keeps. |
+
+Then go to **Settings**, then **Evals**: **Provider** is **opencontroller evals**, **Base URL** is `http://oc-acme-evals:8080`, and **Sign in** is **Token** with the value of `EVALS_API_KEY`. See [Evals](/monitor/evals).
+
+### Ask Ctrl
+
+`askCtrl.enabled` deploys the assistant's runtime and points the API at it. The assistant answers through the cell's LLM gateway: the module connected in **Settings**, or the address in `askCtrl.gatewayURL`. Without a gateway, the assistant is off and says so.
+
+| Value | What it sets | Default |
+|---|---|---|
+| `askCtrl.model` | The model, named as the gateway names it (`provider/model`) | `anthropic/claude-sonnet-5-5` |
+| `askCtrl.reasoningEffort` | How much the model thinks: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` | `medium` |
+| `askCtrl.reasoningSummary` | How much of that thinking the person sees: `none`, `auto`, `concise`, `detailed` | `auto` |
+| `askCtrl.gatewayURL` | Where the API calls the Responses API; unset, the LLM gateway module's endpoint | unset |
+| `askCtrl.turnTimeoutMs` | How long one turn of the runtime may take | `120000` |
+| `askCtrl.scratch` | The turns' scratch directories, together | `1Gi` |
+
+A gateway that asks for a key gets it from the secret `ASK_CTRL_GATEWAY_KEY`: seed it in `secrets` or the existing Secret, and manage it afterwards in **Settings**, then **Secrets**. Each answer runs a process for its length, which is why the runtime asks for 512 MiB and is limited at 2 GiB. See [Ask Ctrl](/assistant/ask-ctrl).
+
+## Reference
+
+### Values
+
+The chart's top-level keys. Every one has comments in `values.yaml`.
+
+| Key | What it sets |
+|---|---|
+| `org.id`, `org.name` | The organization. `org.id` names the cell (`oc-<org.id>`), its database (`opencontroller_<org.id>`) and its labels. |
+| `image.<service>.repository`, `image.<service>.tag`, `image.pullPolicy` | Each service's image: `api`, `console`, `rekori`, `evals`, `askCtrl`, `srsCoreGo`, `srsInferenceEngine`. An empty tag means the chart's `appVersion`. |
+| `imagePullSecrets` | Pull secrets for a private registry |
+| `publicURL` | Where browsers reach the cell. Becomes `DISCOVERY_PUBLIC_URL`. |
+| `ingress.enabled`, `ingress.className`, `ingress.host`, `ingress.annotations`, `ingress.tls` | The Ingress to the console |
+| `ingress.redirectHosts` | Other names the console answers on, such as the host before `publicURL` moved. The API, sign-in, SCIM and the trace intake work there as on the host; a person opening a page is sent to `publicURL`. Add them to `ingress.tls` too. |
+| `ingress.gatewayUI.host`, `ingress.gatewayUI.service`, `ingress.gatewayUI.port`, `ingress.gatewayUI.sourceCIDRs` | The LLM gateway's own console on a host of its own, framed inside OpenController's |
+| `mongo.uri`, `mongo.database` | The MongoDB connection string, kept in the cell's Secret, and the database (default `opencontroller_<org.id>`) |
+| `mongo.deploy`, `mongo.image`, `mongo.storage`, `mongo.storageClass`, `mongo.resources` | A MongoDB inside the cell, for evaluation |
+| `env` | Settings passed to the API as environment variables |
+| `secrets` | Sensitive settings, written into the cell's Secret |
+| `existingSecret` | A Secret made elsewhere, instead of `mongo.uri` and `secrets` |
+| `vault.enabled`, `vault.address`, `vault.role`, `vault.authMount`, `vault.mount`, `vault.pathPrefix`, `vault.caConfigMap` | HashiCorp Vault as the secrets manager, through Kubernetes auth |
+| `serviceAccount.create`, `serviceAccount.annotations` | The API's service account and the annotations its cloud identity needs |
+| `api.replicas`, `api.podLabels`, `api.resources` | The API's Deployment. `api.podLabels` carries Azure Workload Identity's `azure.workload.identity/use: "true"`. |
+| `console.replicas`, `console.resources` | The console's Deployment |
+| `rekori.*` | The LLM gateway: `enabled`, `replicas`, `auth.enabled`, `logLevel`, `existingSecret`, `postgres`, `extraEnv`, `resources` |
+| `evals.*` | The evals service: `enabled`, `existingSecret`, `database`, `workers`, `resources` |
+| `askCtrl.*` | The assistant's runtime: `enabled`, `replicas`, `model`, `reasoningEffort`, `reasoningSummary`, `gatewayURL`, `turnTimeoutMs`, `scratch`, `resources` |
+| `guardrails.*` | The guardrail engine: `enabled`, `existingSecret`, `database`, `auditDatabase`, `awsPrincipal`, `core`, `engine` (`sessions`, `blockingThreads`, `resources`), `opa` (`enabled`, `image`, `storage`, `storageClass`, `resources`) |
+| `observability.*` | The trace store: `enabled`, `existingSecret`, `collector` (`image`, `token`, `resources`), `clickhouse` (`image`, `storage`, `storageClass`, `retention`, `systemLogDays`, `resources`) |
+| `podSecurityContext`, `securityContext` | The pods' and containers' security settings; see below |
+| `networkPolicy.enabled`, `networkPolicy.consoleFrom` | The NetworkPolicy, and who may reach the console |
+
+### Environment variables operators set most
+
+Set these in `env`, or in the Secret when they are sensitive. The platform's configuration table in the product repository lists every variable.
+
+| Variable | Default | What it sets |
+|---|---|---|
+| `MONGO_URI` | required | The MongoDB connection string. The chart sets it from `mongo.uri` or the existing Secret. |
+| `FEATURES_PROFILE` | `full` | The bundle of features the cell runs: `discover`, `govern` or `full` |
+| `FEATURES` | | Single features on or off on top of the profile, such as `control=off,discover.databricks=off` |
+| `DISCOVERY_PUBLIC_URL` | `http://localhost:8080` | Where browsers reach the console. The chart sets it from `publicURL`. |
+| `DISCOVERY_ADMIN_EMAIL`, `DISCOVERY_ADMIN_PASSWORD` | | The first administrator, created only when there are no accounts |
+| `DISCOVERY_PASSWORD_LOGIN` | `true` | Email and password sign-in |
+| `DISCOVERY_SESSION_IDLE`, `DISCOVERY_SESSION_MAX` | `12h`, `168h` | How long a password sign-in lasts unused, and at most |
+| `DISCOVERY_SCAN_INTERVAL` | `5m` | Rescan of each connection, counted from its last scan; `0` turns automatic scans off. Each connection's own interval can be set in **Settings**, then **Scan schedule**. |
+| `DISCOVERY_SCAN_TIMEOUT` | `15m` | Upper bound on one scan |
+| `SECRETS_PROVIDER` | | The secrets manager: `vault`, `aws_secrets_manager`, `azure_keyvault`, `gcp_secret_manager`. Unset: MongoDB, sealed with `DISCOVERY_SECRET_KEY`. The chart sets `vault` with `vault.enabled`. |
+| `DISCOVERY_SECRET_KEY` | | 32 random bytes, base64. Seals secrets in MongoDB when no provider is set. Changing it makes secrets sealed with it unreadable. |
+| `REQUEST_TIMEOUT` | `15s` | Deadline on every request |
+| `MAX_BODY_BYTES` | `1048576` | Request body cap |
+| `TRUSTED_PROXIES` | the private and loopback ranges | The load balancers and proxies whose `X-Forwarded-For` names the client, as CIDRs |
+| `MONGO_ENSURE_INDEXES` | `true` | Create the indexes on start; `false` when indexes are managed out of band |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
+
+### Security defaults
+
+The chart's defaults, which you can change in `podSecurityContext`, `securityContext` and `networkPolicy`:
+
+| Default | Setting |
+|---|---|
+| Pods run as non-root, with the runtime's default seccomp profile | `podSecurityContext.runAsNonRoot: true`, `seccompProfile.type: RuntimeDefault` |
+| Containers cannot gain privileges, have a read-only root filesystem, and drop every capability | `securityContext.allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]` |
+| The API runs as the distroless `nonroot` user, uid 65532 | Fixed in the chart |
+| Only the console and the ingress controller reach the API; only the API, the evals service and the guardrail engine reach a MongoDB the chart deploys | `networkPolicy.enabled: true` |
+| Only the ingress controller reaches the console. The default allows Traefik and ingress-nginx pods. | `networkPolicy.consoleFrom`: with a load balancer that sends traffic straight to pod IPs, such as an AWS ALB with target type `ip`, list its subnets instead. |
+
+## Upgrade
+
+The product's version is SemVer, and its images are tagged with it. To upgrade, set the new tags in `image.<service>.tag` and run the same command with the new chart:
+
+```sh
+helm upgrade opencontroller ./opencontroller -n acme -f values.yaml
+```
+
+The API creates the indexes it needs on start (`MONGO_ENSURE_INDEXES`). Changing `mongo.uri` or `secrets` rolls the API, because its pod template carries a checksum of the Secret the chart writes. A Secret you manage yourself (`existingSecret`) does not roll it.
+
+## Evaluate on a laptop
+
+For a look at the product before a cluster exists, the product repository runs the whole system with Docker Compose from its root:
+
+```sh
+make up      # MongoDB, Vault, the API and the console: http://localhost:8080
+make down    # stop; the database volume is kept
+```
+
+Settings come from `.env` at the repository root, never from an image. `make up-gateway` adds the LLM gateway with its PostgreSQL, `make up-observability` the trace store and collector, and `make up-evals` the evals service. `make up-guardrails` adds the guardrail engine, which needs about 5 GB of Docker's memory. `make up-keycloak` adds a Keycloak for trying single sign-on.
+
+## Cloud resources
+
+What the chart cannot make itself, `deploy/tofu` in the product repository makes with OpenTofu. It holds one module per cloud with the same interface: `modules/aws`, `modules/azure` and `modules/gcp`. Each makes the cluster, the image registry, the API's workload identity and HTTPS, plus Vault and the gateway's PostgreSQL. This is how the vendor builds a cell's cloud resources on AWS, Azure or Google Cloud. Partners can use the same modules. Each module's outputs name the values they go into, such as `image.*.repository`, `serviceAccount.annotations` and `ingress.annotations`.
