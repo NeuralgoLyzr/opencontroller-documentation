@@ -110,69 +110,13 @@
   decorate();
 })();
 
-// ---- The estate reader ------------------------------------------------------------------
-// 6. An answer strip under the title: where the page lives in the console, and who can act.
-// 7. A diagram's nodes light the prose that names them.
-// 8. The home page's walkthrough plays as a stepper.
+// ---- Diagrams and the walkthrough --------------------------------------------------------
+// 6. A diagram's nodes light the prose that names them, and diagrams move once in view.
+// 7. The home page's walkthrough plays on its own; the atlas's framework picker lights a column.
 (function () {
   "use strict";
   if (window.__ocEstate) return;
   window.__ocEstate = true;
-
-  // Where each page lives in the console: the sidebar section and the page.
-  var CONSOLE = {
-    "/discover/overview": ["Overview"], "/discover/inventory": ["Discover", "AI Inventory"], "/discover/map": ["Discover", "AI Inventory", "Map"],
-    "/discover/shadow-ai": ["Discover", "Shadow AI"], "/discover/people": ["Discover", "People"], "/discover/spend": ["Spend"],
-    "/govern/registry": ["Govern", "Registry"], "/govern/approvals": ["Govern", "Approvals"], "/govern/policies": ["Govern", "Policies"],
-    "/govern/audit-log": ["Settings", "Audit log"], "/govern/respond": ["Discover", "Shadow AI"], "/govern/control-actions": ["Discover", "AI Inventory", "an asset's Actions"],
-    "/monitor/observability": ["Monitor", "Observability"], "/monitor/send-traces": ["Monitor", "Observability", "Setup"], "/monitor/traces-and-issues": ["Monitor", "Observability", "Traces"],
-    "/monitor/cost": ["Monitor", "Observability", "Cost"], "/monitor/evals": ["Monitor", "Evals"], "/monitor/evaluators-and-tasks": ["Monitor", "Evals", "Evaluators"],
-    "/monitor/monitors-and-datasets": ["Monitor", "Evals", "Monitors"], "/runtime/llm-gateway": ["Runtime", "LLM Gateway"], "/runtime/virtual-keys": ["Runtime", "LLM Gateway", "Virtual keys"],
-    "/runtime/teams-and-customers": ["Runtime", "LLM Gateway", "Teams & customers"], "/runtime/gateway-logs": ["Runtime", "LLM Gateway", "Logs"], "/runtime/guardrails": ["Runtime", "Guardrails"],
-    "/runtime/guardrail-checks": ["Runtime", "Guardrails", "Checks"], "/runtime/guardrail-violations": ["Runtime", "Guardrail Violations"], "/runtime/guardrails-api": ["Runtime", "Guardrails"],
-    "/posture/findings": ["Posture", "Findings"], "/posture/security-policies": ["Posture", "Security policies"], "/posture/frameworks": ["Posture", "Findings", "Frameworks"],
-    "/improve/fine-tuning": ["Improve", "Fine-tuning"], "/assistant/ask-ctrl": ["Ask Ctrl"], "/connect/overview": ["Integrations"], "/connect/aws": ["Integrations", "AWS"],
-    "/connect/microsoft": ["Integrations", "Microsoft"], "/connect/google-cloud": ["Integrations", "Google Cloud"], "/connect/databricks": ["Integrations", "Databricks"],
-    "/connect/anthropic": ["Integrations", "Anthropic"], "/connect/snowflake": ["Integrations", "Snowflake"], "/connect/scans": ["Integrations", "Scans"],
-    "/get-started/quickstart": ["Integrations"], "/get-started/modules": ["Overview"],
-  };
-
-  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-
-  function answerStrip() {
-    var header = document.querySelector("#content-area #header");
-    if (!header || header.parentNode.querySelector(".oc-answer")) return;
-    var place = CONSOLE[location.pathname.replace(/\/$/, "")];
-    var here = location.pathname.replace(/\/$/, "");
-    var data = window.__ocRoles;
-    var perms = data && data.pages[here];
-    var inAtlas = window.__ocAtlas && window.__ocAtlas.pages[location.pathname.replace(/\/$/, "")];
-    if (!place && !perms && !inAtlas) return;
-    var strip = document.createElement("div");
-    strip.className = "oc-answer";
-    var html = "";
-    if (place) {
-      var mark = document.querySelector('#navigation-items a[aria-current="page"] svg');
-      html += '<div class="oc-answer-cell"><span class="oc-answer-k">In the console</span><span class="oc-answer-v oc-crumb">' +
-        (mark ? mark.outerHTML : "") + place.map(function (p) { return "<span>" + esc(p) + "</span>"; }).join('<svg class="oc-sep" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>') + "</span></div>";
-    }
-    // Who can act: the least role of each permission the page uses, from roles.js, which
-    // scripts/roles.py builds from the platform's own permission catalogs.
-    if (perms && perms.length) {
-      var order = ["viewer", "operator", "admin", "owner"];
-      var by = {};
-      perms.forEach(function (p) { var r = data.least[p]; if (r) (by[r] = by[r] || []).push(p); });
-      var roles = order.filter(function (r) { return by[r]; });
-      if (roles.length) {
-        html += '<div class="oc-answer-cell"><span class="oc-answer-k">Who can act</span><span class="oc-answer-v">' +
-          roles.map(function (r) {
-            return '<a class="oc-role oc-role-' + r + '" href="/administration/roles#perm-' + by[r][0].replace(":", "-") + '" title="' + esc(by[r].join(", ")) + '">' + r + "</a>";
-          }).join("") + "</span></div>";
-      }
-    }
-    strip.innerHTML = html;
-    header.parentNode.insertBefore(strip, header.nextSibling);
-  }
 
   // Hovering a node lights every paragraph, row and item that names it.
   var lit = [];
@@ -262,25 +206,6 @@
     });
   }
 
-  // The controls a page helps evidence, from atlas.js (generated from the Frameworks page):
-  // one chip per framework with its count, the codes in the chip's title.
-  function controlsCell() {
-    var atlas = window.__ocAtlas;
-    var strip = document.querySelector("#content-area .oc-answer");
-    if (!atlas || !strip || strip.querySelector(".oc-answer-fw")) return;
-    var mine = atlas.pages[location.pathname.replace(/\/$/, "")];
-    if (!mine) return;
-    var chips = atlas.frameworks.filter(function (f) { return mine[f.id] && mine[f.id].length; }).map(function (f) {
-      var codes = mine[f.id].join(", ");
-      return '<a class="oc-fw" href="/posture/security-policies?fw=' + f.id + '#policies-by-framework" title="' + esc(codes) + '" aria-label="' + esc(f.label + ": " + codes + ". Open in Policies by framework") + '">' + esc(f.label) + " <b>" + mine[f.id].length + "</b></a>";
-    });
-    if (!chips.length) return;
-    var cell = document.createElement("div");
-    cell.className = "oc-answer-cell oc-answer-fw";
-    cell.innerHTML = '<span class="oc-answer-k">Framework controls</span><span class="oc-answer-v">' + chips.join("") + "</span>";
-    strip.appendChild(cell);
-  }
-
   // The atlas's framework picker: one column lit, the rest recede. Event delegation, so it
   // survives Mintlify re-rendering the page.
   function pick(atlas, next) {
@@ -328,7 +253,7 @@
   var pending;
   function run() {
     clearTimeout(pending);
-    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); liveDiagrams(); pickFromUrl(); }, 120);
+    pending = setTimeout(function () { bindNodes(); stepper(); liveDiagrams(); pickFromUrl(); }, 120);
   }
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   run();
