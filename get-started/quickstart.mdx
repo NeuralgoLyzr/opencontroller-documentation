@@ -1,0 +1,61 @@
+---
+title: "Quickstart"
+description: "Your first hour: sign in, connect one platform, scan it, find the shadow agents and register one."
+---
+
+This walk-through assumes OpenController is installed and you have the administrator account created at
+installation, or an Admin role from your administrator.
+
+<Steps>
+  <Step title="Sign in">
+    Open the console. Sign in with your email and password, or with your identity provider if single sign-on is
+    set up. If the console says **No access yet**, ask your administrator for the viewer, operator or admin role.
+  </Step>
+  <Step title="Connect one platform">
+    Open **Integrations** and add a connection for the platform with the most agents, usually Microsoft or AWS.
+    Each platform's guide lists exactly what to create on the provider's side and which fields to fill in. A read
+    credential is enough for this walk-through.
+
+    <CardGroup cols={3}>
+      <Card title="AWS" href="/connect/aws" />
+      <Card title="Microsoft" href="/connect/microsoft" />
+      <Card title="Google Cloud" href="/connect/google-cloud" />
+      <Card title="Databricks" href="/connect/databricks" />
+      <Card title="Anthropic" href="/connect/anthropic" />
+      <Card title="Snowflake" href="/connect/snowflake" />
+    </CardGroup>
+  </Step>
+  <Step title="Scan it">
+    A new connection scans on its own. Open the connection to watch the scan, and read its result: how many assets
+    it found and anything it could not read, which usually means a permission is missing.
+
+    <Card title="Scans" href="/connect/scans" />
+  </Step>
+  <Step title="Look at the inventory">
+    Open **AI Inventory**. The **Agents** tab lists every agent the scan found; **All assets** lists what they use.
+    Filter by **Cloud** and **Source** to see one platform at a time, and open an agent to see its account, identity,
+    models, tools and servers.
+
+    <Card title="AI Inventory" href="/discover/inventory" />
+  </Step>
+  <Step title="Find what nobody owns">
+    Open **Shadow AI**. The map runs from accounts to products to agents to what they use, and the numbers at the top
+    say how much of the estate is registered. Everything here is unregistered.
+
+    <Card title="Shadow AI" href="/discover/shadow-ai" />
+  </Step>
+  <Step title="Register one agent">
+    Pick an agent you know, select it and click **Register selected**. Name its owner; discovery prefills the person
+    the platform records. The request appears in **Approvals**, where an Admin registers or rejects it. Once
+    registered it leaves Shadow AI and appears in the **Registry**.
+
+    <Card title="Approvals" href="/govern/approvals" />
+  </Step>
+</Steps>
+
+## Next
+
+- Connect the rest of your platforms, and grant a control credential where you want to act.
+- Read [how it works](/get-started/how-it-works) for the flow from discovery to evaluation.
+- Point an agent's traffic at the [LLM gateway](/runtime/llm-gateway), or send its traces to
+  [Observability](/monitor/send-traces).

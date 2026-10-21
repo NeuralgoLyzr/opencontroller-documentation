@@ -1,0 +1,110 @@
+---
+title: "The console at a glance"
+description: "What each section of the sidebar does, and which role sees it."
+---
+
+The sidebar follows the flow: discover, govern, run, watch, improve. Sections appear only when the installation's
+profile includes them and your role can read them.
+
+## Overview and Spend
+
+**Overview** is the estate on one page: how many agents, on which platforms, how many are registered, open findings
+and approvals, and recent activity. **Spend** totals what the agents cost, across the gateway, observability and the
+platforms, by provider, model, team and agent.
+
+<CardGroup cols={2}>
+  <Card title="Overview" href="/discover/overview" />
+  <Card title="Spend" href="/discover/spend" />
+</CardGroup>
+
+## Discover
+
+**AI Inventory** is every asset discovery found, as a list and as a map. **People** is everyone the platforms name
+as a creator or owner. **Shadow AI** is the unregistered part of the inventory, with the controls to register it.
+
+<CardGroup cols={3}>
+  <Card title="AI Inventory" href="/discover/inventory" />
+  <Card title="People" href="/discover/people" />
+  <Card title="Shadow AI" href="/discover/shadow-ai" />
+</CardGroup>
+
+## Govern
+
+**Approvals** is the queue of registration requests. **Registry** is the list of approved agents, their owners and
+their states. **Policies** is the registration policy: which kinds must be registered, what a request states and what an
+approval needs. Deciding and governing need the Admin role.
+
+<CardGroup cols={3}>
+  <Card title="Approvals" href="/govern/approvals" />
+  <Card title="Registry" href="/govern/registry" />
+  <Card title="Policies" href="/govern/policies" />
+</CardGroup>
+
+## Control
+
+Actions on an agent in its own platform: block, unblock, share, revoke, end organisation-wide sharing, delete. They
+live on the agent's page in the inventory, and every one is audited.
+
+<Card title="Control actions" href="/govern/control-actions" />
+
+## Runtime
+
+**LLM Gateway** is the endpoint in front of the model providers, with virtual keys, teams, logs and spend caps.
+**Guardrails** are the checks that run on prompts and answers passing through it. **Guardrail Violations** is what
+the checks caught.
+
+<CardGroup cols={3}>
+  <Card title="LLM Gateway" href="/runtime/llm-gateway" />
+  <Card title="Guardrails" href="/runtime/guardrails" />
+  <Card title="Guardrail Violations" href="/runtime/guardrail-violations" />
+</CardGroup>
+
+## Posture
+
+**Findings** are risky configurations across the estate. **Security policies** are the checks that produce them,
+mapped to the frameworks you choose.
+
+<CardGroup cols={2}>
+  <Card title="Findings" href="/posture/findings" />
+  <Card title="Security policies" href="/posture/security-policies" />
+</CardGroup>
+
+## Monitor
+
+**Observability** reads the organisation's trace store: what agents did, what it cost, what went wrong. **Evals**
+judges those traces with evaluators, on demand or on a schedule.
+
+<CardGroup cols={2}>
+  <Card title="Observability" href="/monitor/observability" />
+  <Card title="Evals" href="/monitor/evals" />
+</CardGroup>
+
+## Improve
+
+**Fine-tuning** trains small models of the organisation's own on what its agents do, through the studio the
+installation connects to.
+
+<Card title="Fine-tuning" href="/improve/fine-tuning" />
+
+## Ask Ctrl
+
+The assistant answers questions about the estate from the inventory, the registry and the findings, in words.
+
+<Card title="Ask Ctrl" href="/assistant/ask-ctrl" />
+
+## Integrations and Settings
+
+**Integrations** is where connections are added, tested and rescanned. **Settings** holds the organisation (general, members, roles,
+teams), the scan schedule, security (single sign-on, role mappings, service accounts, secrets, authentication, the
+audit log) and each module's connection.
+
+<Card title="Connections" href="/connect/overview" />
+
+## Who sees what
+
+| Role | Sees | Can |
+|---|---|---|
+| Viewer | Every section the profile includes | Read the inventory, registry, findings, scans and audit log; ask Ctrl |
+| Operator | The same | Also run scans, request registrations, try guardrails, change agent sharing |
+| Admin | The same, plus Policies and Guardrail Violations | Also decide approvals, change the registry policy, make guardrails, manage connections and credentials, pin owners and teams |
+| Owner | Everything, including the Security settings | Also single sign-on, the access rules, and who holds which role |

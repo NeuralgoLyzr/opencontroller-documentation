@@ -1,0 +1,112 @@
+---
+title: "Frameworks"
+description: "The seven security and governance frameworks the posture maps its policies to, and which controls each policy answers."
+---
+
+Every security policy answers to one or more controls in a published framework, so a finding can be read as evidence against a standard your auditors already use. The posture maps its policies to seven frameworks. The **Frameworks** panel on [Findings](/posture/findings) shows how many of each framework's controls have findings, and the **Security policies** page lists policies by framework. Each framework has a guide in the console, opened from **Framework guides** on [Security policies](/posture/security-policies), with the framework's official documentation and a **Covered by the policies** table.
+
+The posture covers what can be seen in an inventory: configuration, identity, exposure, ownership and whether an agent is traced and evaluated. Controls about what happens at runtime, such as a model's answers, belong to the [LLM gateway's guardrails](/runtime/guardrails) and to [evals](/monitor/evals).
+
+<AccordionGroup>
+<Accordion title="OWASP Top 10 for LLM Applications (2025)">
+The most widely used list of risks in applications built on large language models, published by the OWASP GenAI Security Project. Each item names a class of weakness, from prompt injection to unbounded consumption. The posture answers the items that show in configuration; LLM04, LLM05 and LLM08 are runtime risks, covered by guardrails and evals rather than by the inventory.
+
+| Item | Policies |
+|---|---|
+| LLM01 Prompt injection | EXP-1, EXP-3, EXP-6, DAT-3, AGY-2, RT-1 |
+| LLM02 Sensitive information disclosure | EXP-5, DAT-1, DAT-2, RT-1 |
+| LLM03 Supply chain | SUP-1, SUP-3 |
+| LLM06 Excessive agency | IAM-1, AGY-1 |
+| LLM07 System prompt leakage | DAT-2 |
+| LLM09 Misinformation | OBS-2 |
+| LLM10 Unbounded consumption | RT-2 |
+</Accordion>
+
+<Accordion title="OWASP Top 10 for Agentic Applications (2026)">
+OWASP's list for systems where a model plans and acts: calls tools, holds credentials, talks to other agents. Its items, ASI01 to ASI10, describe how an agent's autonomy can be turned against its owner.
+
+| Item | Policies |
+|---|---|
+| ASI01 Agent goal hijack | EXP-1, EXP-6, DAT-3, AGY-2 |
+| ASI02 Tool misuse and exploitation | DAT-3, AGY-1 |
+| ASI03 Identity and privilege abuse | EXP-1, EXP-5, IAM-1, IAM-2, IAM-6 |
+| ASI04 Agentic supply chain | EXP-2, SUP-1, SUP-2 |
+| ASI05 Unexpected code execution | AGY-3 |
+| ASI07 Insecure inter-agent communication | EXP-2, AGY-4, SUP-2 |
+| ASI08 Cascading failures | AGY-4 |
+| ASI10 Rogue agents | IAM-5, GOV-3 |
+</Accordion>
+
+<Accordion title="MITRE ATLAS">
+MITRE's knowledge base of adversary tactics and techniques against AI systems, in the style of ATT&CK. Each technique is a way an attacker reaches or abuses a model or agent. The posture maps a policy to the technique its finding would make possible.
+
+| Technique | Policies |
+|---|---|
+| AML.T0012 Valid accounts | IAM-1 |
+| AML.T0049 Exploit public-facing application | EXP-1, EXP-2, EXP-3 |
+| AML.T0051 LLM prompt injection | EXP-6, DAT-3 |
+| AML.T0055 Unsecured credentials | IAM-3, IAM-4, IAM-5, IAM-6, DAT-1 |
+| AML.T0083 Credentials from AI agent configuration | DAT-1, DAT-2 |
+| AML.T0086 Exfiltration via AI agent tool invocation | DAT-3 |
+| AML.T0101 Data destruction via AI agent tool invocation | AGY-1 |
+| AML.T0104 Publish poisoned AI agent tool | SUP-1 |
+| AML.T0105 Escape to host | AGY-3 |
+</Accordion>
+
+<Accordion title="NIST AI Risk Management Framework 1.0">
+The United States standard for managing AI risk, published as NIST AI 100-1, with a generative AI profile (NIST AI 600-1) and a playbook. It is organised in four functions: Govern, Map, Measure and Manage. The posture answers the Govern and Measure subcategories about inventories, ownership, third parties and production monitoring.
+
+| Subcategory | Policies |
+|---|---|
+| GOVERN 1.6 Inventory of AI systems | GOV-1 |
+| GOVERN 1.7 Decommissioning AI systems | IAM-4, GOV-4 |
+| GOVERN 2.1 Roles and responsibilities | IAM-5, GOV-2, GOV-3 |
+| GOVERN 6.1 Third-party risk policies | SUP-1, SUP-3 |
+| MEASURE 2.4 Production monitoring | RT-1, RT-2, OBS-1 |
+| MEASURE 2.5 Validity and reliability | OBS-2 |
+| MEASURE 2.7 Security and resilience | EXP-1, EXP-3, EXP-4, IAM-3 |
+| MANAGE 2.4 Disengage or deactivate | GOV-4 |
+</Accordion>
+
+<Accordion title="ISO/IEC 42001:2023">
+The international standard for an AI management system, the AI counterpart of ISO 27001. Its Annex A lists controls an organisation implements and an auditor certifies. The posture answers the controls about roles, documentation, deployment, logging, intended use and suppliers.
+
+| Control | Policies |
+|---|---|
+| A.3.2 AI roles and responsibilities | IAM-2, GOV-2, GOV-3 |
+| A.4.2 Resource documentation | GOV-1 |
+| A.6.2.4 AI system verification and validation | OBS-2 |
+| A.6.2.5 AI system deployment | GOV-5 |
+| A.6.2.8 AI system recording of event logs | OBS-1 |
+| A.9.4 Intended use of the AI system | EXP-5 |
+| A.10.3 Suppliers | SUP-1, SUP-3 |
+</Accordion>
+
+<Accordion title="EU AI Act">
+Regulation (EU) 2024/1689, in force since 1 August 2024, with obligations phased in over the following years. Article 26 sets what a deployer of a high-risk AI system must do: use it as instructed, keep human oversight, monitor its operation and keep its logs. The posture answers that article where the inventory can show oversight and monitoring.
+
+| Article | Policies |
+|---|---|
+| Art. 26 Obligations of deployers: oversight and monitoring | AGY-1, RT-1, OBS-1 |
+</Accordion>
+
+<Accordion title="AWS Security Hub">
+AWS Security Hub's controls for Amazon Bedrock AgentCore, the managed runtime for agents on AWS. These controls are the ones the posture can check on the inventory it reads from an AWS account.
+
+| Control | Policies |
+|---|---|
+| BedrockAgentCore.1 Runtimes should run in a VPC | EXP-4 |
+| BedrockAgentCore.2 Gateways should have an inbound authorizer | EXP-2 |
+| BedrockAgentCore.7 Code interpreters should not have public network access | AGY-3 |
+</Accordion>
+</AccordionGroup>
+
+## Using a framework in an audit
+
+- On [Findings](/posture/findings), click the framework in the **Frameworks** panel to see only the policies that answer to it, and open a policy to read its evidence per asset.
+- On [Security policies](/posture/security-policies), browse by **framework** to see which controls are covered and whether each policy is on.
+- **Export** on Findings writes the open findings to CSV with a Frameworks column, one row per finding.
+
+## API
+
+- `GET /v1/posture/frameworks/{framework}`: the guide for `owasp-llm`, `owasp-agentic`, `mitre-atlas`, `nist-ai-rmf`, `iso-42001`, `eu-ai-act` or `aws-security-hub`.

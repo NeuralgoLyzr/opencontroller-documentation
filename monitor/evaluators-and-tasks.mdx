@@ -1,0 +1,72 @@
+---
+title: "Evaluators and tasks"
+description: "Write an evaluator, the three kinds and their settings, run it as a task over a project's traces, and read the scores."
+---
+
+An evaluator is a saved judge: what it reads, the question it asks and how it answers. A task is that evaluator pointed at a trace store, judging the records that match a filter, once over a window or continuously as they arrive. Every answer is a score.
+
+**Who can do this:** `modules:read` to read; `modules:use` to create, change, start and stop. `observability:content` to see the records' text.
+
+## Evaluators
+
+The **Evaluators** table lists each one with its Judge (the kind), what it **Reads**, how it **Answers**, its Model, its Scores and Tokens over 7 days and when it Changed. **New evaluator** opens a catalogue of templates, grouped by what they test, and a **Custom eval from scratch** for each kind.
+
+### The three kinds
+
+| Kind | What it does | Needs a model |
+|---|---|---|
+| **LLM-as-a-judge** | A model reads each record and picks one of your labels, each scored. | Yes |
+| **Multi-question judge** | Several typed questions about one record, answered in a single call. | Yes |
+| **Code evaluator** | Your own JavaScript scores each record: no model, no cost, the same answer every time. Offered only when the service runs with `EVALS_CODE_EVALUATORS=true`. | No |
+
+### Settings
+
+| Setting | What it means |
+|---|---|
+| **Evaluator type** | One of the three kinds |
+| **Name** | What the tables call it |
+| **Reads** | **One step** (a span), **Whole run** (a trace) or **Conversation** (a session) |
+| **Model connection** and **Model** | Which model judges, from the [connections](/monitor/monitors-and-datasets); Anthropic's API or any OpenAI-compatible one, such as the LLM gateway |
+| **Temperature** | The model's temperature |
+| **Template** | The prompt, with variables in braces such as `{input}` and `{output}`, each mapped to a field of the record. A code evaluator has **Code** instead: a function `evaluate(vars)` that returns a score, true or false, a label, or an object with score, label and explanation. |
+| **The judge answers with** | For an LLM judge, labels each with a score, such as `pass` 1 and `fail` 0. For a multi-question judge, questions that are **boolean**, a **choice** or a **score**, each with its instructions. |
+| **A higher score is** | Whether up is better or worse, so trends read the right way |
+| Explain | Whether the judge gives its reasoning with each verdict |
+
+<Tip>
+A judge with no source of truth cannot tell a right fact from a wrong one. The blank LLM judge starts by asking only whether the answer answers what was asked; to judge correctness, map a variable to the agent's context or to a dataset's expected answer.
+</Tip>
+
+### Pointing it at data
+
+The right side of the editor sets up where the evaluator reads, in steps:
+
+<Steps>
+<Step title="Pick a data source">
+A trace store connection and a project in it, or a dataset. Grade your agents' live traces in a project, or the rows of a dataset.
+</Step>
+<Step title="Filter">
+A span query, such as `"name" = 'chat gpt-4o' AND "status" != 'Error'`. For runs and conversations, those with a span that matches; leave it empty for all of them. The box suggests fields and the values your spans hold.
+</Step>
+<Step title="Matching records">
+A sample of what the filter returns, over **Last 15 minutes** to **Last 30 days**. Click one to view it while you map variables.
+</Step>
+<Step title="Map variables to data">
+Each `{variable}` in the template is mapped to a field of the record. The page shows the chosen record's value, and warns when some matching records are empty there: those are passed over, not judged. **Only judge records that have it** adds that condition to the filter. `{expected}` is reserved for a dataset row's expected answer.
+</Step>
+<Step title="Task configuration">
+**Name**, the **Sampling rate** (the share of matching records the judge reads; each one judged costs a model call), **Run continuously** (judge each new record as it arrives) and **One-time backfill** with **From** and **To** (judge what is already recorded). Turn at least one on. Under **Advanced**, a **Token budget** stops the task once judging has spent that many tokens.
+</Step>
+</Steps>
+
+**Test on records** runs the evaluator over the sample without saving anything. **Create evaluator** saves it; **Create and run** saves it and starts the task. An evaluator a task or monitor uses cannot be deleted: remove it from them first. Its results stay when it is deleted.
+
+## Tasks
+
+The **Tasks** table shows each task's Evaluator, how it **Runs** (**Continuously** or **Backfill**, with its sampling share), its Status (idle, running, done, stopped or failed), and how many records it **Read**, **Judged**, hit **Errors** on, and the **Judge tokens** spent. **Start** and **Stop** control it; **Delete** stops the judging, and the results it judged stay.
+
+A task's page shows the same four numbers, its Evaluator, Trace store, how it Runs and its Variables, a **Verdicts** bar you can filter by label, and the **Results** table of Record, Verdict, Reasoning and When, each row opening the trace. A task that ran out of budget can be resumed with a new one.
+
+## Scores
+
+**Scores** is every judgment, newest first, 500 at a time. Filter by **Every evaluator** or one, and **Every label** or one. The columns are Judged (when), Evaluator, Score, Explanation and **Of** (the record). A row opens the score with its Evaluator, **Judged by** (the task or monitor run), **Of**, when it was **Judged**, a link to the **Trace**, the **Tokens** it cost and the judge's **Explanation**.

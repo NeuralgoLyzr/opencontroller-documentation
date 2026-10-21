@@ -1,0 +1,57 @@
+---
+title: "Findings"
+description: "What the posture found across your inventory, by severity, cloud, category and framework, and how each finding is resolved."
+---
+
+A finding is one security policy that matched one asset in your inventory: an agent anyone can call without signing in, a tool that reads credentials from its environment, a published agent nobody traces. The **Findings** page is the posture's report. It is evaluated in the background after each scan, so it follows the inventory rather than needing a run of its own.
+
+**Who can do this:** `posture:read` lets you read findings (a viewer; findings are scoped to the teams you belong to). `posture:write` lets you click **Evaluate now**. Turning policies on and off needs `posture:govern`, on [Security policies](/posture/security-policies).
+
+## How findings are produced
+
+The posture runs a catalogue of thirty checks, called security policies, over the inventory. Each policy looks at one kind of risk on the clouds it covers; the full list is on [Security policies](/posture/security-policies). A finding is one policy on one asset, so an asset can carry several findings and a policy can be open on many assets.
+
+- An evaluation starts on its own about thirty seconds after a burst of scans settles, and when you click **Evaluate now**. Each evaluation runs for at most five minutes.
+- A finding is **open** while the latest evaluation still sees it. When a rescan no longer finds it, the posture marks it **resolved** on its own. A resolved finding stays in the report for 30 days and reopens if it comes back. There is no manual resolve, mute or snooze: a finding goes away when the asset changes.
+- Some policies need more than the inventory: the registry, owners, the LLM gateway, a list of allowed model providers, traces or evaluations. When one of those is off or could not be read, the policy shows as **not assessed at the last evaluation** instead of reporting nothing.
+
+The header shows **Evaluated** with the time of the last evaluation, or **Evaluating** while one runs. Before the first evaluation finishes the page says **Evaluating the posture**: findings show in a minute or two.
+
+## Severities
+
+Every policy has a severity: **Critical**, **High**, **Medium** or **Low**. A finding starts at its policy's severity and can be raised one step by what the asset is:
+
+| Factor | What it means | Raises the finding to at most |
+|---|---|---|
+| reachable | The asset can be reached from outside | Critical |
+| acts | The asset can take actions through tools | Critical |
+| reaches data | The asset reads private data | Critical |
+| busy | The asset is in use | High |
+
+A factor the policy itself tests does not raise it again. The finding's drawer lists the factors under **Raised by**.
+
+## What is on the page
+
+| Panel | What it shows |
+|---|---|
+| **Findings by cloud** | Open findings by severity for each connected cloud. Click a cloud to filter the page to it. |
+| **Findings by category** | The share of open findings in each category: Exposure, Identity and access, Data and secrets, Agency, Supply chain, Runtime protection, Governance and Observability. |
+| **Where it concentrates** | A heatmap of category by cloud. Click a cell to filter to it. |
+| **Frameworks** | For each of the seven frameworks, how many of its controls have findings. Click one to filter to the policies that answer to it. |
+| **Assets most at risk** | The ten assets with the most open findings: Severity, Asset, Kind, Found and Findings. A row opens the asset in the inventory. |
+| **Policies** | Every policy with something open: Severity, Policy (its title, category and id), Clouds and Assets. The segmented control filters by severity (**All**, **Critical**, **High**, **Medium**, **Low**); the **Showing** chips hold the category, cloud and framework filters you set in the panels above. The footer counts the policies that find nothing open and the ones turned off, with a link to **Set the security policies**. |
+
+Click a policy to open it. The drawer shows the policy's severity, category and id, why it matters, a notice when it was not or only partly assessed, **How to fix it**, **Open on N assets** (each asset with its evidence and the factors it was **Raised by**, linking to the inventory), **Resolved in the last 30 days** and **Frameworks it answers to**.
+
+<Note>
+Evidence shows what was found, not secret values. A credential policy reports the name of the variable or the shape of the string, never its contents.
+</Note>
+
+## Export
+
+**Export** downloads the open findings as a CSV named `findings-<timestamp>.csv`, with the columns Policy, Title, Severity, Asset, Kind, Cloud, Account, Owner, First seen, Evidence and Frameworks. The export is the usual way to hand an audit the evidence for a framework; see [Frameworks](/posture/frameworks).
+
+## API
+
+- `GET /v1/posture`: the report; `?team=` scopes it to one team.
+- `POST /v1/posture/evaluate`: start an evaluation now; answers `202`.

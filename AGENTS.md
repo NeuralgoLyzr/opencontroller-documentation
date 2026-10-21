@@ -1,33 +1,26 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
-
 # Documentation project instructions
 
-## About this project
+This is OpenController's customer documentation, a Mintlify site. Pages are MDX with YAML frontmatter; navigation
+and settings live in `docs.json`. The product's source is pinned beside this site in the product repository, which
+carries these docs as a submodule at `docs/site`; the API reference is generated from the product's OpenAPI file.
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+## Audience
 
-## Terminology
+Security and platform administrators at a customer, and the partner engineers who deploy OpenController for them.
+Assume they have never seen the product.
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+## Style
 
-## Style preferences
-
-{/* Add any project-specific style rules below */}
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
+- Second person, active voice, sentence case for headings and UI labels. One idea per sentence.
+- UI labels verbatim as the console shows them, in bold: Click **Register**.
+- Code formatting for file names, commands, paths, environment variables, values keys and API paths.
+- Explain what a thing is for before how to use it, then the procedure or the reference.
+- Where a permission gates a page or action, name it.
+- No em-dashes.
 
 ## Content boundaries
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Document only what the product does. A missing detail beats an invented one.
+- No customer, prospect or partner names; no names from any demo tenant's data; no internal environment names or
+  URLs; no secrets or realistic-looking keys.
+- No roadmap or "coming soon".

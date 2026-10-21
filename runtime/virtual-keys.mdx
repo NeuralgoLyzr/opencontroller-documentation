@@ -1,0 +1,94 @@
+---
+title: "Virtual keys"
+description: "The keys agents and teams call the gateway with: which providers and models each may reach, and how much it may spend."
+---
+
+A virtual key is what an application sends with each call to the gateway. It stands in for the provider credentials,
+which stay in the gateway, and it carries its own limits: which providers and models it may call, a budget, token and
+request rate limits, and the team or customer its spend counts against. Make one per agent or team, so spend is
+capped and attributed.
+
+Who can do this: reading keys needs `modules:read`. Creating, changing, rotating and deleting a key needs
+`modules:govern`, held by the Admin role by default, since a key is a credential.
+
+## The list
+
+**LLM Gateway**, then **Virtual keys**. Search by name with **Search keys**.
+
+| Column | Meaning |
+|---|---|
+| **Name** | The key's name. A key switched off shows **Inactive**. |
+| **Key** | The key's value, masked: its first characters, then its last four. |
+| **Belongs to** | The team or customer the key belongs to, if any. |
+| **May call** | Each provider the key may reach, with its models or "every model". A key that may call nothing shows **Nothing**. |
+| **Budget** | Spend so far against the budget and its period, with a bar. **No budget** when none is set. |
+| **Rate limit** | The token and request limits and their periods. **No rate limit** when none is set. |
+
+The actions menu on a row offers **Edit**, **Rotate value** and **Delete**.
+
+## Create a key
+
+<Steps>
+  <Step title="Open the form">
+    Click **New key**.
+  </Step>
+  <Step title="Name it">
+    **Name** (required, up to 128 characters), for example `support-agent`, and an optional **Description**.
+  </Step>
+  <Step title="Choose who it belongs to">
+    **Belongs to**: **No team or customer**, a team, or a customer. A key belongs to one or the other, not both. Its
+    spend also counts against that team's or customer's budget.
+  </Step>
+  <Step title="Choose what it may call">
+    Under **May call**, switch on each provider the key may reach. Leave the models box empty for every model of that
+    provider, or list models separated by commas, for example `gpt-4o, gpt-4o-mini`. A provider left off cannot be
+    called. If the gateway has no provider yet, add one under **Providers** first.
+  </Step>
+  <Step title="Optionally require callers to sign in">
+    Under **Callers sign in with**, switch on the gateway's identity providers whose token each caller must also
+    send. Then every call, and every guardrail it trips, names the person who made it. Leave all off for an agent
+    calling on its own. If the gateway has no identity provider yet, add one there first.
+  </Step>
+  <Step title="Set limits">
+    Under **Limits**, leave a field empty for no limit. **Budget** is an amount in US dollars per period: hourly,
+    daily, weekly or monthly. **Tokens** and **Requests** are rate limits per minute, hour, day, week or month.
+  </Step>
+  <Step title="Create">
+    Leave **Active** on and click **Create**.
+  </Step>
+</Steps>
+
+<Warning>
+The key's value is shown once, in the dialog that follows: copy it now and give it to the agent or team that calls
+the gateway. It is not shown again anywhere, for anyone. If it is lost, rotate the key.
+</Warning>
+
+A new key starts with no limit of any kind unless you set one. A key with every provider switched off can call
+nothing.
+
+## Edit a key
+
+**Edit** opens the same form with the key's settings. Saving replaces all of them as the form shows them, and a
+limit left empty is cleared. What the form does not show (a provider's weight, its blocked models, which provider
+keys it uses) stays as the gateway has it. Switch **Active** off to refuse calls with the key without deleting it.
+
+## Rotate a key
+
+**Rotate value** gives the key a new value and keeps everything else: its name, limits, team and access. The new
+value is shown once, as on creation. Calls with the old value are refused from then on.
+
+## Delete a key
+
+**Delete** asks you to confirm. Calls made with the key are refused from now on, and its budget and usage go with
+it.
+
+Every key created, changed, rotated or deleted is recorded in OpenController's audit log by name, never by value.
+
+## API
+
+- `GET /v1/llm-gateway/virtual-keys`: list keys, with `search`, `limit` (1 to 200, default 50) and `offset`.
+- `POST /v1/llm-gateway/virtual-keys`: create a key; the answer holds its value in full.
+- `PUT /v1/llm-gateway/virtual-keys/{id}`: replace a key's settings.
+- `POST /v1/llm-gateway/virtual-keys/{id}/rotate`: a new value, in full in the answer.
+- `DELETE /v1/llm-gateway/virtual-keys/{id}`: delete a key.
+- `GET /v1/llm-gateway/providers`, `GET /v1/llm-gateway/identity-providers`: what the form picks from.

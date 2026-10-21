@@ -1,0 +1,76 @@
+---
+title: "Traces and issues"
+description: "Read an agent's runs as traces, spans and sessions, query them, open one run step by step, and find the failures grouped as issues."
+---
+
+A trace is one run of an agent: a request in, the model calls, tool calls and retrievals it made, and the answer out. Each step is a span. A session is the runs of one conversation, turn by turn. A project's **Traces**, **Spans** and **Sessions** pages list them; **Issues** groups the failures.
+
+**Who can do this:** `observability:read` to list and open runs; `observability:content` to read what was asked and answered. Without it the pages say **Inputs and outputs are hidden for your role** and the Input and Output columns stay blank.
+
+## The three lists
+
+| Page | What a row is | Default columns |
+|---|---|---|
+| **Traces** | A run, summed up: its steps, model calls, tokens, cost and status | Status, Kind, Name, Input, Output, Agent, Start time, Latency, Tokens, Cost. Also available: Models, Session, User, Gateway key, Spans, Trace ID, and any attribute as a column. |
+| **Spans** | A step of a run: a model call, tool, retrieval or the agent's own | Status, Kind, Name, Input, Output, Start time, Latency, Model, Tokens, Cost. Also: Service, Agent, Trace ID, Span ID. |
+| **Sessions** | A conversation | Session ID, First message, Last message, Start time, Duration, Agent, User, Turns, Tokens, Cost, Status. |
+
+Spans name their session with `session.id` or `gen_ai.conversation.id`; without one, Sessions is empty for the window.
+
+Each list has the same controls:
+
+- A time range: **Last 15 minutes**, **Last hour**, **Last 12 hours**, **Last day**, **Last 7 days**, **Last 2 weeks**, **Last 30 days**, **Last 3 months**, or a **Custom range** of at most 180 days, shown in **Local** time or **UTC**. **Live** keeps the list moving; **Refresh** reloads it.
+- A strip above the list with the count, Latency, Tokens and Cost of what matches, and the latency heatmap. Click a heatmap column to narrow the list to those minutes.
+- Sort by start time, latency, tokens or cost; choose the columns.
+- Saved views, kept in your browser. A view keeps the time range, queries, agent, columns and sort.
+- Keyboard: `j` and `k` move between rows, `Escape` closes the open run.
+
+## Querying
+
+The query bar takes conditions joined by `and`:
+
+```
+kind = 'llm' and model contains 'gpt' and latency_ms > 2000
+```
+
+| Fields | Operators |
+|---|---|
+| Text: `name`, `kind`, `status`, `service`, `model`, `provider`, `agent`, `project`, `session`, `user`, `customer`, `key`, `team`, `trace_id`, `span_id` | `=`, `!=`, `contains`, `not contains`, `in`, `not in` |
+| Numbers: `latency_ms`, `tokens`, `input_tokens`, `output_tokens`, `cost` | `=`, `!=`, `>`, `>=`, `<`, `<=`, `in`, `not in` |
+| Content: `input`, `output` | `contains`, `not contains` |
+| Any span attribute as `attributes.<key>`, any resource attribute as `resource.<key>` | As text |
+
+Text with no operator searches span names. The bar suggests fields, and the values your spans hold, as you type. A query is at most 2000 characters, 20 conditions and 50 values in one `in`.
+
+On Traces you can stack queries, labelled A, B and so on: a trace matches when it has a span that matches each query, which finds a run that called one model and also a given tool. On Spans a span matches one query.
+
+## Reading a run
+
+A row opens the run in a slide-over; `/observability/traces/<id>` is its own page. The views are:
+
+- **Chat**, when the run asked a model and got an answer: the messages by role.
+- **Tree**, the spans nested as they ran, with the time and tokens of each.
+- **Timeline**, the same spans on a time axis.
+- **Graph**, how the steps called one another.
+
+**Where the time went** sums the run's duration by kind of step, and a search box finds a span by name. Opening a span shows its header (kind, service, duration, provider and model, and **asked** the model the gateway routed to when the call was routed), its messages by role, its tool calls, its attributes (searchable, or as JSON), its events, which is where exceptions appear, and its resource. A session opens as its turns in chat form, with each turn's trace beside it.
+
+## Issues
+
+An issue is one step failing with one error, however many runs it broke. OpenController takes the deepest failed span of each failed run and groups them by project, step name and error message, with numbers in the message masked so a changing id does not split one failure into many. A project's **Issues** page lists up to 100.
+
+| Column | What it is |
+|---|---|
+| **Issue** | The kind and name of the step, its service and the error message |
+| **Failures** | How many spans failed this way, with a share bar |
+| **Runs** | How many traces it broke |
+| **First seen**, **Last seen** | When it started and when it last happened |
+| **Latest run** | A link to the most recent trace that hit it |
+
+Clicking an issue opens Spans with the query `name = '<step>' and status = 'error'`, so you can read every occurrence. The Overview's **Top issues** panel shows the same list cut short.
+
+## API
+
+- `GET /v1/observability/traces`, `/traces/{id}`, `/spans`, `/sessions`, `/sessions/{id}`: the lists and one run; `q[]` carries each query.
+- `GET /v1/observability/issues`: the grouped failures.
+- `GET /v1/observability/fields`, `/values`: the query bar's suggestions.

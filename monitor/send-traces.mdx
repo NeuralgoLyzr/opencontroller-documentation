@@ -1,0 +1,90 @@
+---
+title: "Send traces"
+description: "Point an agent's OpenTelemetry exporter at OpenController with an API key and a project, and which span attributes it reads."
+---
+
+An agent sends its traces to OpenController's intake, an OTLP endpoint on the console's own address. The intake checks the API key, stamps the project and its agent onto the trace, and forwards it to the collector that writes the store. Each project's **Setup** page fills the snippets below in with your project's id and address.
+
+**Who can do this:** the key's service account needs `observability:send`: an operator or administrator role, or a custom role with that permission. Creating the key needs `service-accounts:write`.
+
+## The endpoint
+
+| | |
+|---|---|
+| Endpoint | `<console origin>/otlp`; traces go to `<console origin>/otlp/v1/traces` |
+| Protocol | OTLP over HTTP, as protobuf or JSON, gzip or not. No gRPC. |
+| Key | Header `x-api-key: <your key>` or `Authorization: Bearer <your key>` |
+| Project | Header `x-project: <project id>` (the project's name also works) |
+
+The intake forwards to the collector named by `OBSERVABILITY_COLLECTOR_URL` on the API. When that is not set, the Setup page warns **Set OBSERVABILITY_COLLECTOR_URL on the API**, and nothing can be sent. The collector listens on port 4318 for OTLP/HTTP; with the Helm chart it is `http://<release>-otel-collector:4318`, and `observability.collector.token` sets the bearer token the API presents to it. The LLM gateway can export straight to the collector at `http://<release>-otel-collector:4318/v1/traces`.
+
+## The Setup page
+
+<Steps>
+<Step title="Choose how the agent is built">
+Pick the **Conventions** the agent's instrumentation follows: **OpenInference** or **OpenTelemetry GenAI**. Then pick a framework card: Claude Teams / Enterprise, OpenAI, Anthropic, LangChain, LlamaIndex, CrewAI, OpenAI Agents, Amazon Bedrock, Google GenAI, Vertex AI, LiteLLM, Mistral, Groq, DSPy, Haystack, smolagents, AutoGen, Agno, MCP, or **Your own spans**. The card chooses the instrumentor in the snippets.
+</Step>
+<Step title="Get an API key">
+Choose a service account and click **Create key**. The key is shown once. Its service account's role must allow `observability:send`.
+</Step>
+<Step title="Set the environment">
+The page writes the variables an OpenTelemetry SDK reads:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=<console origin>/otlp
+OTEL_EXPORTER_OTLP_HEADERS=x-api-key=<your key>,x-project=<project id>
+OTEL_SERVICE_NAME=<project name>
+```
+
+With the GenAI conventions it adds two more, so the SDK emits the current attributes and captures message content on spans:
+
+```bash
+OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY
+```
+</Step>
+<Step title="Send its traces">
+Choose **Python** or **TypeScript**. The page shows the install line for the SDK, the OTLP/HTTP exporter and the framework's instrumentor, then the lines that build a tracer provider with a batch span processor and an OTLP exporter and call the instrumentor on it. With **Your own spans** it shows the attributes below set on a span by hand, in either convention. Spans that are not AI calls are kept too, and the two conventions can be mixed in one trace.
+</Step>
+<Step title="Listen for the first trace">
+Click **Send a test trace** to send one from the console with your own session (it needs `observability:send`), then **View traces**.
+</Step>
+</Steps>
+
+<Tabs>
+<Tab title="Claude Teams / Enterprise">
+The card for Claude Code writes a settings file for an organization's managed settings. It turns Claude Code's telemetry on, sets the traces exporter to OTLP over `http/protobuf` with the endpoint and headers above, turns metrics and logs exporters off, and sets the variables that make it log user prompts and tool details and content. The same file can carry the hooks that hold Claude Code to a [guardrail](/runtime/guardrails).
+</Tab>
+<Tab title="Any OpenTelemetry SDK">
+Set the three environment variables and use the SDK's OTLP/HTTP exporter. The exporter must speak HTTP, not gRPC, so pick the `otlp-proto-http` flavour where an SDK offers both.
+</Tab>
+</Tabs>
+
+## What OpenController reads from a span
+
+OpenController reads the OpenTelemetry GenAI semantic conventions first and OpenInference second, so either instrumentation works without mapping. In words:
+
+| It reads | From |
+|---|---|
+| The model | The response model, else the requested model, else the OpenInference model name |
+| The provider | The GenAI provider name or system, the OpenInference provider or system, or the gateway's provider name |
+| Input and output tokens | The GenAI usage counts (new and old names), else the OpenInference token counts |
+| Cached input tokens | The GenAI cache-read count, else the OpenInference prompt cache detail |
+| Cost | The GenAI usage cost, else the OpenInference total cost |
+| The kind of step | The OpenInference span kind, else the GenAI operation name: chat and text completion are model calls, embeddings an embedding, execute tool a tool, invoke or create agent an agent |
+| The session | The GenAI conversation id, else `session.id` |
+| The user | `enduser.id`, `user.id` or the GenAI request user |
+| The customer, gateway key and team | The LLM gateway's customer, virtual key and team attributes, or a customer name attribute |
+| The tool | The GenAI tool name, else `tool.name` |
+| What was asked and answered | The input and output values or messages, the prompt and completion, the first message's content, a tool call's arguments and result, or a retrieval query |
+
+Two things are not read from the sender. The agent a trace belongs to is the project's agent, written by the intake as the resource attribute `agent.id`, so a sender cannot claim another agent. The project is the resource attribute `opencontroller.project`, set the same way.
+
+<Note>
+A model call is counted once per trace, at the deepest span that carries usage. When a call goes through the LLM gateway, the gateway's span carries the price.
+</Note>
+
+## API
+
+- `POST /otlp/v1/traces`: the intake; signed with a service account key.
+- `GET /v1/observability/intake`: the intake's path and whether a collector is set.

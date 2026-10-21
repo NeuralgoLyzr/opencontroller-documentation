@@ -1,0 +1,114 @@
+---
+title: "LLM gateway"
+description: "One endpoint in front of your model providers, with virtual keys, teams, logs and content rules, managed from OpenController."
+---
+
+The LLM gateway is the endpoint your agents call instead of calling model providers directly. It holds the provider
+credentials, gives each agent or team a virtual key with a budget and rate limits, logs every call, and runs content
+rules (your guardrails) on what goes to a model and what comes back.
+
+OpenController does not carry the model traffic itself. It connects to a gateway you run and manages it through the
+gateway's management API. The gateway kind OpenController manages today is Rekori. Every change you make in the
+console is recorded with who made it.
+
+## The pages
+
+**LLM Gateway** in the console has two kinds of pages.
+
+| Pages | What they are |
+|---|---|
+| Overview, **Virtual keys**, **Teams & customers**, **Logs** | Written in OpenController's own terms, the same for any kind of gateway. |
+| **Providers**, **Routing Rules**, **MCP Servers**, **Content Rules**, and the groups Traffic, Routing, Tools, Access, API Hub, Policies and System | The rest of the connected gateway's own console, reached through OpenController. |
+
+Until a gateway is connected, every page says **No LLM gateway connected** and offers **Connect the gateway**.
+
+## Connect the gateway
+
+Who can do this: `modules:endpoint`, held by the Admin role by default.
+
+<Steps>
+  <Step title="Open the connection page">
+    Go to **Settings**, then **LLM Gateway**.
+  </Step>
+  <Step title="Choose the kind and the address">
+    **Provider** is the kind of gateway: **Rekori**. **Base URL** is where OpenController reaches its management
+    API, for example `https://gateway.example.com`, or `http://rekori:8080` beside a local stack.
+  </Step>
+  <Step title="Choose how OpenController signs in">
+    **Sign in** offers what the kind accepts. For Rekori: **No sign-in** (its authentication is off, as on a local
+    gateway), **Username and password** (its administrator's), or **Token** (a bearer token it accepts). Type the
+    **Username** and **Password**, or the **Token**. The credential is kept in the secrets manager and cannot be read
+    back. When you edit the connection later, leave the field empty to keep the stored credential.
+  </Step>
+  <Step title="Optionally show the gateway's own console">
+    Turn on **Show Rekori's own console inside opencontroller** to see the gateway's own pages in place of
+    OpenController's versions of them. If the browser reaches that console at another address than the Base URL (an
+    in-cluster Base URL, say), choose **Its console is at another address** and give the **Console address**. The
+    gateway must allow OpenController's origin to frame it.
+  </Step>
+  <Step title="Save and check">
+    Click **Save**, then **Check connection**. The checks are **Reachable**, **Version** and **Signed in**; they stop
+    at the first that fails.
+  </Step>
+</Steps>
+
+<Warning>
+If the Base URL is plain `http://` and points outside the local network, the page warns that the credential goes over
+plain HTTP. Use an `https://` base URL.
+</Warning>
+
+**Disconnect** forgets the endpoint and deletes its credential from the secrets manager. The gateway keeps running
+and keeps everything set in it.
+
+## The overview
+
+The overview shows the gateway at a glance over a window you pick: **Last hour**, **Last 24 hours** (the default),
+**Last 7 days** or **Last 30 days**.
+
+| Number | Meaning |
+|---|---|
+| **Calls** | How many calls went through the gateway in the window. |
+| **Succeeded** | The share of those calls that succeeded, in percent. |
+| **Average latency** | The mean time a call took, in milliseconds. |
+| **Cost** | What the calls cost, in US dollars, as the gateway prices them. |
+
+Below the numbers: **Spend**, cost per period over the window; **Providers** and **MCP servers**, whether each the
+gateway calls is up, with those needing attention first; **Closest to budget**, the five virtual keys that have
+used the most of their budget; and **Latest calls**, the eight most recent, leading to **Logs**.
+
+## Point an application at the gateway
+
+An application needs two things: the gateway's address, and a virtual key made on the
+[Virtual keys](/runtime/virtual-keys) page. Rekori serves an OpenAI-compatible API at `/v1/chat/completions`. The
+virtual key goes in the `x-bf-vk` header:
+
+```bash
+curl https://gateway.example.com/v1/chat/completions \
+  -H "x-bf-vk: <your virtual key>" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "<model>", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+The key decides which providers and models the call may reach, and its budget and rate limits apply. The gateway's
+own content rules then check the prompt and the answer.
+
+<img className="block dark:hidden" src="/images/diagrams/gateway-light.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+<img className="hidden dark:block" src="/images/diagrams/gateway-dark.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+
+## Who can do what
+
+| Permission | Default role | Allows |
+|---|---|---|
+| `modules:read` | Viewer | Read the gateway's pages. |
+| `modules:use` | Operator | Change teams, customers, routing, content rules and prompts; search logs by content. |
+| `modules:govern` | Admin | Change virtual keys, providers and provider keys. |
+| `modules:endpoint` | Admin | Connect, check and disconnect the gateway. |
+
+## API
+
+- `GET /v1/modules`: every module, the kinds it can run on, and its endpoint when set.
+- `PUT /v1/modules/llm_gateway/endpoint`: set the connection.
+- `POST /v1/modules/llm_gateway/endpoint/check`: run the connection checks.
+- `DELETE /v1/modules/llm_gateway/endpoint`: disconnect.
+- `GET /v1/llm-gateway`: the connected gateway's kind and what it can do.
+- `GET /v1/llm-gateway/usage`, `GET /v1/llm-gateway/cost`: the overview's numbers and the spend series.

@@ -1,20 +1,80 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "What is OpenController"
+description: "The AI control plane for security leaders: every agent in every cloud, in one inventory, with the authority to govern, stop and watch them."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Your organisation already runs more AI agents than anyone has counted. They were built in Copilot Studio, Bedrock,
+Vertex AI, Databricks and Snowflake by teams who needed them, and most of them never passed a security review. Each
+one holds an identity, reaches data, calls tools and talks to people. Nobody owns the list.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+OpenController is the control plane that owns the list. It connects to each cloud and platform with read access,
+builds one inventory of every agent and everything each agent uses, and gives the security team the authority to
+decide which agents are allowed, stop the ones that are not, and watch the ones that run. Agents stay where they
+were built. Nothing moves.
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+<img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
+<img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
+
+## One platform, six capabilities
+
+<CardGroup cols={2}>
+  <Card title="AI discovery" href="/discover/inventory">
+    One inventory of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud,
+    Databricks, Anthropic and Snowflake, read on a schedule. The shadow AI view shows what nobody has registered.
+  </Card>
+  <Card title="Governance" href="/govern/registry">
+    A registry of approved agents with named owners, a registration policy that says what must be registered,
+    approvals with separation of duties, and an audit trail.
+  </Card>
+  <Card title="Control" href="/govern/control-actions">
+    Block or quarantine an agent, end organisation-wide sharing, remove a person's access, or delete it, on the
+    platform it runs on, with a control credential you grant per platform.
+  </Card>
+  <Card title="Runtime security" href="/runtime/llm-gateway">
+    An LLM gateway in front of every model provider, with virtual keys, budgets and logs, and guardrails that block, redact
+    or mask personal data, secrets, prompt injection and off-topic use in prompts and answers.
+  </Card>
+  <Card title="Posture" href="/posture/findings">
+    Thirty security policies checked continuously against the inventory, raising findings with severities, mapped
+    to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.
+  </Card>
+  <Card title="Observability and evals" href="/monitor/observability">
+    Traces of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over
+    time so you know when one gets worse.
+  </Card>
+</CardGroup>
+
+## Who it is for
+
+- **The CISO and the security team** who are accountable for AI they did not build and cannot see. OpenController
+  gives them the inventory, the owner of every agent, the findings, and the stop button.
+- **AI and platform leaders** who want teams to build agents without a review bottleneck. The registry and the
+  gateway make the approved path the easy path.
+- **Governance, risk and compliance** who need evidence: which AI systems exist, who owns them, what controls apply,
+  and how that maps to the frameworks auditors ask about.
+
+## How it treats your environment
+
+- **Read-only by default.** Discovery lists and describes. It never invokes an agent, reads a conversation or
+  fetches a secret value.
+- **Control is opt-in, per platform.** Blocking, sharing and deleting need a second credential you grant when you
+  are ready, and every action is audited.
+- **Deployed in your environment.** One installation per organisation, with secrets in HashiCorp Vault. Traces and
+  logs stay in your trace store.
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="What is shadow AI" href="/get-started/what-is-shadow-ai">
+    The problem, the risks by asset kind, and why it is a security team's problem.
+  </Card>
+  <Card title="How it works" href="/get-started/how-it-works">
+    Discover, govern, control, observe, evaluate: one agent, in order.
+  </Card>
+  <Card title="Responding to discoveries" href="/govern/respond">
+    A framework for the security team: triage, investigate, decide.
+  </Card>
+  <Card title="A rollout plan" href="/get-started/rollout">
+    What to do in the first week, the first month and the first quarter.
+  </Card>
+</CardGroup>

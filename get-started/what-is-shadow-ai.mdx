@@ -1,0 +1,84 @@
+---
+title: "What is shadow AI"
+description: "AI agents nobody registered, running on platforms the organisation already pays for, and why they are a security problem."
+---
+
+## The problem
+
+Every major platform now lets anyone with a licence build an agent in an afternoon: Copilot Studio and Agent
+Builder in Microsoft 365, Bedrock and AgentCore in AWS, Agent Runtime and CX Agent Studio in Google Cloud, Genie in
+Databricks, Cortex Agents in Snowflake. The agent gets an identity, is pointed at data, is given tools, and is shared
+with colleagues. None of that passes through the security team, and none of the platforms tells them.
+
+Shadow AI is the result: every agent, model deployment, MCP server, tool and identity that exists in your clouds
+without anyone having registered it, reviewed it, or taken ownership of it. It is rarely hidden on purpose. It is
+simply uncounted.
+
+## The risks, by what is in the shadows
+
+**Shadow agents.** An agent acts. It calls tools, reads data stores, sends messages and runs code under an identity
+of its own. An unreviewed agent is an unreviewed integration with your systems, and one that can be talked into
+misusing them through prompt injection.
+
+**Shadow identities and keys.** Agents run as service principals, roles and API keys. Those identities outlive the
+proof of concept and the person who made it, and often carry the maker's own permissions.
+
+**Shadow MCP servers and tools.** An MCP server is an API exposed to any agent that can reach it. Servers added to
+an agent from outside the organisation run code and read data on its behalf, with nobody having checked what they
+do.
+
+**Shadow data reach.** Agents are pointed at knowledge bases, tables and document stores. The agent inherits the
+reach, and the people it is shared with inherit it through the agent.
+
+**Shadow sharing.** An agent published to a Microsoft 365 catalogue or shared organisation-wide reaches everyone,
+including people who should never see the data behind it.
+
+**Shadow spend.** Every one of these calls a model, and the bill arrives with no owner to send it to.
+
+## Why this matters for security leaders
+
+- **Accountability has landed.** The OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU
+  AI Act all expect an inventory of AI systems with a named owner and controls per system. An auditor will ask for
+  the list.
+- **The blast radius is an identity, not a chatbot.** When an agent is compromised, what matters is the identity it
+  runs as, the data it can reach and the tools it can call. Those are the things shadow AI leaves unreviewed.
+- **The platforms will not do this for you.** Each one sees only its own agents and offers admin tooling built for
+  its own tenant, not for a security team watching five clouds.
+- **It compounds.** Agents are cheap to create and are rarely retired. The number only grows until something
+  counts them.
+
+## What OpenController does about it
+
+OpenController reads each connected platform on a schedule and places every discovered asset in one of these states:
+
+| State | Meaning |
+|---|---|
+| **Shadow** | Discovered, and nobody has registered it. |
+| **Awaiting approval** | Someone asked to register it, and an approver has not yet decided. |
+| **Registered** | Approved, with a named owner, in the registry. |
+| **Not governed** | A kind the registration policy does not require to be registered, listed for visibility. |
+
+<img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+<img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+
+The **Shadow AI** page shows the shadow and awaiting-approval assets as a map from accounts to products to agents to
+what the agents use, with the share of governed assets that are registered across the top. From there you register
+one agent, or a whole connection at once, and the request goes to Approvals. Findings run against the same
+inventory, so a shadow agent that is reachable from the internet or acting with its maker's credentials is flagged
+before anyone registers it.
+
+## What discovery reads, and what it does not
+
+Discovery reads with a read credential and changes nothing. It lists agents, models, tools, servers, identities,
+memories, sharing and configuration, and records who the platform names as the owner. It never invokes an agent,
+never reads a conversation, and never fetches a secret value. Control actions use a separate credential you grant
+per platform, when you are ready.
+
+<CardGroup cols={2}>
+  <Card title="Responding to discoveries" href="/govern/respond">
+    A framework for the security team: triage, investigate, decide.
+  </Card>
+  <Card title="The Shadow AI page" href="/discover/shadow-ai">
+    How to read the map and register what you find.
+  </Card>
+</CardGroup>

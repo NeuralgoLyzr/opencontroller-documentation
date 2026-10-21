@@ -1,0 +1,81 @@
+---
+title: "Connecting clouds and platforms"
+description: "What a connection is, the two credentials it holds, and how the Integrations page lists, verifies, scans and removes them."
+---
+
+A **connection** is one account OpenController reads: an AWS account, a Microsoft tenant, a Databricks workspace, a Google Cloud project, folder or organization, an Anthropic organization, or a Snowflake account. Discovery reads each connection on a schedule and records the AI agents it finds, and everything they use, in the inventory. Discovery only reads. It never invokes an agent, reads a conversation or fetches a secret value.
+
+## Two credentials
+
+Every connection holds two credentials, and neither stands in for the other.
+
+| Credential | Required | Used by |
+|---|---|---|
+| **Read** | Yes | Discovery, **Verify** and spend. It can change nothing. |
+| **Control** | No | Changes OpenController makes in that account: sharing, blocking, publishing. Control is off until a connection has one, and discovery goes on without it. |
+
+The control credential can be one of its own (recommended), a copy of the read credential, or none. Each row shows **Control: off** or the credential changes are made as, with **Turn on** or **Change** beside it.
+
+Secrets go to your secrets manager at `integrations/<connection id>/client-secret` and `integrations/<connection id>/control/client-secret`. They are never returned by the API and never logged.
+
+<img className="block dark:hidden" src="/images/diagrams/credentials-light.png" alt="The read credential lists and describes; the control credential changes" />
+<img className="hidden dark:block" src="/images/diagrams/credentials-dark.png" alt="The read credential lists and describes; the control credential changes" />
+
+## The Integrations page
+
+| Column | What it shows |
+|---|---|
+| **Name** | The name you gave it, its cloud, and its control status. |
+| **Account** | The account ID, tenant, workspace host, scope, organization ID or Snowflake account. |
+| **Signs in as** | The read credential: the role, app, service principal, service account or user. |
+| **Access** | The last verification: **Not verified**, **Verified**, **N refused** (reachable, but some checks failed), **Unreachable**, or on AWS **Trust update needed**. Click it to see each check. **Integration off** means the deployment does not discover from that cloud. |
+| **Enabled** | A switch. Off pauses scans of the connection without removing it. |
+| **Actions** | **Verify**, **Setup** (the grants or script for the connection), and remove. |
+
+A connection whose own sign-in failed is called out above the table, with **Update the secret**, **Update the key** or **Show the setup script** to fix it.
+
+<Steps>
+  <Step title="Connect">
+    Click **Connect**, pick a cloud under **What are you connecting?**, and fill in its form. Each cloud's page lists the fields.
+  </Step>
+  <Step title="Grant access">
+    **Setup** on the row shows what to grant or run in the account.
+  </Step>
+  <Step title="Verify">
+    Click **Verify**. Each surface is checked separately, so the result says exactly which grant is missing.
+  </Step>
+  <Step title="Scan">
+    Scans run on their own once the connection is enabled, and on **Run scan**. See [Scans](/connect/scans).
+  </Step>
+</Steps>
+
+To remove a connection, click its trash icon and confirm **Remove**. Scans stop, its stored secrets are deleted, and what was discovered stays until later scans retire it. The role, app, service principal, service account or users stay in the cloud until you remove them there.
+
+## What a scan produces
+
+A scan reads one cloud. Each account, region and resource family is its own **source**, named `provider:account:region:family`. A source that is refused fails alone; the others are still read, and a failed source keeps what the last good scan recorded. Assets are retired, not deleted, when every source that reported them stops reporting them.
+
+## Supported clouds and platforms
+
+<CardGroup cols={2}>
+  <Card title="AWS" href="/connect/aws">Bedrock agents, AgentCore, the AWS Agent Registry and guardrails, through a read-only role.</Card>
+  <Card title="Microsoft" href="/connect/microsoft">Copilot Studio, Agent Builder, the Agent 365 catalog and Azure AI Foundry, as an Entra app.</Card>
+  <Card title="Google Cloud" href="/connect/google-cloud">Agent Runtime, Managed Agents, Agent Registry and CX Agent Studio, as a service account.</Card>
+  <Card title="Databricks" href="/connect/databricks">Serving endpoints, Agent Bricks, Genie, models, MCP servers and skills, as a service principal.</Card>
+  <Card title="Anthropic" href="/connect/anthropic">The Claude models and API keys an organization uses, with an Admin API key.</Card>
+  <Card title="Snowflake" href="/connect/snowflake">Cortex Agents, CoWork, MCP servers, Cortex Search and semantic views, as a service user.</Card>
+</CardGroup>
+
+## Who can do this
+
+- `connections:read` (Viewer): see the page and each connection's setup.
+- `connections:verify` (Operator): **Verify**.
+- `connections:write` (Admin): **Connect**, change credentials and control, enable or disable, and remove.
+- `scans:run` (Operator): **Run scan**.
+
+## API
+
+- `GET /v1/connections`, `POST /v1/connections`: list and connect.
+- `PATCH /v1/connections/{connection_id}`, `DELETE /v1/connections/{connection_id}`: change (`read`, `control`, `enabled`) and remove.
+- `POST /v1/connections/{connection_id}/verify`: run the checks.
+- `GET /v1/connections/guides/{provider}`: the cloud's setup guide as Markdown.

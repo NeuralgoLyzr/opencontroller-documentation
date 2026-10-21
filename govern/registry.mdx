@@ -1,0 +1,100 @@
+---
+title: "Registry"
+description: "The Registry is the catalog of approved AI assets: what your organization runs on purpose, with an accountable owner and a stated purpose for each."
+---
+
+An asset is registered when someone has stated who owns it and what it is for, and an administrator has approved that request. Until then, an asset of a kind the registry policy names is shadow. The Registry page lists what is approved.
+
+**Who can do this:** `registry:read` to see the page. `registry:request` to register an external agent. `registry:decide` to revoke.
+
+## States
+
+A registration moves through these states. An asset has at most one active registration (pending or registered); the others are history.
+
+| State | Shown as | Meaning |
+|---|---|---|
+| `pending` | **Awaiting approval** | Requested, not yet decided |
+| `registered` | **Registered** | Approved |
+| `rejected` | **Rejected** | Turned down; the asset stays shadow |
+| `revoked` | **Revoked** | Approval taken back; the asset is shadow again |
+| `withdrawn` | **Withdrawn** | The request was cancelled |
+
+An asset's standing in the registry is one of **Registered**, **Awaiting approval**, **Shadow** or **Not governed** (its kind is not in the policy).
+
+## Transitions
+
+| From | Action | To | Who | Note |
+|---|---|---|---|---|
+| shadow | Request | pending | `registry:request` | Owner and purpose |
+| pending | Approve | registered | `registry:decide` | Optional. With separation of duties, not the requester |
+| pending | Reject | rejected | `registry:decide` | Required |
+| pending | Withdraw | withdrawn | The requester, or `registry:decide` | None |
+| registered | Revoke | revoked | `registry:decide` | Required |
+
+Rejecting, revoking or withdrawing returns the asset to shadow, and it can be requested again. A later request records the earlier ones under **Earlier requests** on the asset's Registration card.
+
+<img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
+<img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
+
+## What is recorded
+
+| Field | Where it comes from |
+|---|---|
+| **Owner** | The owner the platform names, when it names one; the requester cannot change it. Otherwise what the requester typed. The registration says "from the platform" in the first case |
+| **Purpose** | What the requester typed, up to 2,000 characters |
+| **Requested** | Who asked and when |
+| **Policy** | The version of the registry policy the request was made under |
+| **History** | Each step: requested, approved, rejected, revoked or withdrawn, by whom, when, with the note |
+
+The registration also keeps the asset's name, kind, provider, platform and account as they were when it was requested. A registration is kept when its asset is retired; the Registry then shows the row faint with **Removed** in the **Status** column.
+
+## The page
+
+Filters are the AI Inventory's, with **Kind** offering only the kinds the policy governs and **Include removed** available. **Table** and **Cards** switch the view.
+
+| Column | What it shows |
+|---|---|
+| **Asset** | Name |
+| **Kind** | The kind badge |
+| **Source** | Cloud and product |
+| **Owner** | The accountable owner |
+| **Purpose** | The stated purpose |
+| **Approved** | When, with who in the tooltip |
+| **Status** | **Registered**, or **Removed** for a retired asset |
+
+Clicking a row opens the registration: its badge, source, a link to the asset in the inventory, the actions available, **Owner**, **Purpose**, **Requested**, **Policy** version and **History**. Before anything is registered the page points you to Shadow AI.
+
+## Un-registering
+
+Open the registration and click **Revoke**. A note saying why is required. The asset is shadow again and the registration is kept as history.
+
+## External agents
+
+**Register external agent** adds an agent no connected cloud runs. It enters the inventory under **Agents** and goes through approval like any discovered asset. It needs `registry:request` and a role in the organization, since no team owns an agent outside the connected clouds.
+
+<Tabs>
+  <Tab title="A2A agent (agent card)">
+    Type the **Agent URL**: the agent card itself, or the base URL its `/.well-known/agent-card.json` is under. Public `https` only. **Read card** fetches it and shows the name, description, endpoint, skills, authentication schemes (a warning when there are none) and provider.
+  </Tab>
+  <Tab title="API endpoint">
+    Type a **Name**, pick the **API** (**OpenAI Chat Completions**, **OpenAI Responses** or **Other HTTP**), the **Endpoint URL** (public `https` only) and an optional **Description**.
+  </Tab>
+</Tabs>
+
+Then state the **Owner** and **Purpose** and click **Add and request registration**.
+
+## Registry settings
+
+The registry's rules are the registry policy, edited on the [Policies](/govern/policies) page. The old `/settings/registry` address redirects there.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/registry/registered` | Registered assets as the inventory has them now, with their registrations |
+| `GET` | `/v1/registry/registrations` | Registrations, filtered by state, kind or text |
+| `GET` | `/v1/registry/registrations/{registration_id}` | One registration |
+| `POST` | `/v1/registry/registrations/{registration_id}/revoke` | Revoke, with a note |
+| `GET` | `/v1/assets/{asset_id}/registration` | One asset's standing, current and past registrations |
+| `POST` | `/v1/registry/external/preview` | Read an A2A agent card |
+| `POST` | `/v1/registry/external` | Register an external agent |

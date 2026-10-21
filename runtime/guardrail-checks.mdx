@@ -1,0 +1,146 @@
+---
+title: "Guardrail checks"
+description: "The eleven built-in checks a guardrail can hold text to: what each detects, its settings and defaults, and what it does when it fires."
+---
+
+A guardrail is made of checks. Each check is switched on or off, reads prompts or both prompts and answers, and has
+settings of its own. This page is the reference for the eleven built-in checks, in the order the editor shows them.
+A new guardrail starts with every check off, at the defaults given here.
+
+## Actions
+
+A check that fires does one of three things.
+
+| Action | Effect |
+|---|---|
+| Block | The whole text is stopped. In the gateway the call fails; through the API, `blocked` is true. |
+| Redact | The value found is replaced and the text goes on. Personal data becomes a numbered placeholder such as `<PERSON_1>`; a keyword becomes its rule's replacement, `<REDACTED>` by default. |
+| Mask | Secrets only: the secret is replaced by asterisks of the same length and the text goes on. |
+
+Flagging without blocking exists only for the OPA check in audit mode, which is outside these eleven.
+
+## Sensitivity
+
+Prompt injection, toxicity, sexual content and gibberish are scored by a model. The check fires when the score is at
+or above its threshold, so a lower threshold is stricter. The editor offers three levels, computed from the check's
+default, or **Set an exact threshold** between 0.05 and 1 in steps of 0.05.
+
+| Level | Threshold | For a default of 0.8 | For a default of 0.5 |
+|---|---|---|---|
+| **Strict** | default minus 0.2 | 0.6 | 0.3 |
+| **Balanced** (recommended) | the default | 0.8 | 0.5 |
+| **Relaxed** | default plus 0.1 | 0.9 | 0.6 |
+
+## The checks
+
+<AccordionGroup>
+  <Accordion title="Personal data">
+    Finds people's names, places, emails, phone and card numbers and more, and redacts or blocks them. Reads prompts.
+
+    Setting **What to look for**: tick each kind and choose **Redact** or **Block** for it. **Redact all**, **Block
+    all** and **Clear** set every kind at once. A kind not ticked is not looked for.
+
+    | Kind | API name | Finds |
+    |---|---|---|
+    | Names | `PERSON` | People's full names |
+    | Places | `LOCATION` | Cities, countries and addresses |
+    | Emails | `EMAIL_ADDRESS` | Any email address |
+    | Phone numbers | `PHONE_NUMBER` | Any phone number |
+    | Card numbers | `CREDIT_CARD` | Credit and debit card numbers |
+    | US social security numbers | `US_SSN` | Social security numbers |
+    | IP addresses | `IP_ADDRESS` | IPv4 and IPv6 addresses |
+    | Web addresses | `URL` | Links and web addresses |
+    | Dates and times | `DATE_TIME` | Dates, times and birthdays |
+
+    Default: Names, Emails, Phone numbers and Card numbers, each set to redact. Names and places are found by a
+    model, the rest by pattern. Places also catches countries and cities in ordinary questions, which the editor
+    warns about. For your own words, such as a project codename, use Keywords.
+
+    API: `checks.personal_data`: `{"enabled": true, "types": {"PERSON": "redact", "US_SSN": "block"}}`.
+  </Accordion>
+  <Accordion title="Secrets">
+    Finds API keys, tokens and passwords, and masks or blocks them. Reads prompts and answers.
+
+    Setting **When a secret is found**: **Mask it** (replace it with asterisks and let the text through) or **Block
+    the text**. Default: mask.
+
+    API: `checks.secrets`: `{"enabled": true, "action": "mask"}`, action `mask` or `block`.
+  </Accordion>
+  <Accordion title="Prompt injection">
+    Blocks text that tries to override the model's instructions or jailbreak it. Reads prompts. Action: block.
+
+    Setting **Sensitivity**: a level or an exact threshold. Default threshold 0.8.
+
+    API: `checks.prompt_injection`: `{"enabled": true, "threshold": 0.8}`; a threshold of 0 takes the default.
+  </Accordion>
+  <Accordion title="Toxicity">
+    Blocks insults, threats and abuse. Reads prompts. Action: block.
+
+    Setting **Sensitivity**. Default threshold 0.8.
+
+    API: `checks.toxicity`: `{"enabled": true, "threshold": 0.8}`.
+  </Accordion>
+  <Accordion title="Sexual content">
+    Blocks sexual or explicit text. Reads prompts. Action: block.
+
+    Settings **Sensitivity**, default threshold 0.8, and **What is scored**: **Each sentence** (fires when any one
+    sentence crosses the line, which catches one bad line in a long text) or **Whole text**. Default: each sentence.
+
+    API: `checks.sexual_content`: `{"enabled": true, "threshold": 0.8, "granularity": "sentence"}`, granularity
+    `sentence` or `full`.
+  </Accordion>
+  <Accordion title="Gibberish">
+    Blocks text that makes no sense. Reads prompts. Action: block.
+
+    Settings **Sensitivity**, default threshold 0.5, and **What is scored**, default each sentence.
+
+    API: `checks.gibberish`: `{"enabled": true, "threshold": 0.5, "granularity": "sentence"}`.
+  </Accordion>
+  <Accordion title="Banned topics">
+    Blocks text about any of the topics named. Reads prompts. Action: block.
+
+    Setting **Topics to block**: up to 50 topics of up to 100 characters each, for example `politics, medical
+    advice`. Press Enter or a comma to add one. The check cannot be saved on with no topic.
+
+    API: `checks.banned_topics`: `{"enabled": true, "topics": ["politics", "medical advice"]}`.
+  </Accordion>
+  <Accordion title="Allowed topics">
+    Blocks text about none of the topics named: everything that is not about them is blocked. Reads prompts. Action:
+    block.
+
+    Setting **Topics it may talk about**: up to 50 topics of up to 100 characters, for example `billing, shipping,
+    returns`. List every topic the agent should handle. The check cannot be saved on with no topic.
+
+    API: `checks.allowed_topics`: `{"enabled": true, "topics": ["billing", "shipping"]}`.
+  </Accordion>
+  <Accordion title="Keywords">
+    Redacts or blocks words, phrases or patterns of your own. Reads prompts and answers.
+
+    Setting **Words and patterns**: a table of up to 200 rules. Each rule has a **Keyword or pattern** (up to 500
+    characters), **Match** as **Text** (the words as written, in any case) or **Pattern** (a regular expression),
+    **When found** as **Redact** or **Block**, and for redact an optional **Replace with** (up to 100 characters,
+    `<REDACTED>` by default). Rows left empty are dropped on save.
+
+    API: `checks.keywords`: `{"enabled": true, "rules": [{"keyword": "codename", "action": "redact", "replacement": "[codename]", "regex": false}]}`.
+  </Accordion>
+  <Accordion title="Valid SQL">
+    Blocks text that is not valid SQL, for agents that must send or return only SQL. Reads prompts and answers.
+    Action: block. Nothing to set.
+
+    API: `checks.valid_sql`: `{"enabled": true}`.
+  </Accordion>
+  <Accordion title="Valid OpenAPI">
+    Blocks text that is not a valid OpenAPI document. Reads prompts and answers. Action: block. Nothing to set.
+
+    API: `checks.valid_openapi`: `{"enabled": true}`.
+  </Accordion>
+</AccordionGroup>
+
+## Which checks read answers
+
+| Reads prompts only | Reads prompts and answers |
+|---|---|
+| Personal data, Prompt injection, Toxicity, Sexual content, Gibberish, Banned topics, Allowed topics | Secrets, Keywords, Valid SQL, Valid OpenAPI |
+
+When a guardrail is tried as an answer, or runs on a model's answer in the gateway, only the right-hand checks
+apply.

@@ -1,72 +1,182 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "OpenController",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#3d5a86",
+    "light": "#9db2d4",
+    "dark": "#3d5a86"
   },
-  "favicon": "/favicon.svg",
-  "navigation": {
-    "pages": [
-      {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
+  "fonts": {
+    "heading": {
+      "family": "Manrope",
+      "weight": 600
+    },
+    "body": {
+      "family": "Manrope",
+      "weight": 400
     }
   },
+  "appearance": {
+    "default": "system"
+  },
+  "background": {
+    "color": {
+      "light": "#ffffff",
+      "dark": "#1a1917"
+    }
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "section"
+  },
+  "favicon": "/favicon.svg",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "index",
+              "get-started/what-is-shadow-ai",
+              "get-started/how-it-works",
+              "get-started/rollout",
+              "get-started/concepts",
+              "get-started/quickstart",
+              "get-started/modules"
+            ]
+          },
+          {
+            "group": "Discover",
+            "pages": [
+              "discover/overview",
+              "discover/inventory",
+              "discover/map",
+              "discover/shadow-ai",
+              "discover/people",
+              "discover/spend"
+            ]
+          },
+          {
+            "group": "Govern",
+            "pages": [
+              "govern/registry",
+              "govern/approvals",
+              "govern/policies",
+              "govern/audit-log"
+            ]
+          },
+          {
+            "group": "Control",
+            "pages": [
+              "govern/respond",
+              "govern/control-actions"
+            ]
+          },
+          {
+            "group": "Observe",
+            "pages": [
+              "monitor/observability",
+              "monitor/send-traces",
+              "monitor/traces-and-issues",
+              "monitor/cost"
+            ]
+          },
+          {
+            "group": "Evaluate",
+            "pages": [
+              "monitor/evals",
+              "monitor/evaluators-and-tasks",
+              "monitor/monitors-and-datasets"
+            ]
+          },
+          {
+            "group": "LLM gateway and guardrails",
+            "pages": [
+              "runtime/llm-gateway",
+              "runtime/virtual-keys",
+              "runtime/teams-and-customers",
+              "runtime/gateway-logs",
+              "runtime/guardrails",
+              "runtime/guardrail-checks",
+              "runtime/guardrail-violations",
+              "runtime/guardrails-api"
+            ]
+          },
+          {
+            "group": "Posture",
+            "pages": [
+              "posture/findings",
+              "posture/security-policies",
+              "posture/frameworks"
+            ]
+          },
+          {
+            "group": "Improve",
+            "pages": [
+              "improve/fine-tuning",
+              "assistant/ask-ctrl"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "connect/overview",
+              "connect/aws",
+              "connect/microsoft",
+              "connect/google-cloud",
+              "connect/databricks",
+              "connect/anthropic",
+              "connect/snowflake",
+              "connect/scans"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Using the API",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/examples"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "api-reference/openapi.json"
+          }
+        ]
+      }
+    ]
+  },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:support@mintlify.com"
+        "label": "GitHub",
+        "href": "https://github.com/NeuralgoLyzr/opencontroller"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
+    ]
   },
   "contextual": {
     "options": [
       "copy",
       "view",
-      "chatgpt",
       "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
+      "chatgpt",
+      "mcp"
     ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/NeuralgoLyzr"
     }
   }
 }

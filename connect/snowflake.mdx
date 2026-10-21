@@ -1,0 +1,140 @@
+---
+title: "Connect a Snowflake account"
+description: "Create the read and control users with the generated setup script, choose how they sign in, and see what discovery reads and control changes."
+---
+
+OpenController reads a **Snowflake account** as a **service user** whose role sees what the account holds and reads none of its data. One connection is one account. It discovers **CoWork** and the **Cortex Agents** it serves, Snowflake-managed **MCP servers**, **Cortex Search** services, **semantic views** and models in the Model Registry.
+
+A connection has two users:
+
+- **The read user** (required): discovery and **Verify** sign in as it. Its role holds `MONITOR`, `USAGE` and `REFERENCES` grants and Snowflake's viewer roles, and nothing that changes anything.
+- **The control user** (optional): changes are made as it. Its role manages grants on the account. Without one, control is off.
+
+Each user signs in one of two ways:
+
+| Method | How it works | Stored secret |
+|---|---|---|
+| **Workload identity federation (recommended)** | The user trusts this deployment's AWS identity | None |
+| **Key pair** | OpenController generates the key. Its private half goes to your secrets manager; you set the public half on the user | The private key |
+
+Federation needs the deployment to run with an AWS role. Use a key pair where it does not.
+
+## What is discovered
+
+| In Snowflake | Becomes |
+|---|---|
+| Cortex Agents: display name, owner role, budget, instructions (credentials masked), sample questions | Agent |
+| An agent's orchestration model | Model, which the agent uses |
+| An agent's Cortex Analyst, Cortex Search, custom and built-in tools, skills and external MCP servers | Tool, Skill and MCP server, which the agent uses |
+| A secure agent | Agent, without its tools |
+| The CoWork object | Registry, registering the agents CoWork shows |
+| Snowflake-managed MCP servers: their tools and address | MCP server, exposing what it serves |
+| The grants on each agent and MCP server | Its owner role, and the roles and users that can edit or use it. `PUBLIC` holding one is exposure to the whole account |
+| External MCP servers behind an API integration | MCP server, with its URL |
+| Cortex Search services | Tool |
+| Semantic views | Tool |
+| Models in the Model Registry | Model |
+
+## Before you start
+
+- The account identifier: in Snowsight, your name, then **Account**, **View account details**. It is `<orgname>-<account_name>`.
+- Someone who can run SQL as **ACCOUNTADMIN**, or a role that can create users and roles and grant `MANAGE GRANTS`, once.
+- Enterprise edition or higher for the account usage views.
+
+## Connect
+
+<Steps>
+  <Step title="Open the form">
+    On **Integrations**, click **Connect**, then **Snowflake account**.
+  </Step>
+  <Step title="Fill it in">
+    **Name**, **Account identifier** and, optionally, **Warehouse**, where the account usage views are read a few times a day. Listing objects needs none, but a block does.
+
+    **Read user** (default `OPENCONTROLLER_READ`) and **Read user: signs in with**.
+
+    Under **Control user**, choose **None: discovery only**, **The read user, copied**, or **A user of its own (recommended)** with its **Control user** name (default `OPENCONTROLLER_CONTROL`) and how it signs in.
+  </Step>
+  <Step title="Run the setup script">
+    Click **Connect**. The next screen, **Let … into Snowflake**, shows the SQL to run in a Snowsight worksheet as ACCOUNTADMIN: the users, with the public keys OpenController generated, and every grant their roles hold. **Setup** on the row shows it again later.
+  </Step>
+  <Step title="Verify">
+    Click **Verify**.
+  </Step>
+</Steps>
+
+To rotate a key-pair user's key, open **Setup** and click **Generate a new key for &lt;user&gt;**. The old key stops working at once; run the script's `ALTER USER … SET RSA_PUBLIC_KEY` line again.
+
+## Permissions
+
+The setup script grants exactly these. Each row is one **Verify** check.
+
+| Surface | The read role holds |
+|---|---|
+| Sign in | A `TYPE = SERVICE` user, acting as its own role, with `DEFAULT_SECONDARY_ROLES = ()` |
+| Read only | No `OWNERSHIP`, `MODIFY`, `OPERATE`, `MANAGE GRANTS`, `CREATE` or write privilege |
+| Agents | `GRANT INHERITED MONITOR ON ALL AGENTS IN ACCOUNT`: the full spec, never the right to run one |
+| MCP servers | `GRANT INHERITED USAGE ON ALL MCP SERVERS IN ACCOUNT` |
+| Cortex Search | `GRANT INHERITED MONITOR ON ALL CORTEX SEARCH SERVICES IN ACCOUNT` |
+| Semantic views | `GRANT INHERITED REFERENCES ON ALL SEMANTIC VIEWS IN ACCOUNT` |
+| CoWork | `USAGE` on `SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT` |
+| Inherited grants | `FEATURE_RBAC_INHERITED_GRANTS = 'ENABLED'` on the account |
+| Account usage | `USAGE` on the warehouse, and `SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` |
+
+The control role holds `MANAGE GRANTS` on the account, `USAGE` on every database and schema, `MODIFY` on the CoWork object, `USAGE` on the warehouse, and the rights to keep a block's state in `OPENCONTROLLER.STATE.BLOCK_SNAPSHOTS` and the `OPENCONTROLLER.STATE.BLOCK_OWNER` tag, in your own account. That is close to SECURITYADMIN's power, and it changes grants only, never data.
+
+Neither user ever reads table data, calls an agent, a search service, an MCP tool or an AI function, or reads conversations or the files users upload to CoWork. Every statement carries the query tag `opencontroller`.
+
+## Control
+
+With a control user, an agent's and an MCP server's page has an **Access** card. Every change is made as the control user, recorded with its reason, and followed by a rescan.
+
+| Action | Cortex Agent | MCP server | What runs |
+|---|---|---|---|
+| **Share** (can use, can edit) | Yes | Can use | `GRANT USAGE` or `MODIFY` to a role or user |
+| **Remove** | Yes | Yes | `REVOKE` every privilege the role or user holds. The owner role is refused |
+| **End access for everyone** | Yes | Yes | `REVOKE … FROM ROLE PUBLIC` |
+| **Publish** | Yes | No | Adds the agent to CoWork |
+| **Block** | Yes | No | Takes ownership from the owner role with `COPY CURRENT GRANTS`, records the grants in `BLOCK_SNAPSHOTS`, and revokes them. Nobody can run the agent, its owner included |
+| **Unblock** | Yes | No | Grants them back, gives ownership back, and deletes the row |
+
+A grant inherited from a schema, database or account-wide grant cannot be revoked on one agent; the log names it. While an agent is blocked, Share, Remove, End access and Publish are refused. Dropping an agent is not offered.
+
+## Verify
+
+| Check | Passes when |
+|---|---|
+| Sign in | The user signs in and lands in the connection's own account |
+| One role | It acts as its own role alone |
+| Read only | None of the read role's grants changes anything |
+| Agents, MCP servers, Cortex Search, Semantic views | Listed; shows how many |
+| CoWork | Shows how many agents CoWork holds, or that there is none |
+| Inherited grants | One set of grants covers every database |
+| Account usage | The warehouse reads an account usage view; **not set up** without one |
+| Control sign in, Control one role | With a control user: the same, as it |
+| Control scope | The control role manages grants on the whole account |
+| Control CoWork, Control block state | It can show and hide agents in CoWork, and keep a block's state |
+
+## Scans
+
+Seven sources per account, named `snowflake:<account>:global:<family>`: `cortex.agents`, `cowork`, `mcp.servers`, `mcp.external`, `cortex.search`, `semantic.views` and `models`. Each is read with `SHOW` and `DESCRIBE` alone, which need no warehouse.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `the account refused the key of …` | The user's `RSA_PUBLIC_KEY` is not the connection's. Run the setup script again |
+| `the account refused this deployment's AWS identity …` | The user's `WORKLOAD_IDENTITY` must name this deployment's AWS role, as the script shows |
+| `this deployment has no AWS identity …` | Federation needs an AWS role; use a key pair |
+| One role: acts with secondary roles too | `ALTER USER <user> SET DEFAULT_SECONDARY_ROLES = ()` |
+| Inherited grants off | `ALTER ACCOUNT SET FEATURE_RBAC_INHERITED_GRANTS = 'ENABLED'`, then the script's account-wide grants |
+| Block: needs a warehouse | Give the connection a warehouse, and the control role `USAGE` on it |
+
+## Remove
+
+Click the trash icon on the row: the stored private keys are deleted. Then in Snowflake run `DROP USER OPENCONTROLLER_READ; DROP ROLE OPENCONTROLLER_READ;`, the same for the control user, and `DROP DATABASE OPENCONTROLLER;` if control was on.
+
+## API
+
+- `POST /v1/connections` with `"provider": "snowflake"` and `snowflake.account`, optional `warehouse`, `read` and `control` (`user`, `method` of `wif` or `key_pair`).
+- `GET /v1/connections/{connection_id}/snowflake/setup`: the setup script.
+- `PATCH /v1/connections/{connection_id}` with `{"read": {"rotate_key": true}}` to rotate a key.

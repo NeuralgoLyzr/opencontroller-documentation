@@ -1,0 +1,111 @@
+---
+title: "Fine-tuning"
+description: "Train small models of your own on what your agents do, in the OpenFinetuner studio shown inside OpenController."
+---
+
+Fine-tuning trains small models of your own on what your agents do. The training runs in its own studio,
+OpenFinetuner, on the machines it trains on. OpenController does not train anything itself. It shows the studio's
+own console in place, under **Fine-tuning** in the sidebar, and routes every call that console makes through its
+own API, so your roles decide what each person may do and every change is recorded with their name.
+
+**Who can do this.** Connecting the studio needs `modules:endpoint` (the admin role). Once connected, viewers read,
+operators train, and admins manage the studio's tokens; see [What each role may do](#what-each-role-may-do).
+
+## Before it is connected
+
+Until a studio is set, the **Fine-tuning** page shows an empty state titled **No fine-tuning studio connected**:
+
+> Fine-tuning runs in its own studio, OpenFinetuner, on the machines it trains on. Set where it runs in Settings,
+> and its pages show here.
+
+An admin sees a **Connect the studio** button, which opens **Settings → Fine-tuning**. Anyone else sees
+"An administrator connects it."
+
+## Connect the studio
+
+You need a running OpenFinetuner that OpenController can reach over HTTP, and that allows OpenController's console
+to frame it.
+
+<Steps>
+  <Step title="Allow framing">
+    OpenFinetuner frames only for the origins it is told to. `localhost` on any port is built in. For any other
+    address, add your OpenController console's origin to the studio's `SHADOWLM_FRAME_ANCESTORS`
+    (space- or comma-separated).
+  </Step>
+  <Step title="Choose a token">
+    OpenController signs in to the studio with a bearer token. Use the studio's own `SHADOWLM_API_KEY`, or better,
+    a machine token minted for OpenController in the studio (**Machines → Create machine token**), which you can
+    revoke on its own. A studio run without authentication takes no token.
+  </Step>
+  <Step title="Set the endpoint">
+    Open **Settings → Fine-tuning**.
+
+    - **Provider**: OpenFinetuner.
+    - **Base URL**: where OpenController reaches the studio, for example `https://finetuner.example.com`, or
+      `http://localhost:8329` beside a local stack.
+    - **Its console is at another address**: click this when the browser reaches the studio somewhere other than the
+      Base URL (an in-cluster Base URL, say) and fill in **Console address**. Left empty, the console is shown from
+      the Base URL.
+    - **Sign in**: **Token** for a bearer token, or **No sign-in** for a studio whose authentication is off.
+    - **Token**: the token you chose.
+
+    Click **Save**. The credential goes to the secrets manager and is never shown again.
+  </Step>
+  <Step title="Check the connection">
+    Click **Check connection**. OpenController runs two checks against the studio: **Reachable** (its sign-in page
+    answers) and **Signed in** (its health answers the token). A failed check names what to fix.
+  </Step>
+</Steps>
+
+<Warning>
+The studio's address must be a different origin from OpenController's own console. Set at the same address, the
+page shows **The studio cannot be shown from this address**: "It is set at opencontroller's own address, and
+opencontroller frames only consoles at another. Give it its own address in Settings."
+</Warning>
+
+To remove the studio, click **Disconnect** on the same page. The studio keeps running, with its datasets, runs and
+models.
+
+## What the console shows
+
+The **Fine-tuning** entry in the sidebar is the studio's own menu, sent by the studio itself: its sections
+(**Overview**, **Datasets**, **Models**, **New run**, **Runs**, **Playground**, **Machines**), its actions (its Hugging
+Face token, freeing GPU memory) and its links. Nothing is copied into OpenController, so what the studio offers is
+what you see. Each section has an address of its own, `/fine-tuning/<section>`, and a run or dataset opened within
+one is kept in the address too, so links and the back button work.
+
+The studio stays loaded as you move between sections, follows OpenController's light or dark theme, and shows its
+notifications in OpenController. It never sees your session: OpenController hands it a short-lived pass that works
+only for the fine-tuning module's calls, and renews it while the page is open. A refusal from OpenController shows as
+a notification in the studio.
+
+## What each role may do
+
+Every call the studio makes goes through OpenController, which decides by the caller's role.
+
+| Role | In the studio |
+|---|---|
+| Viewer | Read everything: datasets, models, runs with their metrics, logs and checkpoints, machines and settings. A dataset's rows (what agents were asked and answered) need `observability:content` as well; without it, the dataset's name, format and size show and the rows do not. |
+| Operator | Also add and remove datasets, download and add models, start and cancel training runs, download the trained weights, use the playground, and free GPU memory. |
+| Admin | Also set the studio's Hugging Face token and mint or revoke the machine tokens its training machines sign in with. |
+
+Signing in to the studio itself, and the routes only its training machines call, stay out of reach through
+OpenController. Training machines connect to the studio directly.
+
+## Sizes and waits
+
+- A dataset is sent whole, in one request, up to 64 MiB.
+- A model loading before its first answer in the playground, or a dataset fetched from Hugging Face, may take up to
+  five minutes. A load balancer in front of OpenController must allow an idle connection at least that long.
+- An answer from the studio is read up to 16 MiB. Larger trained weights are downloaded from the studio directly:
+  use **Open on its own**.
+
+## API
+
+| Method | Path | What it does |
+|---|---|---|
+| `GET` | `/v1/modules/fine_tuning/endpoint` | The studio's endpoint, as set. |
+| `PUT` | `/v1/modules/fine_tuning/endpoint` | Set the provider, base URL, console address and sign-in. |
+| `POST` | `/v1/modules/fine_tuning/endpoint/check` | Run the connection checks. |
+| `DELETE` | `/v1/modules/fine_tuning/endpoint` | Disconnect the studio. |
+| `*` | `/v1/modules/fine_tuning/proxy/{path}` | The studio's own API, through OpenController, by role. |
