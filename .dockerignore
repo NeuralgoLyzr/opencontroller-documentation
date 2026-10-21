@@ -1,0 +1,7 @@
+# Only what the export reads.
+.git
+.github
+.impeccable
+styles
+scripts/__pycache__
+Dockerfile

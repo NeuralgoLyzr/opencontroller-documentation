@@ -49,3 +49,28 @@ jobs:
       - run: python3 scripts/openapi.py --check
       - run: python3 scripts/atlas.py --check
       - run: python3 scripts/roles.py --check
+
+  # The container: the site exported and served by nginx (Dockerfile), for a
+  # cell to run its own copy. Every push to main publishes it to GitHub's
+  # registry, tagged by commit and as latest; a pull request only builds it.
+  image:
+    runs-on: ubuntu-latest
+    needs: [style, links]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/neuralgolyzr/opencontroller-documentation:${{ github.sha }}
+            ghcr.io/neuralgolyzr/opencontroller-documentation:latest

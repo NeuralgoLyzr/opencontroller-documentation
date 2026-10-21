@@ -62,3 +62,16 @@ through CSS variables, so they stay sharp at any width and follow the theme. A p
 ## Publish
 
 Mintlify's GitHub app watches this repository: every pull request gets a preview, and `main` is published.
+
+## The container
+
+`Dockerfile` builds the site as a container: the pages exported by `mint export` (nothing of Mintlify's runs
+afterwards), served by nginx with the rules the export asks for (`docker/nginx.conf`). CI publishes it on every
+push to main as `ghcr.io/neuralgolyzr/opencontroller-documentation`, tagged by commit and as `latest`; a cell runs it
+beside the console where the internet is not at hand (the product's `docs` service in Compose, `docs.enabled` in the
+Helm chart), and the console's Documentation button opens it.
+
+```sh
+docker build -t opencontroller-documentation .
+docker run --rm -p 8081:8080 opencontroller-documentation   # http://localhost:8081
+```
