@@ -1,55 +1,93 @@
 ---
-title: "What is OpenController"
+title: "OpenController"
 description: "Every AI agent in every cloud, in one inventory, with the authority to govern, stop and watch them."
+mode: "wide"
 icon: "book-open"
 ---
 
-<div className="oc-hero">
-
-<p>Your organization already runs more AI agents than anyone has counted. Nobody owns the list.</p>
-
-<p>They were built in Copilot Studio, Bedrock, Vertex AI, Databricks and Snowflake by teams who needed them, and most of them never passed a security review. Each one holds an identity, reaches data, calls tools and talks to people.</p>
-
-<p>OpenController is the control plane that owns the list. It connects to each cloud and platform with read access, builds one inventory of every agent and everything each agent uses, and gives you the authority to decide which agents are allowed, stop the ones that are not, and watch the ones that run. Agents stay where they were built. Nothing moves.</p>
-
-<img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
-<img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
-
+<div className="oc-banner">
+  <div>
+    <div className="oc-t">Quickstart</div>
+    <span>Connect one cloud with a read credential and see your AI inventory in minutes. Nothing moves.</span>
+  </div>
+  <div className="oc-banner-actions">
+    <a className="oc-btn oc-btn-primary" href="/get-started/quickstart">Get started</a>
+    <a className="oc-btn" href="/connect/overview">Connect a cloud</a>
+  </div>
 </div>
 
-## One platform, six capabilities
+<div className="oc-panel">
+  <div className="oc-panel-head">
+    <div className="oc-t">See how it works</div>
+    <span>One agent, from discovery to a score, in the order the console runs it.</span>
+  </div>
+  <Tabs>
+    <Tab title="Discover">
+      <img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
+      <img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
+      Discovery reads each connected cloud with a read credential and lists every agent and everything each agent uses: models, tools, MCP servers, identities, memories, sharing. It never invokes an agent, reads a conversation or fetches a secret. [AI Inventory](/discover/inventory) and [Shadow AI](/discover/shadow-ai).
+    </Tab>
+    <Tab title="Govern">
+      <img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+      <img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+      Someone registers an agent and names an owner. An approver registers or rejects it, under a policy that says which kinds must be registered and whether approvals need separation of duties. [Registry](/govern/registry), [Approvals](/govern/approvals) and [Policies](/govern/policies).
+    </Tab>
+    <Tab title="Control">
+      <img className="block dark:hidden" src="/images/diagrams/credentials-light.png" alt="A read credential for discovery, a separate control credential for changes" />
+      <img className="hidden dark:block" src="/images/diagrams/credentials-dark.png" alt="A read credential for discovery, a separate control credential for changes" />
+      With a control credential you grant per platform, block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on. Every action is audited. [Control actions](/govern/control-actions).
+    </Tab>
+    <Tab title="Run">
+      <img className="block dark:hidden" src="/images/diagrams/gateway-light.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+      <img className="hidden dark:block" src="/images/diagrams/gateway-dark.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+      Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block, redact or mask personal data, secrets, prompt injection and off-topic use. [LLM gateway](/runtime/llm-gateway) and [Guardrails](/runtime/guardrails).
+    </Tab>
+    <Tab title="Observe">
+      <img className="block dark:hidden" src="/images/diagrams/traces-light.png" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
+      <img className="hidden dark:block" src="/images/diagrams/traces-dark.png" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
+      Agents send traces to a collector in your environment. The console shows what each run did, what it cost and where it failed, and raises issues from the traces. [Observability](/monitor/observability).
+    </Tab>
+    <Tab title="Evaluate">
+      <img className="block dark:hidden" src="/images/diagrams/evals-light.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
+      <img className="hidden dark:block" src="/images/diagrams/evals-dark.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
+      Evaluators judge the traces with a model and record scores, and monitors say when an agent gets worse. [Evals](/monitor/evals).
+    </Tab>
+  </Tabs>
+</div>
 
-<div className="oc-ledger">
-  <div className="oc-row">
-    <Icon icon="radar" />
-    <a href="/discover/inventory">AI discovery</a>
-    <p><strong>One inventory</strong> of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, read on a schedule. The Shadow AI view shows what nobody has registered.</p>
-  </div>
-  <div className="oc-row">
-    <Icon icon="clipboard-check" />
-    <a href="/govern/registry">Governance</a>
-    <p><strong>A registry</strong> of approved agents with named owners, a registration policy that says what must be registered, approvals with separation of duties, and an audit trail.</p>
-  </div>
-  <div className="oc-row">
-    <Icon icon="octagon-x" />
-    <a href="/govern/control-actions">Control</a>
-    <p><strong>Block or quarantine</strong> an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on, with a control credential you grant per platform.</p>
-  </div>
-  <div className="oc-row">
-    <Icon icon="shield" />
-    <a href="/runtime/llm-gateway">Runtime security</a>
-    <p><strong>An LLM gateway</strong> in front of every model provider, with virtual keys, budgets and logs, and guardrails that block, redact or mask personal data, secrets, prompt injection and off-topic use in prompts and answers.</p>
-  </div>
-  <div className="oc-row">
-    <Icon icon="scan-search" />
-    <a href="/posture/findings">Posture</a>
-    <p><strong>Thirty security policies</strong> checked continuously against the inventory, raising findings with severities, mapped to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.</p>
-  </div>
-  <div className="oc-row">
-    <Icon icon="activity" />
-    <a href="/monitor/observability">Observability and evals</a>
-    <p><strong>Traces</strong> of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over time so you know when one gets worse.</p>
-  </div>
+## What it covers
+
+<div className="oc-cards">
+  <a className="oc-card" href="/discover/inventory">
+    <div className="oc-card-media"><Icon icon="radar" /></div>
+    <div className="oc-t">AI discovery</div>
+    <span>One inventory of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, read on a schedule. Shadow AI shows what nobody has registered.</span>
+  </a>
+  <a className="oc-card" href="/govern/registry">
+    <div className="oc-card-media"><Icon icon="clipboard-check" /></div>
+    <div className="oc-t">Governance</div>
+    <span>A registry of approved agents with named owners, a registration policy, approvals with separation of duties, and an audit trail.</span>
+  </a>
+  <a className="oc-card" href="/govern/control-actions">
+    <div className="oc-card-media"><Icon icon="octagon-x" /></div>
+    <div className="oc-t">Control</div>
+    <span>Block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on.</span>
+  </a>
+  <a className="oc-card" href="/runtime/llm-gateway">
+    <div className="oc-card-media"><Icon icon="shield" /></div>
+    <div className="oc-t">Runtime security</div>
+    <span>An LLM gateway with virtual keys, budgets and logs, and guardrails that block, redact or mask personal data, secrets, prompt injection and off-topic use.</span>
+  </a>
+  <a className="oc-card" href="/posture/findings">
+    <div className="oc-card-media"><Icon icon="scan-search" /></div>
+    <div className="oc-t">Posture</div>
+    <span>Thirty security policies checked continuously, raising findings with severities, mapped to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.</span>
+  </a>
+  <a className="oc-card" href="/monitor/observability">
+    <div className="oc-card-media"><Icon icon="activity" /></div>
+    <div className="oc-t">Observability and evals</div>
+    <span>Traces of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over time.</span>
+  </a>
 </div>
 
 ## Who it is for

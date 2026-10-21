@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "maple",
+  "theme": "almond",
   "name": "OpenController",
   "colors": {
     "primary": "#3d5a86",
@@ -18,7 +18,7 @@
     }
   },
   "appearance": {
-    "default": "system"
+    "default": "dark"
   },
   "background": {
     "color": {
