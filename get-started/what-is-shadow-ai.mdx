@@ -1,0 +1,42 @@
+---
+title: "What is shadow AI"
+description: "AI agents nobody registered, running on platforms the organisation already pays for."
+---
+
+Shadow AI is every AI agent, model deployment, MCP server or tool that exists in your clouds and SaaS platforms
+without anyone having registered it, reviewed it, or taken ownership of it.
+
+It is not malicious, and it is rarely hidden on purpose. It is the Copilot Studio agent a sales team built in an
+afternoon, the Bedrock agent a developer left running after a proof of concept, the Vertex AI agent that reads a
+customer table nobody reviewed, the MCP server exposing an internal API. Every one of these platforms lets anyone with
+a licence create an agent, and almost none of them tell the security team.
+
+## Why it matters
+
+- **Agents act.** Unlike a chatbot, an agent calls tools, reads data stores, sends messages and runs code. An
+  unreviewed agent is an unreviewed integration with your systems.
+- **They carry identities.** Agents run as service principals, roles and keys. Those identities outlive the people
+  who created them.
+- **They are shared.** An agent published to a Microsoft 365 catalog or an organisation-wide share reaches everyone,
+  including people who should not have the data behind it.
+- **Frameworks now ask about them.** The OWASP LLM and agentic Top 10, NIST AI RMF, ISO 42001 and the EU AI Act all
+  expect an inventory and an owner for each AI system.
+
+## How OpenController sees it
+
+OpenController reads each connected platform and places every discovered asset in one of these states:
+
+| State | Meaning |
+|---|---|
+| **Shadow** | Discovered, and nobody has registered it. |
+| **Awaiting approval** | Someone asked to register it, and an approver has not yet decided. |
+| **Registered** | Approved, with an owner, in the registry. |
+| **Unmanaged** | Discovered on a platform where OpenController cannot register or act, listed for visibility. |
+
+The **Shadow AI** page shows the shadow and awaiting-approval assets, with the share of governed assets that are
+registered, as a map from accounts to products to agents to what the agents use. From there you register one agent
+or a whole connection at once, which sends it for approval.
+
+<Card title="Shadow AI page" href="/discover/shadow-ai">
+  How to read the map and register what you find.
+</Card>

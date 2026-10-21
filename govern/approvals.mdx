@@ -1,0 +1,69 @@
+---
+title: "Approvals"
+description: "Approvals is the queue of registration requests waiting for an administrator, and the record of what was decided before."
+---
+
+Every request to register an asset lands here. Approving one registers the asset; rejecting it leaves the asset shadow. The **Decided** tab keeps rejected, revoked and withdrawn registrations, with who decided and why.
+
+**Who can do this:** `registry:read` to see the queue. `registry:decide` (an administrator's by default) to approve, reject and revoke. A requester can withdraw their own request with `registry:request`.
+
+## The page
+
+**Pending** shows the queue, with the number waiting; **Decided** the history. **Search** matches name, owner or purpose.
+
+| Column | Pending | Decided |
+|---|---|---|
+| Checkbox | Selects for a bulk decision | |
+| **Asset** | Name | Name |
+| **Kind** | Kind badge | Kind badge |
+| **Owner** | The accountable owner | The accountable owner |
+| **Requested** / **Decided** | Who asked, and when | Who last acted, and when |
+| **Outcome** | | **Rejected**, **Revoked** or **Withdrawn** |
+
+Clicking a row opens the registration: its state, source, a link to the asset in the inventory, the actions, **Owner** (marked "from the platform" when the platform named them), **Purpose**, **Requested**, **Policy** version and the **History** of every step with its note.
+
+## Deciding one request
+
+<Steps>
+  <Step title="Open the request">
+    Click its row.
+  </Step>
+  <Step title="Approve, Reject or Withdraw">
+    **Approve** takes an optional **Note**. **Reject** requires an answer to **Why is it rejected?**. **Withdraw** is offered to the requester and to administrators and takes no note.
+  </Step>
+  <Step title="Confirm">
+    The decision is recorded in the registration's history with your name and the time.
+  </Step>
+</Steps>
+
+Under the default policy an administrator cannot approve a request they made themselves: the **Approve** button says "You requested it: another administrator approves it". Turn **Separation of duties** off on the [Policies](/govern/policies) page to allow it.
+
+## Deciding several at once
+
+Select rows and click **Approve selected** or **Reject selected**. The dialog takes one **Note** (required for a rejection) and decides each request as if alone: a request you made yourself is refused under separation of duties, and the toast names up to three refusals with the reason.
+
+## What happens to the asset
+
+| Decision | Effect |
+|---|---|
+| Approve | The asset is **Registered**: it appears on the Registry page, its Registration card shows who approved it and when, and it colours green on the map. Where the control module blocks agents, a registered agent can be blocked. |
+| Reject | The asset stays **Shadow**. The Registration card says the last request was rejected and offers **Register** again. |
+| Withdraw | The asset is **Shadow** again. |
+
+<Note>
+A block from the Access card on a shadow agent can register it as pending in the same step, with the operator as owner and the block's reason as purpose. That request then waits here like any other.
+</Note>
+
+## Notifications
+
+OpenController does not send notifications when a request is made or decided. The queue, and the **Pending** count on this page and on the Overview, are how administrators see what waits.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/registry/registrations?state=pending` | The queue |
+| `POST` | `/v1/registry/registrations/{registration_id}/approve` | Approve, with an optional note |
+| `POST` | `/v1/registry/registrations/{registration_id}/reject` | Reject, with a note |
+| `POST` | `/v1/registry/registrations/{registration_id}/withdraw` | Withdraw |
+| `POST` | `/v1/registry/decisions` | Approve or reject several at once |

@@ -1,0 +1,53 @@
+---
+title: "People"
+description: "The People page lists everyone in the connected tenants who holds an AI licence or has usage put down to them, with what they hold, when they last used it, and what they cost."
+---
+
+Spend is the money; People is who it is spent on. A person here is an email address in a connected tenant that holds a licence (read from Microsoft 365) or has a bill put down to it (Claude Code use, read from Anthropic). The page shows the last 30 days.
+
+<Note>
+This is not the same as an asset's owner or sponsor. Who answers for an asset is on the asset's **Ownership** tab in the [AI Inventory](/discover/inventory); it comes from your teams' rules and from what the platform says about the asset.
+</Note>
+
+**Who can do this:** `spend:people`, an administrator's permission by default. Without it the page says so.
+
+## Where people come from
+
+People show once Microsoft 365 or Anthropic is connected under Integrations and Spend has read its licences or usage. Until then the page reads "No one read yet". A person's **Department** is the one the directory gives them.
+
+## The five numbers
+
+| Number | What it is |
+|---|---|
+| **People** | How many, and how many licences they hold between them |
+| **Licences a month** | What the priced licences cost a month. If no prices are set, it says to set them in Spend; otherwise it says how many people hold an unpriced licence |
+| **Idle** | People none of whose licences were used in 30 days, and what their licences cost a month. Needs a source that reports usage |
+| **Usage, 30 days** | Usage put down to people, such as Claude Code |
+| **Model calls, 30 days** | With observability on: the traced model calls attributed to people who hold a licence |
+
+## Views
+
+**People** is one row per person, searchable by name, address, department or licence, and narrowed with **Show**: **All**, **Idle** or **Unpriced**. Rows are sorted by what each person costs: licences a month plus usage plus model calls. Pages hold 50 rows; **Show more** loads the next.
+
+| Column | What it shows |
+|---|---|
+| **Person** | Name and address, with the cloud's icon |
+| **Department** | From the directory |
+| **Licences** | Each licence held, a count beside it when more than one seat |
+| **Last active** | When they last used any licence. "Unknown" when the source reports no activity; shown in amber when idle |
+| **A month** | Their licences at the prices set in Spend. "Not priced" when none of theirs has a price |
+| **Usage, 30 days** | Usage put down to them; the tooltip splits it by service |
+| **Model calls** | With observability on: traced calls attributed to them |
+
+**Departments** adds the same up per department: **People**, **Seats**, **Idle people**, **A month**, **Usage, 30 days**, **Model calls**, and a share bar. People with no department are grouped under "None set".
+
+## Relation to Spend
+
+The Spend page's **Licences** panel links here as "Who holds them: People", and its **Top spenders** panel as "Everyone: People". Licence prices are set on Spend with `spend:prices` and apply here.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/spend/people` | Each person holding a licence now, or with usage over the window, costliest first. Needs `spend:people` |
+| `GET` | `/v1/observability/cost?by=user` | Traced model calls by person, when observability is on |

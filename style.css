@@ -1,0 +1,48 @@
+/* OpenController's look, as the console has it: Manrope for text, JetBrains
+   Mono for code, warm neutrals, a 0.5rem radius. docs.json sets the fonts,
+   the primary and the page backgrounds; this file covers what it cannot. */
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --oc-foreground: #141311;
+  --oc-muted-foreground: #635d51;
+  --oc-muted: #e8e4dd;
+  --oc-border: #e3ded4;
+  --oc-sidebar: #f8f7f4;
+  --oc-radius: 0.5rem;
+}
+
+.dark {
+  --oc-foreground: #ebe8e3;
+  --oc-muted-foreground: #a39e95;
+  --oc-muted: #23221f;
+  --oc-border: #2a2926;
+  --oc-sidebar: #1a1917;
+}
+
+code, pre, kbd, samp, .font-mono {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+
+body {
+  color: var(--oc-foreground);
+  letter-spacing: -0.005em;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+}
+
+/* Cards, callouts, tables and code blocks share the console's radius and
+   border colour instead of Mintlify's rounder defaults. */
+.card, .callout, .prose table, .prose pre, [class*="rounded-xl"], [class*="rounded-2xl"] {
+  border-radius: var(--oc-radius) !important;
+}
+
+.card, .callout {
+  border-color: var(--oc-border) !important;
+}
+
+#sidebar, #navbar {
+  background-color: var(--oc-sidebar);
+}

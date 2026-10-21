@@ -1,0 +1,73 @@
+---
+title: "Audit log"
+description: "The audit log records every change made from OpenController, whether it worked or not: changes to AI assets, and who signed in and changed people, roles and settings."
+---
+
+The audit log is the organization's record. It lives under **Settings, Audit log** (the `/audit` address redirects there). It has two tabs, each backed by its own log.
+
+**Who can do this:** `actions:read` (a viewer's permission) for **AI assets**. `audit:read` (an administrator's) for **Identity & access**; without it only the first tab is shown.
+
+## AI assets
+
+Every [control action](/govern/control-actions) taken on an agent, newest first, including the ones that failed. Each entry shows what was done (Shared with, Removed, Ended organization-wide sharing, Published, Blocked, Unblocked, Deleted, Routed through the LLM gateway, Taken off the LLM gateway), on which asset, when, by whom, and whether the agent was published afterwards. A failed entry carries the error.
+
+Each record holds:
+
+| Field | Meaning |
+|---|---|
+| `action` | `grant`, `revoke`, `org_wide`, `publish`, `block`, `unblock`, `delete`, `route_gateway` or `unroute_gateway` |
+| `principal`, `role` | Who was shared or removed, and whether to use or edit |
+| `reason` | What the operator typed |
+| `actor`, `actor_kind` | Who did it: a person, a service account, or the console with authentication off |
+| `status` | `succeeded` or `failed`, with `error` |
+| `detail` | What else happened: nothing to change, what a cascade removed, access that remains through other roles |
+| `partial` | The change succeeded but part of a cascade did not |
+| `publish`, `publish_error` | Whether the agent was published after the change: `succeeded`, `failed` or `skipped` |
+| `started_at`, `finished_at` | When |
+
+The same entries appear on the agent's own page as its change history. The tab reads the latest 200 and refreshes every 15 seconds. Before any change, it reads "No changes yet".
+
+## Identity & access
+
+Who signed in, and who changed people, roles, teams, projects, connections, keys and settings. The **Show** selector narrows the list to one kind of event; "everything" is the default, with the total beside it.
+
+| Column | What it shows |
+|---|---|
+| **When** | Relative time; the exact time is the tooltip |
+| **What** | The event kind, with a **failed** badge when it failed |
+| **Who** | The actor; service accounts and the console are marked |
+| **To what** | The subject: a user, service account, key, team, connection or the organization |
+| **Detail** | What changed, in words. Never a secret value |
+
+The kinds of event are:
+
+<AccordionGroup>
+  <Accordion title="Sign-in">
+    `sign_in`, `sign_in_failed`, `sign_in_refused` (a locked account), `sign_out`
+  </Accordion>
+  <Accordion title="People and access">
+    `user.created`, `user.changed`, `user.removed`, `password.changed`, `service_account.created`, `service_account.changed`, `service_account.removed`, `key.minted`, `key.revoked`, `rules.changed`, `team.created`, `team.changed`, `team.removed`, `ownership.changed`, `scim_user.created`, `scim_user.changed`, `scim_user.removed`, `scim_group.created`, `scim_group.changed`, `scim_group.removed`
+  </Accordion>
+  <Accordion title="Organization and sign-on">
+    `org.changed`, `sso.connected`, `sso.changed`, `sso.disconnected`, `scim_token.minted`
+  </Accordion>
+  <Accordion title="Integrations and settings">
+    `connection.created`, `connection.changed`, `connection.removed` (which fields changed, never their values), `scan_schedule.changed`, `posture_policy.changed`, `project.created`, `project.changed`, `project.removed`
+  </Accordion>
+  <Accordion title="LLM gateway and guardrails">
+    `virtual_key.created`, `virtual_key.changed`, `virtual_key.rotated`, `virtual_key.removed`, `guardrail.created`, `guardrail.changed`, `guardrail.removed`, `guardrail_connection.created`, `guardrail_connection.changed`, `guardrail_connection.removed`, `opa_policy.created`, `opa_policy.changed`, `opa_policy.removed`
+  </Accordion>
+</AccordionGroup>
+
+Each event carries the request id it happened in, so it can be matched to the API's logs. A store that cannot be written is logged by the server and never fails the request it happened in.
+
+## Retention and export
+
+Both logs are kept in the platform's MongoDB database without a time limit; there is no retention setting. The console has no export button. To export, page through the API with `limit` and `offset`.
+
+## API
+
+| Method | Path | Parameters |
+|---|---|---|
+| `GET` | `/v1/actions` | `asset_id`, `limit` (1 to 200, default 50), `offset` |
+| `GET` | `/v1/audit/events` | `kind`, `actor`, `limit` (up to 500, default 100), `offset`. Returns the events, the total, and every kind for a filter |

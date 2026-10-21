@@ -1,0 +1,81 @@
+---
+title: "Security policies"
+description: "The thirty checks the posture runs over your inventory, what each looks for, and how to turn them on and off."
+---
+
+A security policy is one detector the posture runs over the inventory. Each one tests a single risk, such as an API key that never expires or an agent that calls models around the LLM gateway, on the clouds where it can be seen. When a policy matches an asset, that is a finding on [Findings](/posture/findings). The **Security policies** page, under Posture, is where you decide which policies run.
+
+Security policies are not the same as governance policies. The **Policies** page under Govern holds the registration policy: what counts as a shadow asset, what a registration request must state, who approves it. Security policies only read the inventory and report.
+
+**Who can do this:** `posture:read` lets you read the page. Switching a policy on or off, or setting the allowed model providers, needs `posture:govern`. Each change is written to the audit log.
+
+## Turning policies on and off
+
+A change is saved as you make it, and findings follow at the next evaluation, within a minute.
+
+<Steps>
+<Step title="Find the policy">
+Filter by cloud with the **Provider** control (**Every provider** or one cloud), and browse the tree on the left by **category** (categories and their classes) or by **framework** (frameworks and their controls). Search by name. **Clear the filters** resets the page.
+</Step>
+<Step title="Switch it">
+Each row has an **On** switch. On means the policy runs at each evaluation, on every cloud it covers, and lists what it finds in Findings. Off means it does not run on any cloud, and what it found leaves Findings. **Turn all on** and **Turn all off** switch every policy in view; with a provider filter set the buttons read **everywhere**, because a policy turns on or off on every cloud it covers, not on one.
+</Step>
+<Step title="Read why it runs or does not">
+Click a row to open the policy. The drawer shows the **Detector** switch, **Clouds it covers** and **Frameworks it answers to**. When a policy cannot run, its row says **Not running** and why: it needs a source that is off (the registry, owners, the LLM gateway, traces, evaluations or an allowlist) or that could not be read.
+</Step>
+</Steps>
+
+### Allowed model providers
+
+The policy **SUP-3 Models from providers the organization does not allow** needs a list to compare against. Open it and, under **Allowed model providers**, switch on the vendors the inventory has seen, or type **Another provider** and click **Allow**. A model from any other provider is a finding. With no provider allowed, the policy does not run. The list holds up to 50 names of up to 64 characters each, stored lowercased.
+
+## The catalogue
+
+The table columns are Policy (its title, why it matters, framework chips and any **Not running** reason), Severity, Providers (the clouds it covers) and On. The **Framework guides** button opens the guide for each framework; see [Frameworks](/posture/frameworks).
+
+| Id | Policy | Class | Severity | Needs |
+|---|---|---|---|---|
+| EXP-1 | Assets anyone can use without signing in | Authentication | High | |
+| EXP-2 | Gateways without inbound authentication | Authentication | High | |
+| EXP-3 | Assets reachable from the internet | Network exposure | Medium | |
+| EXP-4 | Runtimes and projects on public networking | Network exposure | Medium | |
+| EXP-5 | Assets shared with the whole organization | Sharing | Medium | |
+| EXP-6 | Agents that read the open web | Untrusted input | Low | |
+| IAM-1 | Agents acting with their maker's credentials | Delegated identity | High | |
+| IAM-2 | Assets that share one identity | Delegated identity | Medium | |
+| IAM-3 | API keys that never expire | API keys | Medium | |
+| IAM-4 | API keys unused for 30 days | API keys | Medium | |
+| IAM-5 | API keys made by someone who is not a member | API keys | High | |
+| IAM-6 | Tools signing in with a static API key | API keys | Medium | |
+| DAT-1 | Credentials in environment variables | Secrets | High | |
+| DAT-2 | Credentials written into instructions | Secrets | High | |
+| DAT-3 | Outside input, private data and a way to act, in one agent | Data exfiltration | Critical | |
+| AGY-1 | Destructive tools, and the agents that can call them | Excessive agency | High | |
+| AGY-2 | Generative agents with little or no instructions | System instructions | Medium | |
+| AGY-3 | Agents that run code they write | Excessive agency | Medium | |
+| AGY-4 | Agents that call other agents | Multi-agent | Low | |
+| SUP-1 | Agents using MCP servers outside the registry | Unapproved components | High | The registry |
+| SUP-2 | Tools, servers and models reached without TLS | Encryption in transit | Medium | |
+| SUP-3 | Models from providers the organization does not allow | Unapproved components | Medium | Allowed model providers |
+| RT-1 | Agents with no guardrail and no gateway | Guardrails | Medium | |
+| RT-2 | Agents calling models around the gateway | Gateway coverage | Low | The LLM gateway |
+| GOV-1 | Shadow assets | Inventory | Medium | The registry |
+| GOV-2 | Assets nobody answers for | Ownership | Medium | Owners |
+| GOV-3 | Assets whose owner has left | Ownership | High | Owners |
+| GOV-4 | Published agents nobody uses | Inventory | Medium | |
+| GOV-5 | Agents published from the default environment | Environments | Low | |
+| OBS-1 | Agents nobody traces | Tracing | Medium | Observability |
+| OBS-2 | Traced agents nobody evaluates | Evaluation | Low | Observability and evals |
+
+A few details worth knowing when you read a finding:
+
+- **DAT-1** reads only the names of environment variables, and **DAT-2** keeps only the shape of what it matched, never the value.
+- **AGY-2** flags generative agents whose instructions are under 100 characters.
+- **GOV-4** flags a published agent with no use for 90 days, and leaves agents under 30 days old alone.
+- **OBS-1** counts an agent as traced when a project stood for it in the last 30 days; **OBS-2** counts it as evaluated when a result scored it in the last 90 days.
+- **RT-1** applies to platforms where agents are built in code, where a guardrail or the gateway is the only runtime protection.
+
+## API
+
+- `GET /v1/posture/policy`: which policies are off and the allowed model providers.
+- `PUT /v1/posture/policy`: set them; the body is `{"disabled": [...], "model_providers": [...]}`.

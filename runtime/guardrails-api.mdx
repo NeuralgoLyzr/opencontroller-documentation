@@ -1,0 +1,193 @@
+---
+title: "Guardrails API"
+description: "Check a prompt or an answer against your guardrails from any application, with one call, before and after the model."
+---
+
+Any application can hold what it sends to a model, and what comes back, to the organisation's guardrails without
+going through the LLM gateway: one call to `POST /v2/guardrails/inference` before the model, and one after. The
+request carries the completion as the application holds it, in OpenAI's format or Anthropic's; the answer says
+whether it is blocked and what to redact. The completion itself is never rewritten, and the guardrail engine stays
+inside your OpenController.
+
+In the console, **Use it anywhere** on any guardrail shows this call with the guardrail's id and your
+OpenController's address filled in, in curl, Python and TypeScript.
+
+## Authentication
+
+Use a service account's key, which starts with `cpk_`, as a bearer token. Service accounts are made under
+**Settings**, then **Service accounts**.
+
+```
+Authorization: Bearer <your service-account key>
+```
+
+The route needs `guardrails:test`, held by the Operator role and above. A viewer's key is refused with 403. These
+calls are not written to the audit log: they change nothing, and an application makes one on every prompt.
+
+## Check a completion
+
+`POST /v2/guardrails/inference`
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`.
+</ParamField>
+<ParamField header="X-Completion-Format" type="string" default="openai">
+  The completion's format: `openai` or `anthropic`.
+</ParamField>
+
+### Body
+
+<ParamField body="policy_id" type="string">
+  The guardrail's id, shown in the console as its policy ID. Send this or `policy_ids`, not both.
+</ParamField>
+<ParamField body="policy_ids" type="string[]">
+  Several guardrails, run in order.
+</ParamField>
+<ParamField body="hook" type="string" required>
+  Where in the exchange the application is: `llm_input`, `llm_output`, `pre_tool` or `post_tool`.
+</ParamField>
+<ParamField body="completion" type="object" required>
+  The request about to go to the model (`llm_input`, `post_tool`) or the response that came back (`llm_output`,
+  `pre_tool`), in the header's format, as the application holds it.
+</ParamField>
+<ParamField body="message_index" type="integer">
+  The entry of a request's `messages` to check, the last when left out.
+</ParamField>
+
+Bodies are at most 1 MiB. The engine's other fields pass through as well: `principal_id`, `bundle_id` and
+`bundle_name` for `pre_tool` decisions, and `grounding_source` and `query`.
+
+### Hooks
+
+Only the current message is checked; the application may send the whole conversation.
+
+| Hook | Send | It judges |
+|---|---|---|
+| `llm_input` | The request you are about to send | The last message, when the user sent it |
+| `llm_output` | The model's response | The reply's text |
+| `pre_tool` | The model's response | Each tool call in it, before it is made, with the guardrail's Cedar rules and OPA policies |
+| `post_tool` | The request carrying tool results | Each tool result answering the last assistant turn, before the model reads it |
+
+A guardrail with no check at a hook lets everything through there. Checks that read prompts act at `llm_input` and
+`post_tool`; those that also read answers act at `llm_output`; tool call rules act at `pre_tool`.
+
+### Example
+
+A prompt in OpenAI's format:
+
+```bash
+curl -sS https://opencontroller.example.com/v2/guardrails/inference \
+  -H "Authorization: Bearer $OPENCONTROLLER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "policy_id": "<guardrail id>",
+    "hook": "llm_input",
+    "completion": {
+      "model": "<model>",
+      "messages": [
+        {"role": "system", "content": "You are a support agent."},
+        {"role": "user", "content": "My name is Jane Doe. Where is my order?"}
+      ]
+    }
+  }'
+```
+
+For the model's answer, send the response object with `"hook": "llm_output"`; for an Anthropic completion, add
+`X-Completion-Format: anthropic`. In code, the pattern is the same each time: post the completion, stop if
+`blocked` is true, otherwise apply `redactions` to the texts they point at, then send the completion on.
+
+### Response
+
+<ResponseField name="blocked" type="boolean">
+  Whether the completion may go on. When true, do not send it to the model, or do not show the answer.
+</ResponseField>
+<ResponseField name="block_reason" type="string">
+  Why, from the first check that blocked.
+</ResponseField>
+<ResponseField name="blocked_by_policy_id" type="string">
+  The guardrail that blocked.
+</ResponseField>
+<ResponseField name="redacted" type="boolean">
+  Whether there are redactions to apply.
+</ResponseField>
+<ResponseField name="redactions" type="object[]">
+  Values to replace before the completion goes on. Each has `path`, a JSON Pointer to the text in the completion;
+  `text`, the value found; `category`, an entity type such as `PERSON`, or `SECRET`, `KEYWORD`, `CUSTOM_PII`;
+  `start` and `end`, in characters (code points) into that text; and `policy_id`. Apply them from the last to the
+  first in each text, so earlier positions stay right. What a value becomes is the application's choice. A blocked
+  text has none.
+</ResponseField>
+<ResponseField name="results" type="object[]">
+  The verdict on each text or tool call checked: `path`, `message_index`, `tool_call_id` and `tool_name` for a tool
+  call, `blocked`, `block_reason`, `blocked_by_policy_id`, `denied_by`, `redacted`, `warnings` and `detections`, each
+  check's own report. A check that could not run, such as a model being down, is named in `warnings`, so a result
+  with warnings is not a clean pass.
+</ResponseField>
+<ResponseField name="completion" type="object">
+  The completion as sent. It is never rewritten.
+</ResponseField>
+<ResponseField name="hook" type="string">
+  The hook checked.
+</ResponseField>
+<ResponseField name="format" type="string">
+  The format read.
+</ResponseField>
+<ResponseField name="evaluated_policy_ids" type="string[]">
+  The guardrails that ran.
+</ResponseField>
+
+### Errors
+
+A request OpenController refuses is a problem (RFC 9457, `application/problem+json`). The codes are listed at
+`GET /v1/problems`.
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `invalid_request` | An unknown hook or format, no guardrail named, or both `policy_id` and `policy_ids` |
+| 400 | `invalid_json` | A body that is not JSON |
+| 401 | `unauthenticated` | No key, or one not valid |
+| 403 | `forbidden` | A role below Operator |
+| 404 | `not_found` | A guardrail that is not the organisation's; nothing is sent to the engine |
+| 404 | `feature_disabled` | Guardrails are off in this organisation |
+| 413 | `request_too_large` | A body over 1 MiB |
+| 502 | `upstream_unavailable` | The guardrail engine failed |
+| 503 | `not_ready` | No guardrail engine in this OpenController |
+
+A request the engine itself refuses, such as a completion it cannot read, comes back as the engine gave it, with its
+status and its own `error` and `message`. A busy engine's 429 carries `Retry-After`.
+
+## Try plain text on a guardrail
+
+`POST /v1/guardrails/{guardrail_id}/test` is what the console's **Try it** uses. It takes text rather than a
+completion and needs `guardrails:test`.
+
+<ParamField body="text" type="string" required>
+  Up to 8192 characters.
+</ParamField>
+<ParamField body="stage" type="string" default="prompt">
+  `prompt` or `answer`.
+</ParamField>
+
+The answer holds `blocked`, `reason`, `output` (the text as it would go on, redacted and masked), `changed`,
+`replaced` (each value and what it became), `notes`, `not_checked` (checks that could not run) and `detections`.
+`POST /v1/guardrails/test` does the same on a `checks` object that is not saved.
+
+## Managing guardrails by API
+
+| Method and path | Permission | Does |
+|---|---|---|
+| `GET /v1/guardrails` | `guardrails:read` | List guardrails. |
+| `POST /v1/guardrails` | `guardrails:write` | Make one from `name`, `description` and `checks`. A check left out is off; a threshold of 0 takes the default. |
+| `GET /v1/guardrails/{guardrail_id}` | `guardrails:read` | Read one. |
+| `PUT /v1/guardrails/{guardrail_id}` | `guardrails:write` | Replace its name, description and checks. |
+| `DELETE /v1/guardrails/{guardrail_id}` | `guardrails:write` | Remove it; 409 while content rules in the gateway use it. |
+| `GET /v1/guardrails/checks` | `guardrails:read` | The catalogue of checks and their defaults. |
+| `GET /v1/guardrails/gateways` | `guardrails:read` | Which guardrails are in the LLM gateway, and the rules using them. |
+| `GET /v1/guardrails/violations`, `GET /v1/guardrails/violations/users` | `guardrails:violations` | What the gateway's rules blocked or redacted, per caller. |
+
+The `checks` object's fields are given check by check in [Guardrail checks](/runtime/guardrail-checks). The same
+API also manages OPA policies (`/v1/guardrails/opa-policies`) and connections to cloud guardrail providers
+(`/v1/guardrails/connections`), and offers `POST /v2/guardrails/claude-code` for Claude Code's HTTP hooks; those
+are listed in the API reference.

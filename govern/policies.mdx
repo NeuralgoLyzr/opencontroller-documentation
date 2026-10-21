@@ -1,0 +1,51 @@
+---
+title: "Policies"
+description: "Policies are the rules OpenController governs by. The registry policy decides which asset kinds must be registered and what an approval needs."
+---
+
+A policy is the registry's rules, kept as data an administrator edits. Today the Policies page holds one policy, the registry policy. It decides which discovered assets are shadow until registered, and what an approval needs. Changes apply to new requests and decisions from the moment they are saved; past requests keep the version they were made under.
+
+**Who can do this:** `registry:govern`, an administrator's permission. Without it the page reads "Administrators only".
+
+## The registry policy
+
+The header shows the policy's version, who last changed it and when, or "Default policy, never changed".
+
+### What must be registered
+
+A switch per asset kind. Discovered assets of the kinds turned on are shadow until a registration for them is approved. Kinds left off are **Not governed**: they are governed through the assets that use them.
+
+The default policy names what an agent runs, calls or loads: **Agents**, **MCP servers**, **Tools**, **Models**, **Skills**, **Gateways** and **Endpoints**. Every other kind can be turned on.
+
+### Approval
+
+**Separation of duties**: an administrator cannot approve a registration they requested themselves. On by default.
+
+### Checks
+
+The block links to **Posture, Security policies**, where the posture checks are chosen. Which checks run, and what each does, is set there, not here.
+
+## Saving
+
+**Save policy** saves the policy as a whole, at the version you read. If another administrator saved it meanwhile, the save is refused with "the registry policy was changed meanwhile" and a **Load the current policy** link. **Discard changes** drops your edits. **Restore defaults** puts the default policy in the editor; it still needs saving.
+
+## What is enforced, and what is flagged
+
+| Rule | How it is applied |
+|---|---|
+| A kind must be registered | Enforced on every list and badge: assets of that kind without a registration are **Shadow**, count as non-compliant on the map, and colour red. Nothing is changed on the cloud; the asset keeps running. |
+| Separation of duties | Enforced at decision time: the API refuses the approval and the button says why. |
+| Owner and purpose | Enforced at request time: a purpose is always required, and an owner when the platform names none. When the platform names an owner, that owner is recorded and the requester cannot change it. |
+| Blocking agents | Where the control module is on, an agent can be blocked only once it is registered or pending; unblocking is never refused. See [Control actions](/govern/control-actions). |
+
+## How it interacts with approvals
+
+The policy's kinds decide what reaches [Approvals](/govern/approvals): only assets of a governed kind can be requested. Separation of duties decides who may approve. The version in force when a request is made is recorded on the registration as **Policy**, so a later change does not alter what was agreed.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/registry/policy` | The policy in force |
+| `PUT` | `/v1/registry/policy` | Replace it; the body's `version` must be the one read |
+| `GET` | `/v1/registry/policy/catalog` | Every asset kind and state, and the default policy |

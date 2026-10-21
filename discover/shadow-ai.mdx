@@ -1,0 +1,77 @@
+---
+title: "Shadow AI"
+description: "Shadow AI is the queue of discovered AI assets nobody has registered. Register them one at a time or in bulk to send them for approval."
+---
+
+A shadow asset is a discovered asset of a kind the registry policy names that has no pending or approved registration. Shadow AI is the work queue of governance: register what belongs, and an administrator approves it. A retired asset is never shadow, since there is nothing left to register.
+
+**Who can do this:** `registry:read` to see the page. `registry:request` to register. `graph:read` for the map view.
+
+## The four numbers
+
+The strip at the top is how much of what the policy governs is registered:
+
+| Number | What it is | Opens |
+|---|---|---|
+| **% of governed assets registered** | Registered divided by registered, awaiting approval and shadow together | |
+| **Registered** | Approved registrations | Registry |
+| **Awaiting approval** | Pending requests | Approvals |
+| **Shadow** | Discovered, never registered | Shadow AI |
+
+A thin bar beneath shows the three in proportion.
+
+## Map and List
+
+**Map** is the default view and opens with **Non-compliant only** on, so it shows only shadow and pending assets and every path into them. See [Map and graph](/discover/map). **List** is the queue.
+
+## The list
+
+The filters are the AI Inventory's, with **Kind** offering only the kinds the policy governs. There is no **Include removed** switch here.
+
+| Column | What it shows |
+|---|---|
+| Checkbox | Selects the row for **Register selected** |
+| **Asset** | The name, linking to the asset's page |
+| **Kind** | The kind badge |
+| **Source** | The cloud and product |
+| **Platform owner** | Who the cloud platform records as the owner, by name and email where discovery could resolve it. It prefills the owner when you register. An Entra object id that could not be resolved is shown faint. "Not named" when the platform names nobody |
+| **Last seen** | When a scan last reported it |
+| **Register** | Opens the request dialog for this one asset |
+
+When nothing matches the filters the list reads "Nothing matches these filters." When nothing is shadow at all it reads "Every asset the registry policy governs is registered or awaiting approval."
+
+## Register one asset
+
+<Steps>
+  <Step title="Click Register on the row">
+    The dialog is titled **Register** followed by the asset's name, and says the asset stays shadow until an administrator approves the request.
+  </Step>
+  <Step title="Owner">
+    If the platform names an owner, it is shown and cannot be changed here: change the owner on the platform. If it names nobody, type who is accountable for the asset. Your own name is prefilled.
+  </Step>
+  <Step title="Purpose">
+    What it does, and for whom. Up to 2,000 characters.
+  </Step>
+  <Step title="Request registration">
+    The request is sent with `POST /v1/registry/registrations` and a pending registration is created. The asset now shows **Awaiting approval** everywhere and waits under [Approvals](/govern/approvals).
+  </Step>
+</Steps>
+
+## Register a whole connection, or many at once
+
+Select rows with the checkboxes, or the header checkbox for the page, and click **Register selected**. **Register all** takes every shadow asset matching the filters, up to 200. Filter by **Cloud**, **Source** or **Account** first to take one connection's assets.
+
+The bulk dialog, **Register N assets**, lists each asset with its owner: fixed where the platform names one, a field otherwise. One **Purpose** is shared by all of them. **Request N registrations** sends `POST /v1/registry/registrations/batch`. Each request is checked and waits for approval on its own; if some fail, the toast names up to three with the reason.
+
+## Non-compliant only
+
+On the map, **Non-compliant only** is on by default here. Turn it off to see the whole estate from this page.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/registry/shadow` | Shadow assets, filtered and paged |
+| `GET` | `/v1/registry/summary` | The four numbers |
+| `POST` | `/v1/registry/registrations` | Request one asset's registration |
+| `POST` | `/v1/registry/registrations/batch` | Request several at once |

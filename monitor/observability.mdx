@@ -1,0 +1,66 @@
+---
+title: "Observability"
+description: "Where your agents' traces are kept, how projects organise them, and what the Overview shows for a window of time."
+---
+
+Observability is the record of what your agents did at runtime: every run, its model calls, tools, tokens, cost and failures, read from an OpenTelemetry trace store. The posture tells you what an agent could do; observability tells you what it did. The policies **OBS-1** and **OBS-2** on [Findings](/posture/findings) read the same data to say which agents nobody traces or evaluates.
+
+**Who can do this:** `observability:read` reads traces and what they cost (a viewer; scoped to the teams whose projects you belong to). `observability:content` reads what was asked and answered (an operator); without it inputs and outputs are hidden. `observability:projects` makes, changes and removes projects (an administrator). `observability:send` sends traces to a project (an operator, or a service account with that permission). Connecting the trace store needs `modules:endpoint`.
+
+## The connection
+
+OpenController does not store traces itself. An OpenTelemetry Collector writes them to ClickHouse, and the console reads them from there with a read-only user. Until a store is connected, every observability page says **No trace store connected** and links to the settings.
+
+<Steps>
+<Step title="Open Settings, then Observability">
+Set **Provider** to **ClickHouse**, the only kind offered. Enter the **Base URL** of its HTTP interface, for example `https://clickhouse.example.com:8443`, or `http://clickhouse:8123` beside a local stack. Give it a read-only user.
+</Step>
+<Step title="Name the database and table">
+**Database** defaults to `otel` and **Traces table** to `otel_traces`, the names the collector's ClickHouse exporter writes to.
+</Step>
+<Step title="Sign in and save">
+Choose **No sign-in** or **Username and password**. The password is kept in the secrets manager and cannot be read back. Click **Save**, then **Check connection**: the console probes that the store is **Reachable**, reads its **Version** and finds the **Traces table**.
+</Step>
+</Steps>
+
+<Warning>
+The console warns when the credential would go over plain HTTP to a host outside the network. Use an `https` base URL for a store outside it.
+</Warning>
+
+**Disconnect** forgets the endpoint and deletes its credential. The traces stay in the store.
+
+When you deploy with the Helm chart, `observability.enabled` installs a collector and a ClickHouse beside the platform; `observability.existingSecret` names the secret that holds `OC_CLICKHOUSE_PASSWORD`, `OC_CLICKHOUSE_READER_PASSWORD` and `OC_COLLECTOR_TOKEN`, and `observability.clickhouse.retention` (default `720h`) is how long traces are kept. The store is then at `http://<release>-clickhouse:8123` with the user `opencontroller`.
+
+## Projects
+
+A project is where traces are sent: an agent, an app, or one environment of one. A sender names the project in every request, so a project is also the unit of ownership and cost. The **Projects** page lists each project's Traces, Error rate, Model calls, Cost, share of spend and Last trace, with a **Set up** link on projects that have none yet. Filter with **All**, **With errors** or **No traces**, or **Find a project**. An **Unassigned** row holds traces sent to no project, such as the LLM gateway's own or what a collector forwards. A removed project stays listed as **Removed: nothing can send to it; its traces stay.**
+
+To create one, click **New project** and fill in:
+
+| Field | What it does |
+|---|---|
+| **Name** | Required, up to 64 characters of letters, digits, spaces, dots, dashes and underscores. |
+| **Description** | Optional, up to 500 characters. |
+| **Agent** | Optional. An agent from the inventory; the project's traces then count for that agent, in cost and on its page. |
+| **Team** | Optional. The team's members read the project's traces, even with no role in the organization. |
+
+Creating a project opens its **Setup** page; see [Send traces](/monitor/send-traces). Each project has its own **Overview**, **Traces**, **Spans**, **Sessions**, **Issues**, **Cost**, **Setup** and **Settings** pages, and a project switcher (⌘P). **Settings** holds **General** (Name, Description, Project id, Made), the **Agent** and **Team** panels, **Sending traces** with the `x-project` id to copy, and **Remove the project**.
+
+## The Overview
+
+The front page, and each project's **Overview**, sums up one window of time: **Last hour**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The window is fixed when you choose it, and each number is compared with the window before.
+
+| Panel | What it shows |
+|---|---|
+| **Resources** | Counts of Projects (or Spans in a project), Sessions, Issues, Agents, Models, Providers, Tools, MCP servers, Teams, Users, Customers and Gateway keys. |
+| **Cost by project** and **Cost by model** | Where the spend went; a project's page shows **Project details** instead. |
+| Metrics | Traces, Error rate, Model calls, Cost, P99 latency and the share of calls made **Through the gateway**. |
+| Latency heatmap | Every run of the window by when it started and how long it took; red where a run failed, a dotted line at the p99. A column opens the traces of those minutes. |
+| **Activity** | A chart of Requests, Tokens, Prompt cache, Cost, Model calls or Latency over time, split by model. |
+| **Top issues**, **Slowest runs**, **Costliest runs** | Jump-offs into the lists. |
+| **Breakdown** | Models, Providers, Agents, Tools & MCP, Teams, Users, Customers and Gateway keys. |
+
+## API
+
+- `GET /v1/observability/projects`, `POST`, `PATCH /v1/observability/projects/{id}`, `DELETE`: the projects.
+- `GET /v1/observability/usage`, `/series`, `/heatmap`, `/project-stats`: the Overview's numbers.

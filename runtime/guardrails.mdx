@@ -1,0 +1,119 @@
+---
+title: "Guardrails"
+description: "Make a named set of checks for prompts and answers, try it on sample text, and use it from the LLM gateway or any app."
+---
+
+A guardrail is a named set of checks that text is held to: personal data, secrets, prompt injection, toxicity,
+topics, keywords and more, each with its own settings. The guardrail engine inside your OpenController keeps the
+guardrails and runs the checks; nothing it reads leaves it. A guardrail can block a text, or let it through with
+values redacted or masked.
+
+A guardrail is used in two ways. The LLM gateway's content rules can run it on every call, with no code. Any
+application can call it directly through the [guardrails API](/runtime/guardrails-api).
+
+Who can do this: `guardrails:read` (Viewer by default) sees the guardrails. `guardrails:write` (Admin by default)
+makes, changes and deletes them. `guardrails:test` (Operator by default) tries text on them.
+
+## The list
+
+**Guardrails** in the console lists every guardrail. Each row shows its name, when it was updated, a miniature of the
+path text takes through its checks, and a sentence saying what it does, such as "Blocks prompt injection and toxic
+text. Redacts emails and phone numbers. Masks secrets." A badge **LLM gateway** marks a guardrail the gateway can
+use, with how many content rules use it.
+
+Each row offers **Use it anywhere**, which shows the API call with this guardrail's id and your OpenController's
+address filled in, and **Try it**. The menu offers **Duplicate** and **Delete**.
+
+<Note>
+If the engine is not available, the page says why instead of the list: **No guardrail engine in this
+opencontroller**, **Guardrails need a secrets manager**, **The guardrail engine refused opencontroller's key**, or
+**The guardrail engine is not answering**. **Settings**, then **Guardrails**, shows whether the engine is answering
+and how many guardrails it holds.
+</Note>
+
+## Create a guardrail
+
+<Steps>
+  <Step title="Pick a template or start blank">
+    Click **New guardrail**. Choose a template, or **Start blank** with every check off. Templates: **Customer-facing
+    assistant**, **Internal copilot**, **Text-to-SQL agent**, **API agent**, **Data-safe**, **Financial data**,
+    **Prompt attacks**, **Civil conversations** and **Strict**. A template is only a starting point; every setting
+    stays yours to change.
+  </Step>
+  <Step title="Name it">
+    **Name** (up to 80 characters) and **What it is for** (optional, up to 500).
+  </Step>
+  <Step title="Turn on checks, step by step">
+    The builder goes through the checks in groups: **Data protection**, **Threat protection**, **Content
+    moderation**, **Custom rules and format**, **Custom policies (OPA)**, **Tool call rules (Cedar)** and **Cloud
+    provider guardrails**. Switch a check on to open its settings. A tag on each check says whether it reads
+    **Prompts** or **Prompts and answers**. Click **Continue** to move on.
+  </Step>
+  <Step title="Review and create">
+    **Review** repeats what the guardrail does and where it is used. Click **Create guardrail**.
+  </Step>
+</Steps>
+
+A check switched on with nothing to check (banned topics with no topic, keywords with no keyword) cannot be saved:
+the editor points at it and asks you to finish it or turn it off. The eleven built-in checks and their settings are
+in [Guardrail checks](/runtime/guardrail-checks).
+
+The other groups extend the built-in checks: **Custom policies (OPA)** runs Rego policies your organisation writes,
+**Tool call rules (Cedar)** decides which tools a model may call, and **Cloud provider guardrails** runs an AWS
+Bedrock guardrail, Azure AI Content Safety or Google Model Armor through a connection to that cloud.
+
+## The editor
+
+A saved guardrail opens at `/guardrails/<id>`. The top strip, **The path text takes**, shows the checks in the order
+text meets them; after a try it shows what each check did. The steps on the left hold the settings, and **Try it**
+on the right runs them. Changes are saved with **Save changes** and dropped with **Discard changes**. Leaving with
+unsaved changes asks first.
+
+If someone else saves the guardrail while you have it open, a banner says so. Saving yours replaces the whole
+guardrail; **Load their version** takes theirs instead.
+
+## Try it
+
+**Try it** runs text through the settings as they are on screen, saved or not. The text is not stored.
+
+1. Choose **Prompt** (text sent to a model) or **Answer** (a model's answer). An answer is held to fewer checks:
+   personal data, prompt injection and the model scores read prompts only.
+2. Type up to 8192 characters, or click a sample such as **Injection**, **Personal data** or **Secret**. The try runs
+   as you type and whenever a setting changes; **Run** runs it again.
+3. Read the verdict: **Blocked** with the reason, **Passed with changes** with the text as it would go on and each
+   redaction or mask highlighted, or **Passed**. A check whose model is unavailable is named as not checked, so such
+   a result is not a clean pass.
+
+Trying needs the Operator role; a viewer sees the editor read-only.
+
+## Use it in the gateway
+
+Every saved guardrail is put in the connected LLM gateway, usually at once and otherwise within minutes, as a
+guardrail provider named after it with "(OpenController)" appended. The gateway's content rules can then use it.
+
+<Steps>
+  <Step title="Open the content rules">
+    Go to **LLM Gateway**, then **Content Rules**, on the **Guardrails** tab. Managing rules needs `modules:use`.
+  </Step>
+  <Step title="Make a rule">
+    Click **New guardrail**. Give it a **Name** and a **Priority** (rules run in priority order). Under **Matches by**
+    choose **A guardrail provider**, and under **Provider** pick your guardrail.
+  </Step>
+  <Step title="Say what happens">
+    **Then**: **Block the request** or **Redact what matched**, with an optional **Replace with**. **Checks**:
+    **Prompts**, **Answers** or both. **Applies to**: **Every request**, one team or one key. **When the provider
+    fails**: **Let the request through** or **Block the request**. Leave **Enabled** on and click **Save**.
+  </Step>
+</Steps>
+
+From then on the gateway runs the guardrail on the calls the rule applies to, and what it blocks or redacts is
+counted on [Guardrail violations](/runtime/guardrail-violations). A guardrail used by a content rule cannot be
+deleted until the rule is removed there.
+
+## API
+
+- `GET /v1/guardrails`, `POST /v1/guardrails`: list and make guardrails.
+- `GET`, `PUT`, `DELETE /v1/guardrails/{guardrail_id}`: read, replace and remove one.
+- `POST /v1/guardrails/{guardrail_id}/test`, `POST /v1/guardrails/test`: try text on a guardrail, or on unsaved settings.
+- `GET /v1/guardrails/checks`: the catalogue of checks and their defaults.
+- `GET /v1/guardrails/gateways`: which guardrails are in the gateway and the rules that use them.

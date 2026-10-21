@@ -1,0 +1,72 @@
+---
+title: "Scans"
+description: "How discovery scans run, how often, how to start one by hand, and how to read a scan's result and errors."
+---
+
+A **scan** reads a cloud and writes what it finds to the inventory. Scans run on their own, one interval after each connection's last scan, and whenever you start one. Every scan is listed under **Discovery scans** on the **Integrations** page, and each has its own page at `/integrations/scans/<id>`.
+
+## The scan list
+
+The **Discovery scans** section lists every scan, newest first. A line above it says whether automatic scans are on, and when each connection is next due, with **Change** (or **Details**) linking to the schedule settings.
+
+| Column | What it shows |
+|---|---|
+| **Status** | **Running**, **Succeeded** (every source applied), **Partial** (some sources failed; the rest applied) or **Failed** (nothing applied). |
+| **Provider** | The cloud, and the connection's name when the scan read one connection. |
+| **Started** | When it started. |
+| **Duration** | How long it ran. |
+| **Sources read** | Sources that were read. |
+| **Failed** | Sources that were refused or errored. |
+
+Before any scan has run, the section reads **No scans yet**.
+
+## Run a scan by hand
+
+Click **Run scan**. It starts one scan per cloud with something to read: AWS always (with no account connected it reads OpenController's own account), and each other cloud once a connection to it is enabled. A scan you start reads every enabled integration of its cloud; a scheduled scan reads one integration. One scan opens its page; several return to the list.
+
+A cloud already scanning is left to finish: starting another returns "a scan of that provider is already running". One scan is bounded by `DISCOVERY_SCAN_TIMEOUT` (default `15m`). If the service stops while a scan is running, that scan is marked failed.
+
+Who can do this: `scans:run` (Operator). Reading scans needs `scans:read` (Viewer).
+
+## How often discovery runs
+
+Each enabled connection is rescanned once per interval, counted from its last scan, whoever started it. So a scan you start pushes the next automatic one back, and a restart neither forgets the schedule nor rescans at once. The scheduler looks for due scans every minute.
+
+The default interval is `DISCOVERY_SCAN_INTERVAL` (default `5m`). `0` turns automatic scans off, so scans run only when started.
+
+Administrators can set an interval per connection under **Settings**, **Scan schedule**, when the deployment allows it. Otherwise the page says the schedule is set in the server's configuration.
+
+| Column | What it shows |
+|---|---|
+| **Connection** | Its name, cloud and account. |
+| **Every** | Its interval, with **Default** or **Custom** (hover for who set it, and when). **Off** means only when started. |
+| **Next scan** | When it is next due, or **Only when started**. |
+| **Last scan** | When it last started, or **Never**. |
+
+To change it, pick a **Connection** (or **All connections**) and **Scan every**: 5 min, 15 min, 30 min, 1 hour, 6 hours, 12 hours, 1 day, **Custom…** (a number of **Minutes** from 1 to 10080), **Off: only when started**, or **Default**. Click **Save**. The change is recorded in the audit log.
+
+Who can do this: `scans:schedule` (Admin) to change; `scans:read` to view.
+
+## Read a scan's result
+
+A scan's page is titled by its cloud, for example **AWS scan**, with when it started, how long it ran, and its status. **Outcome** states why it ended as it did, such as "3 of 40 sources failed".
+
+Three numbers follow: **Sources read**, **Sources failed** and **Assets reported**.
+
+A **source** is one resource family in one account and region, named `provider:account:region:family`, for example `aws:123456789012:us-east-1:bedrock.agents`. The **Sources** table lists each with its **Account**, **Region**, **Family** and **Assets**, sorted with failures first. Click an asset count to open the inventory filtered to that account and region. Sources that read fine and found nothing are hidden; turn on **Show empty sources** to list them. A source marked **Skipped** was left out on purpose, for example because the project has not enabled that API, and does not make a scan partial.
+
+### Errors
+
+When sources failed, a **Why sources failed** card groups identical causes, so twenty regions failing the same way read as one problem. Each cause shows what OpenController says to do first, then what the cloud itself answered, with the families and the number of regions affected.
+
+A failed source keeps what the last good scan recorded. Nothing is removed from the inventory because a read failed. Assets are retired, not deleted, when every source that reported them stops reporting them. The most common cause is a missing grant: click **Verify** on the connection to see which check fails, and the cloud's page for what to grant.
+
+Scan records are kept for 30 days.
+
+## API
+
+- `GET /v1/scans`: list scans, newest first, with `provider`, `limit` and `offset`.
+- `POST /v1/scans` with `{"provider": "aws"}`: start a scan. It runs in the background.
+- `GET /v1/scans/{scan_id}`: one scan, with its sources.
+- `GET /v1/scans/schedule`: when each connection is next due.
+- `PUT /v1/scans/schedule` with `connections`, and `every_seconds` or `default`: set the interval.
