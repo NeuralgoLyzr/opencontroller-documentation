@@ -215,7 +215,7 @@ The eight policy categories map onto the tones as the console's Findings page co
 
 ### Neutral
 - **Ink** (`foreground`): all text and the closing rules of a table.
-- **Warm Stone** (`muted-foreground`): leads, secondary text, table heads, answer-strip keys, inactive method tags.
+- **Warm Stone** (`muted-foreground`): leads, secondary text, table heads, inactive method tags.
 - **Sand** (`muted`): the current sidebar row, inline code ground, hover fills, scrollbar thumb.
 - **Hairline** (`border`): every structural rule and container edge.
 - **Strong Hairline** (`border-strong`): empty-cell marks and "not held" marks in the instruments.
@@ -245,7 +245,7 @@ The eight policy categories map onto the tones as the console's Findings page co
 - **Title** (600, 1.125rem, -0.015em): subsections; panel and card titles run 1 to 1.0625rem at 600.
 - **Body** (400, 1rem, 1.7, 72ch): prose. Bold is 600, never 700.
 - **Nav** (500, 0.8125rem): sidebar rows; section titles beneath them at 0.6875rem, 500, Warm Stone, sentence case.
-- **Label** (600, 0.75rem, 0.04em, uppercase): table heads and the answer strip's keys (0.6875rem there). Instrument column heads drop the uppercase and tracking.
+- **Label** (600, 0.75rem, 0.04em, uppercase): table heads. Instrument column heads drop the uppercase and tracking.
 - **Mono** (500 to 600, 0.6875rem in chips and tags, 0.85em inline): code and data only.
 
 ### Named Rules
@@ -261,7 +261,7 @@ Spacing is a rem rhythm of 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2 and 3rem. Containers
 
 The home page is a strip of actions (one slate button, one secondary, a one-line promise), the walkthrough panel, a three-column commitments strip with tone dots, and a ruled list of next pages with a drawn arrow. Card grids run three columns.
 
-At 760px and below: grids and strips collapse to one column; the answer strip stacks; diagrams keep a 620px minimum and scroll sideways under a right-edge fade rather than shrink; a picked framework in the atlas shows only its column; the permission table becomes one card per permission with the four roles named on one line; the page-key hint hides.
+At 760px and below: grids and strips collapse to one column; diagrams keep a 620px minimum and scroll sideways under a right-edge fade rather than shrink; a picked framework in the atlas shows only its column; the permission table becomes one card per permission with the four roles named on one line; the page-key hint hides.
 
 ## Elevation & Depth
 
@@ -275,7 +275,7 @@ Flat by default. Content surfaces (cards, panels, callouts, code blocks, tables,
 ### Named Rules
 **The Lift Is A Pixel Rule.** Interactive containers answer hover with a border shift to the tone (or slate) and `translateY(-1px)`, never a shadow.
 
-**The Keycap Rule.** Keyed chips (control codes, keyboard keys, inline codes in the answer strip and permission table) take a 1px hairline with a 2px bottom edge in the same hairline colour. This is the world's own chip device, not an offset shadow; keep it hairline-coloured and 2px.
+**The Keycap Rule.** Keyed chips (control codes, keyboard keys, inline codes in the permission table) take a 1px hairline with a 2px bottom edge in the same hairline colour. This is the world's own chip device, not an offset shadow; keep it hairline-coloured and 2px.
 
 ## Shapes
 
@@ -309,9 +309,6 @@ Sidebar Paper with a hairline, never a pastel; the icon sits in a 1.75rem tile t
 
 ### Navigation
 The console's side panel: Sidebar Paper with a hairline edge; rows 2rem high, 13px at 500, a 16px mark at 70% opacity; the current page on Sand in Ink, its mark at full strength in the section's tone; section titles at 11px in Warm Stone. The table of contents marks the current heading in the section tone. Mintlify's eyebrow above the title is hidden. The footer's previous and next links are hairline tiles with a `[` and `]` keycap hint.
-
-### Answer Strip
-Under every page title that has one: a hairline-topped row of key and value cells (In the console, Who can act, Framework controls). The console path is a crumb led by the page's sidebar mark in the tone, with drawn chevrons; roles show as role chips for the least role of each permission; framework chips link into the atlas with the framework picked.
 
 ### Control Framework Atlas
 On Security policies: eight policy categories by seven frameworks, in a Page Paper container with a Sidebar Paper head carrying the counts line (bold tabular numerals) and a segmented framework picker. Each cell holds one count on a slate tint that deepens with the count (10, 22, 34, 46% over paper; 12, 24, 36% in dark), or a Strong Hairline mark when empty. Codes stay hidden at rest. Picking a framework lights its column on a 6% slate wash and opens its codes as control chips; the other columns recede. Category names link to their page with a drawn arrow that brightens and nudges 2px on hover.
