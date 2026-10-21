@@ -66,12 +66,12 @@ Mintlify's GitHub app watches this repository: every pull request gets a preview
 ## The container
 
 `Dockerfile` builds the site as a container: the pages exported by `mint export` (nothing of Mintlify's runs
-afterwards), served by nginx with the rules the export asks for (`docker/nginx.conf`). CI publishes it on every
-push to main as `ghcr.io/neuralgolyzr/opencontroller-documentation`, tagged by commit and as `latest`; a cell runs it
-beside the console where the internet is not at hand (the product's `docs` service in Compose, `docs.enabled` in the
-Helm chart), and the console's Documentation button opens it.
+afterwards), served by nginx with the rules the export asks for (`docker/nginx.conf`). The product's CI builds it
+from this repository's pinned commit (the submodule `docs/site`) with the cell's other images, and the cell runs it
+beside the console (`docs.enabled` in the Helm chart, the `docs` service in Compose), where the console's
+Documentation button opens it.
 
 ```sh
 docker build -t opencontroller-documentation .
-docker run --rm -p 8081:8080 opencontroller-documentation   # http://localhost:8081
+docker run --rm -p 8083:8080 opencontroller-documentation   # http://localhost:8083
 ```

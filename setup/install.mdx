@@ -15,6 +15,7 @@ The Helm chart deploys one cell. Beside the API and the console, it can run the 
 | The OpenTelemetry Collector and ClickHouse | Observability's trace store and the collector that fills it | `observability.enabled` |
 | The evals service | Judges agents' traces with evaluators | `evals.enabled` |
 | Ask Ctrl's runtime | The assistant's agent, which answers through the cell's LLM gateway | `askCtrl.enabled` |
+| The documentation | This site as a container, for people who cannot reach the public one | `docs.enabled` |
 
 Each optional service reads its credentials from a Kubernetes Secret you make once by hand. Their names start with the cell's name, `oc-<org.id>`: for the organization `acme`, `oc-acme-rekori-env`, `oc-acme-guardrails-env`, `oc-acme-observability-env` and `oc-acme-evals-env`.
 
@@ -210,6 +211,20 @@ Then go to **Settings**, then **Evals**: **Provider** is **opencontroller evals*
 
 A gateway that asks for a key gets it from the secret `ASK_CTRL_GATEWAY_KEY`: seed it in `secrets` or the existing Secret, and manage it afterwards in **Settings**, then **Secrets**. Each answer runs a process for its length, which is why the runtime asks for 512 MiB and is limited at 2 GiB. See [Ask Ctrl](/assistant/ask-ctrl).
 
+### Documentation
+
+`docs.enabled` runs this documentation beside the console, for people who cannot reach the public site: the pages
+as a container, on a host of their own. The console's **Documentation** button opens the page that goes with the
+page shown.
+
+| Value | What it sets | Default |
+|---|---|---|
+| `docs.host` | The host the documentation answers on; put it in `ingress.tls` as well | unset |
+| `docs.url` | Where the button goes: the cell's own copy when it runs, or the public site | `https://<docs.host>` when enabled |
+| `image.docs.repository`, `image.docs.tag` | The documentation's image, published by its own repository | `ghcr.io/neuralgolyzr/opencontroller-documentation:latest` |
+
+Without the service, `docs.url` alone points the button at the public site; with neither, there is no button.
+
 ## Reference
 
 ### Values
@@ -219,7 +234,7 @@ The chart's top-level keys. Every one has comments in `values.yaml`.
 | Key | What it sets |
 |---|---|
 | `org.id`, `org.name` | The organization. `org.id` names the cell (`oc-<org.id>`), its database (`opencontroller_<org.id>`) and its labels. |
-| `image.<service>.repository`, `image.<service>.tag`, `image.pullPolicy` | Each service's image: `api`, `console`, `rekori`, `evals`, `askCtrl`, `srsCoreGo`, `srsInferenceEngine`. An empty tag means the chart's `appVersion`. |
+| `image.<service>.repository`, `image.<service>.tag`, `image.pullPolicy` | Each service's image: `api`, `console`, `rekori`, `evals`, `askCtrl`, `docs`, `srsCoreGo`, `srsInferenceEngine`. An empty tag means the chart's `appVersion`. |
 | `imagePullSecrets` | Pull secrets for a private registry |
 | `publicURL` | Where browsers reach the cell. Becomes `DISCOVERY_PUBLIC_URL`. |
 | `ingress.enabled`, `ingress.className`, `ingress.host`, `ingress.annotations`, `ingress.tls` | The Ingress to the console |
@@ -237,6 +252,7 @@ The chart's top-level keys. Every one has comments in `values.yaml`.
 | `rekori.*` | The LLM gateway: `enabled`, `replicas`, `auth.enabled`, `logLevel`, `existingSecret`, `postgres`, `extraEnv`, `resources` |
 | `evals.*` | The evals service: `enabled`, `existingSecret`, `database`, `workers`, `resources` |
 | `askCtrl.*` | The assistant's runtime: `enabled`, `replicas`, `model`, `reasoningEffort`, `reasoningSummary`, `gatewayURL`, `turnTimeoutMs`, `scratch`, `resources` |
+| `docs.*` | The documentation beside the console: `enabled`, `host`, `url`, `replicas`, `resources` |
 | `guardrails.*` | The guardrail engine: `enabled`, `existingSecret`, `database`, `auditDatabase`, `awsPrincipal`, `core`, `engine` (`sessions`, `blockingThreads`, `resources`), `opa` (`enabled`, `image`, `storage`, `storageClass`, `resources`) |
 | `observability.*` | The trace store: `enabled`, `existingSecret`, `collector` (`image`, `token`, `resources`), `clickhouse` (`image`, `storage`, `storageClass`, `retention`, `systemLogDays`, `resources`) |
 | `podSecurityContext`, `securityContext` | The pods' and containers' security settings; see below |
