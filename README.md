@@ -29,8 +29,8 @@ CI runs the same on every pull request.
 
 ## Flags
 
-`flags.json` turns parts of the site on and off. A part that is off is out of the navigation, so it is neither
-listed nor searchable; its pages stay in the repository. Change a flag, run `python3 scripts/flags.py` to apply it
+`flags.json` turns parts of the site on and off. A part that is off is out of the navigation and its pages are
+marked hidden, so they are neither listed, searched nor in the sitemap; the files stay in the repository. Change a flag, run `python3 scripts/flags.py` to apply it
 to `docs.json`, and commit both.
 
 | Flag | What it shows |
