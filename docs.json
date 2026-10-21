@@ -140,30 +140,6 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Using the API",
-            "pages": [
-              "api-reference/overview",
-              "api-reference/examples"
-            ]
-          },
-          {
-            "group": "Endpoints",
-            "openapi": "api-reference/openapi.json"
-          }
-        ]
-      }
-    ]
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "GitHub",
-        "href": "https://github.com/NeuralgoLyzr/opencontroller"
       }
     ]
   },
