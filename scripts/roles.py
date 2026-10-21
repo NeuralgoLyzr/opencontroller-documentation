@@ -154,7 +154,7 @@ JSX = r'''export const RoleTable = () => (
                   const least = ROLE_DATA.roles.findIndex((x) => x.id === e.role);
                   const held = e.everyone || i >= least;
                   return (
-                    <td key={r.id} className={held ? (i === least && !e.everyone ? "oc-held oc-least" : "oc-held") : "oc-not"} aria-label={held ? r.label + " holds it" : r.label + " does not"}>
+                    <td key={r.id} data-role={r.label} className={held ? (i === least && !e.everyone ? "oc-held oc-least" : "oc-held") : "oc-not"} aria-label={held ? r.label + " holds it" : r.label + " does not"}>
                       {held ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : <span aria-hidden="true">·</span>}
                     </td>
                   );
