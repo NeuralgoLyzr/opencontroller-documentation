@@ -1,70 +1,80 @@
 ---
 title: "What is OpenController"
-description: "One inventory of every AI agent across your clouds, with the controls to govern, run and watch them."
+description: "The AI control plane for security leaders: every agent in every cloud, in one inventory, with the authority to govern, stop and watch them."
 ---
 
-OpenController is a control plane for the AI agents an organisation builds and buys. It connects to the clouds and
-platforms where agents live, reads what is there, and gives security and platform teams one place to see every agent,
-decide which ones are allowed, act on the ones that are not, and watch the ones that run.
+Your organisation already runs more AI agents than anyone has counted. They were built in Copilot Studio, Bedrock,
+Vertex AI, Databricks and Snowflake by teams who needed them, and most of them never passed a security review. Each
+one holds an identity, reaches data, calls tools and talks to people. Nobody owns the list.
 
-It does this without moving anything. Agents stay where they were built. OpenController holds read access to each
-platform, and, where you grant it, the narrower access it needs to act.
+OpenController is the control plane that owns the list. It connects to each cloud and platform with read access,
+builds one inventory of every agent and everything each agent uses, and gives the security team the authority to
+decide which agents are allowed, stop the ones that are not, and watch the ones that run. Agents stay where they
+were built. Nothing moves.
 
 <img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
 <img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
 
-## What it covers
+## One platform, six capabilities
 
 <CardGroup cols={2}>
-  <Card title="Discover" href="/discover/inventory">
-    Every agent, and everything it uses: models, MCP servers, tools, identities, memories and more, across AWS,
-    Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, in one inventory and one map.
+  <Card title="AI discovery" href="/discover/inventory">
+    One inventory of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud,
+    Databricks, Anthropic and Snowflake, read on a schedule. The shadow AI view shows what nobody has registered.
   </Card>
-  <Card title="Govern" href="/govern/registry">
-    A registry of the agents the organisation has approved, with owners, approvals and policies that say what an
-    agent must have before it is allowed.
+  <Card title="Governance" href="/govern/registry">
+    A registry of approved agents with named owners, a registration policy that says what must be registered,
+    approvals with separation of duties, and an audit trail.
   </Card>
   <Card title="Control" href="/govern/control-actions">
-    Block or quarantine an agent, change who it is shared with, or delete it, on the platform it runs on.
+    Block or quarantine an agent, end organisation-wide sharing, remove a person's access, or delete it, on the
+    platform it runs on, with a control credential you grant per platform.
   </Card>
-  <Card title="Run" href="/runtime/llm-gateway">
-    An LLM gateway in front of model providers, with virtual keys, teams, logs and guardrails that check prompts
-    and answers.
+  <Card title="Runtime security" href="/runtime/llm-gateway">
+    An LLM gateway in front of every model provider, with virtual keys, budgets and logs, and guardrails that block, redact
+    or mask personal data, secrets, prompt injection and off-topic use in prompts and answers.
   </Card>
-  <Card title="Observe" href="/monitor/observability">
-    Traces of what agents do and what they cost, with issues surfaced from them.
+  <Card title="Posture" href="/posture/findings">
+    Thirty security policies checked continuously against the inventory, raising findings with severities, mapped
+    to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.
   </Card>
-  <Card title="Evaluate" href="/monitor/evals">
-    Evaluators that judge agents' traces, on demand or on a schedule, and score them over time.
+  <Card title="Observability and evals" href="/monitor/observability">
+    Traces of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over
+    time so you know when one gets worse.
   </Card>
 </CardGroup>
 
 ## Who it is for
 
-- **Security teams** who need to know what AI is running, who owns it, what it can reach, and how to stop it.
-- **Platform teams** who run the gateway, the guardrails and the observability the agents depend on.
-- **Governance and risk** who need the registry, the approvals and the mapping to frameworks such as the OWASP LLM
-  Top 10, NIST AI RMF, ISO 42001 and the EU AI Act.
+- **The CISO and the security team** who are accountable for AI they did not build and cannot see. OpenController
+  gives them the inventory, the owner of every agent, the findings, and the stop button.
+- **AI and platform leaders** who want teams to build agents without a review bottleneck. The registry and the
+  gateway make the approved path the easy path.
+- **Governance, risk and compliance** who need evidence: which AI systems exist, who owns them, what controls apply,
+  and how that maps to the frameworks auditors ask about.
 
-## Where it runs
+## How it treats your environment
 
-OpenController is deployed in your own environment, one installation per organisation. Secrets live in HashiCorp
-Vault. Nothing about your agents leaves your environment unless you
-connect a module that calls out, such as the assistant.
+- **Read-only by default.** Discovery lists and describes. It never invokes an agent, reads a conversation or
+  fetches a secret value.
+- **Control is opt-in, per platform.** Blocking, sharing and deleting need a second credential you grant when you
+  are ready, and every action is audited.
+- **Deployed in your environment.** One installation per organisation, with secrets in HashiCorp Vault. Traces and
+  logs stay in your trace store.
 
 ## Start here
 
 <CardGroup cols={2}>
   <Card title="What is shadow AI" href="/get-started/what-is-shadow-ai">
-    The problem OpenController exists to solve.
+    The problem, the risks by asset kind, and why it is a security team's problem.
   </Card>
   <Card title="How it works" href="/get-started/how-it-works">
-    The flow from discovery to control, in one page.
+    Discover, govern, control, observe, evaluate: one agent, in order.
   </Card>
-  <Card title="Quickstart" href="/get-started/quickstart">
-    Your first hour: connect a cloud, see the inventory, register an agent.
+  <Card title="Responding to discoveries" href="/govern/respond">
+    A framework for the security team: triage, investigate, decide.
   </Card>
-  <Card title="Connect a cloud" href="/connect/overview">
-    Which platforms OpenController reads, and what each needs.
+  <Card title="A rollout plan" href="/get-started/rollout">
+    What to do in the first week, the first month and the first quarter.
   </Card>
 </CardGroup>

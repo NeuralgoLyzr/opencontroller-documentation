@@ -46,6 +46,7 @@
               "index",
               "get-started/what-is-shadow-ai",
               "get-started/how-it-works",
+              "get-started/rollout",
               "get-started/concepts",
               "get-started/quickstart",
               "get-started/modules"
@@ -74,6 +75,7 @@
           {
             "group": "Control",
             "pages": [
+              "govern/respond",
               "govern/control-actions"
             ]
           },

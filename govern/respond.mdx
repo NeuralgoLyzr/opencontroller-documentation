@@ -1,0 +1,75 @@
+---
+title: "Responding to discoveries"
+description: "A framework for the security team: how to triage what discovery finds, what to check, and which decision to take."
+---
+
+Discovery will find more than you can review in a week. This page is the order to work in, what to look at for each
+asset, and the decisions OpenController lets you take. It assumes a read credential on every platform and a control
+credential where you intend to act.
+
+## Triage: what to look at first
+
+Work from the findings, not the list. Findings already rank the inventory by what an asset can do and how exposed it
+is, and a finding's severity is raised when the asset is reachable from outside, acts through tools, reads private
+data or is in use.
+
+| Look first at | Why |
+|---|---|
+| **Critical and High findings on shadow agents** | Reachable, acting, or reading data, with no owner. These are the incidents waiting to happen. |
+| **Agents shared organisation-wide or published to a catalogue** | The widest audience for whatever data sits behind them. |
+| **Agents acting with their maker's credentials** | A person's permissions, running unattended. |
+| **Identities and keys with no agent** | Keys that never expire or have not been used in 30 days belong to something that is gone or forgotten. |
+| **External MCP servers** | Code from outside the organisation, running on an agent's behalf. |
+| **Everything else that is shadow** | Register in bulk by connection once the above is handled, and let approvals do the sorting. |
+
+## Investigate: the questions for each asset
+
+Open the asset in **AI Inventory**. Its page answers most of these.
+
+<AccordionGroup>
+  <Accordion title="Who owns it, and is it still needed?">
+    Discovery records the person the platform names as creator or owner, and prefills them when you register. If
+    that person has left, the asset has no owner. Ask the team whether the agent is in use; the asset's status and,
+    with observability, its traces tell you whether it runs at all.
+  </Accordion>
+  <Accordion title="What identity does it run as?">
+    The identity relationship shows the service principal, role or key. Check whether it is the maker's own
+    credentials, whether it is shared with other assets, and what that identity can reach.
+  </Accordion>
+  <Accordion title="What can it reach?">
+    Models, tools, MCP servers, knowledge bases and memories are listed as relationships. An agent that reads a
+    customer table through a tool is a data access path, and should be reviewed as one.
+  </Accordion>
+  <Accordion title="Who can use it?">
+    The Access card shows the people and groups it is shared with, and whether sharing is organisation-wide or
+    public. On platforms that support it, the same card is where you change that.
+  </Accordion>
+  <Accordion title="Which findings does it have?">
+    The asset's findings list the policies it fails and the factors that raised them. The frameworks page says
+    which control each policy maps to, for the record.
+  </Accordion>
+</AccordionGroup>
+
+## Decide: the options and when to use them
+
+| Decision | When | How |
+|---|---|---|
+| **Register** | The agent is needed, has an owner, and its reach is acceptable | Request registration from Shadow AI or the asset; an approver registers it in Approvals |
+| **Reject** | It should not exist as it is; the requester may fix and resubmit | Reject in Approvals, with a reason |
+| **Narrow the audience** | The agent is fine, the sharing is not | On the Access card: end organisation-wide sharing, or remove people and groups |
+| **Block or quarantine** | Stop it now, reversibly, while you investigate | Block on the asset; the dialog can register it as pending in the same step. Unblock when done |
+| **Route through the gateway** | The agent should keep running, under guardrails and a budget | Point its model calls at the LLM gateway with a virtual key |
+| **Delete** | It is abandoned, or must not exist | Delete on the asset; the name must be typed, and it cannot be undone |
+| **Revoke** | A registered agent no longer qualifies | Revoke in the Registry; the asset returns to shadow |
+
+Which of these a platform supports differs, and the control page lists every combination.
+
+<Card title="Control actions, platform by platform" href="/govern/control-actions" />
+
+## After the decision
+
+- **Rescan.** After a change, the asset's cloud is rescanned and the asset's card shows the change as pending until
+  the scan confirms it.
+- **Audit.** Every action, approval and rejection is in the audit log with who did it and when.
+- **Keep the gate closed.** Set the registration policy so the kinds that matter must be registered, and let the
+  Shadow AI count tell you when something new appears. Findings re-run on every scan.
