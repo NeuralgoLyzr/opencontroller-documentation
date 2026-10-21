@@ -28,9 +28,9 @@ The **Evaluators** table lists each one with its Judge (the kind), what it **Rea
 | **Model connection** and **Model** | Which model judges, from the [connections](/monitor/monitors-and-datasets); Anthropic's API or any OpenAI-compatible one, such as the LLM gateway |
 | **Temperature** | The model's temperature |
 | **Template** | The prompt, with variables in braces such as `{input}` and `{output}`, each mapped to a field of the record. A code evaluator has **Code** instead: a function `evaluate(vars)` that returns a score, true or false, a label, or an object with score, label and explanation. |
-| **The judge answers with** | For an LLM judge, labels each with a score, such as `pass` 1 and `fail` 0. For a multi-question judge, questions that are **boolean**, a **choice** or a **score**, each with its instructions. |
-| **A higher score is** | Whether up is better or worse, so trends read the right way |
-| Explain | Whether the judge gives its reasoning with each verdict |
+| **The judge answers with** | For an LLM judge, labels each with a score, such as `pass` 1 and `fail` 0, or **A score from 0 to 1**. For a multi-question judge, questions that are **boolean**, a **choice** or a **score**, each with its instructions. |
+| **A higher score is** | **Better**, **Worse** or **Neither**, so trends read the right way |
+| **Ask for its reasoning** | Whether the judge gives its reasoning with each verdict |
 
 <Tip>
 A judge with no source of truth cannot tell a right fact from a wrong one. The blank LLM judge starts by asking only whether the answer answers what was asked; to judge correctness, map a variable to the agent's context or to a dataset's expected answer.

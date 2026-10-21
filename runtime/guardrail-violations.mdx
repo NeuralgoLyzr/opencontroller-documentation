@@ -36,8 +36,9 @@ Below, **By caller** lists each caller, the most first.
 | **Last** | When the latest one happened. |
 
 The types are **Personal data**, **Secrets**, **Prompt injection**, **Toxicity**, **Sexual content**,
-**Gibberish**, **Topics**, **Keywords**, **Format** (valid SQL and OpenAPI), **Policy** (OPA, Cedar and cloud
-provider checks) and **Other**.
+**Gibberish**, **Topics**, **Keywords**, **Format** (valid SQL and OpenAPI), **Policy** (OPA, Cedar, compliance, Bedrock
+and Model Armor guardrails) and **Other**. Azure Content Safety counts as Toxicity, Azure Prompt Shields as Prompt injection
+and Azure personal data as Personal data.
 
 A window holding more than 20,000 violations is counted from the newest 20,000, and a notice says so.
 
@@ -55,7 +56,7 @@ Select a row to open the caller's own violations, newest first.
 | **Model** | The model called. |
 | **Reason** | The rule's reason, for example a check's confidence against its threshold. |
 
-**Show more** loads further pages, up to the newest 500.
+**Previous** and **Next** page through them, 50 at a time.
 
 ## What a violation record holds
 

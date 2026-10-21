@@ -33,6 +33,7 @@ The block links to **Posture, Security policies**, where the posture checks are 
 | Rule | How it is applied |
 |---|---|
 | A kind must be registered | Enforced on every list and badge: assets of that kind without a registration are **Shadow**, count as non-compliant on the map, and color red. Nothing is changed on the cloud; the asset keeps running. |
+| Checks | A request is checked against the posture's security policies set to warn or block, chosen under **Posture**, **Security policies**. A failed check does not refuse the request: it shows in the Approvals **Checks** column, and approving it then needs a note. |
 | Separation of duties | Enforced at decision time: the API refuses the approval and the button says why. |
 | Owner and purpose | Enforced at request time: a purpose is always required, and an owner when the platform names none. When the platform names an owner, that owner is recorded and the requester cannot change it. |
 | Blocking agents | Where the control module is on, an agent can be blocked only once it is registered or pending; unblocking is never refused. See [Control actions](/govern/control-actions). |

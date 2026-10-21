@@ -16,6 +16,7 @@ Every request to register an asset lands here. Approving one registers the asset
 | **Asset** | Name | Name |
 | **Kind** | Kind badge | Kind badge |
 | **Owner** | The accountable owner | The accountable owner |
+| **Checks** | The security policies the asset breaks, of those set to warn or block (see [Policies](/govern/policies)) | The same |
 | **Requested** / **Decided** | Who asked, and when | Who last acted, and when |
 | **Outcome** | | **Rejected**, **Revoked** or **Withdrawn** |
 
@@ -39,7 +40,7 @@ Under the default policy an administrator cannot approve a request they made the
 
 ## Deciding several at once
 
-Select rows and click **Approve selected** or **Reject selected**. The dialog takes one **Note** (required for a rejection) and decides each request as if alone: a request you made yourself is refused under separation of duties, and the toast names up to three refusals with the reason.
+Select rows and click **Approve selected** or **Reject selected**. The dialog takes one **Note** (**Why are they rejected?** for a rejection, required; required for an approval when a request failed a check, to record why the exception is accepted) and decides each request as if alone: a request you made yourself is refused under separation of duties, and the toast names up to three refusals with the reason.
 
 ## What happens to the asset
 

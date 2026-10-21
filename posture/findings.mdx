@@ -22,10 +22,10 @@ Every policy has a severity: **Critical**, **High**, **Medium** or **Low**. A fi
 
 | Factor | What it means | Raises the finding to at most |
 |---|---|---|
-| reachable | The asset can be reached from outside | Critical |
-| acts | The asset can take actions through tools | Critical |
-| reaches data | The asset reads private data | Critical |
-| busy | The asset is in use | High |
+| **Reachable from outside** | The asset can be reached from outside | Critical |
+| **Can act** | The asset can take actions through tools | Critical |
+| **Reaches data** | The asset reads private data | Critical |
+| **Heavily used** | The asset is in heavy use | High |
 
 A factor the policy itself tests does not raise it again. The finding's drawer lists the factors under **Raised by**.
 

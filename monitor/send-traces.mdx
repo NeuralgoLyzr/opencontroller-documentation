@@ -15,7 +15,7 @@ An agent sends its traces to OpenController's intake, an OTLP endpoint on the co
 | Key | Header `x-api-key: <your key>` or `Authorization: Bearer <your key>` |
 | Project | Header `x-project: <project id>` (the project's name also works) |
 
-The intake forwards to the collector named by `OBSERVABILITY_COLLECTOR_URL` on the API. When that is not set, the Setup page warns **Set OBSERVABILITY_COLLECTOR_URL on the API**, and nothing can be sent. The collector listens on port 4318 for OTLP/HTTP; with the Helm chart it is `http://<release>-otel-collector:4318`, and `observability.collector.token` sets the bearer token the API presents to it. The LLM gateway can export straight to the collector at `http://<release>-otel-collector:4318/v1/traces`.
+The intake forwards to the collector named by `OBSERVABILITY_COLLECTOR_URL` on the API. When that is not set, the Setup page warns **Set OBSERVABILITY_COLLECTOR_URL on the API**, and nothing can be sent. The collector listens on port 4318 for OTLP/HTTP; with the Helm chart it is `http://<release>-otel-collector:4318`, and `observability.collector.token` turns on the bearer token the API presents to it, whose value is `OC_COLLECTOR_TOKEN` in the observability Secret. The LLM gateway can export straight to the collector at `http://<release>-otel-collector:4318/v1/traces`.
 
 ## The setup page
 

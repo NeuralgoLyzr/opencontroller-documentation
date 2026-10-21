@@ -7,7 +7,8 @@ icon: "key-round"
 A virtual key is what an application sends with each call to the gateway. It stands in for the provider credentials,
 which stay in the gateway, and it carries its own limits: which providers and models it may call, a budget, token and
 request rate limits, and the team or customer its spend counts against. Make one per agent or team, so spend is
-capped and attributed.
+capped and attributed. Creating, editing, rotating and deleting keys needs Admin (`modules:govern`); teams and customers
+need Operator (`modules:use`).
 
 ## The list
 

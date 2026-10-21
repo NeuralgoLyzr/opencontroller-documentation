@@ -53,14 +53,14 @@ Rules that hold everywhere:
   <Tab title="AWS">
     | Platform | Share / Remove | End sharing with everyone | Publish | Block / Unblock | Delete |
     |---|---|---|---|---|---|
-    | AgentCore runtime | Yes: an IAM role or user ARN, or an account id, in the resource policy; can use only | Yes | Not supported yet | Yes: a Deny of every call is added to the resource policy; Unblock removes only that Deny | No |
+    | AgentCore runtime | Yes: an IAM role or user ARN, or an account id, in the resource policy; can use only | Yes | Not supported: a resource policy takes effect without publishing | Yes: a Deny of every call is added to the resource policy; Unblock removes only that Deny | No |
     | AgentCore gateway | Yes, as runtime | Yes | Not applicable: a gateway has no versions | Yes, as runtime | No |
     | AgentCore harness | Not supported: no resource policy | No | No | No | No |
     | Credential providers, workload identities, Agent Registry records | Not supported | No | No | No | No |
 
     An agent with a JWT authorizer cannot be shared or unshared from here (its allow-list is the authorizer's), but it can be blocked. Revoking the agent's own account is refused: block it instead.
 
-    **Credentials.** The connection's control role, created from `aws-control-role.yaml`, must be allowed to change the resource policy. CloudTrail records the change with the operator's name. AWS applies it at once.
+    **Credentials.** The connection's control role, created from `/setup/aws/control-role.yaml`, must be allowed to change the resource policy. CloudTrail records the change with the operator's name. AWS applies it at once.
   </Tab>
   <Tab title="Snowflake">
     | Platform | Share / Remove | End access for everyone | Publish | Block / Unblock | Delete |
