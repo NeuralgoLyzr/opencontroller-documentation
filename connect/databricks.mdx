@@ -1,6 +1,7 @@
 ---
 title: "Connect a Databricks workspace"
 description: "Create the service principal, grant it read access, and see what discovery reads in a workspace."
+icon: "cloud"
 ---
 
 OpenController reads a Databricks workspace as a **service principal**, signing in with OAuth machine-to-machine credentials: the principal's application ID and an OAuth secret. One connection is one workspace, on AWS, Azure or Google Cloud. It discovers the workspace's agents, models, MCP servers and skills, and how they connect.

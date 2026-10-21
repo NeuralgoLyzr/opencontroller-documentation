@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "OpenController",
   "colors": {
     "primary": "#3d5a86",
@@ -28,12 +28,13 @@
   },
   "styling": {
     "codeblocks": "dark",
-    "eyebrows": "section"
+    "eyebrows": "breadcrumbs"
   },
   "favicon": "/favicon.svg",
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "height": 32
   },
   "navigation": {
     "tabs": [
@@ -179,5 +180,8 @@
     "socials": {
       "github": "https://github.com/NeuralgoLyzr"
     }
+  },
+  "icons": {
+    "library": "lucide"
   }
 }

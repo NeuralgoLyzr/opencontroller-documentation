@@ -1,6 +1,7 @@
 ---
 title: "Send traces"
 description: "Point an agent's OpenTelemetry exporter at OpenController with an API key and a project, and which span attributes it reads."
+icon: "send"
 ---
 
 An agent sends its traces to OpenController's intake, an OTLP endpoint on the console's own address. The intake checks the API key, stamps the project and its agent onto the trace, and forwards it to the collector that writes the store. Each project's **Setup** page fills the snippets below in with your project's id and address.

@@ -1,80 +1,96 @@
 ---
 title: "What is OpenController"
 description: "Every AI agent in every cloud, in one inventory, with the authority to govern, stop and watch them."
+icon: "book-open"
 ---
 
-Your organization already runs more AI agents than anyone has counted. They were built in Copilot Studio, Bedrock,
-Vertex AI, Databricks and Snowflake by teams who needed them, and most of them never passed a security review. Each
-one holds an identity, reaches data, calls tools and talks to people. Nobody owns the list.
+<div className="oc-hero">
 
-OpenController is the control plane that owns the list. It connects to each cloud and platform with read access,
-builds one inventory of every agent and everything each agent uses, and gives you the authority to
-decide which agents are allowed, stop the ones that are not, and watch the ones that run. Agents stay where they
-were built. Nothing moves.
+<p>Your organization already runs more AI agents than anyone has counted. Nobody owns the list.</p>
+
+<p>They were built in Copilot Studio, Bedrock, Vertex AI, Databricks and Snowflake by teams who needed them, and most of them never passed a security review. Each one holds an identity, reaches data, calls tools and talks to people.</p>
+
+<p>OpenController is the control plane that owns the list. It connects to each cloud and platform with read access, builds one inventory of every agent and everything each agent uses, and gives you the authority to decide which agents are allowed, stop the ones that are not, and watch the ones that run. Agents stay where they were built. Nothing moves.</p>
 
 <img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
 <img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
 
+</div>
+
 ## One platform, six capabilities
 
-<CardGroup cols={2}>
-  <Card title="AI discovery" href="/discover/inventory">
-    One inventory of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud,
-    Databricks, Anthropic and Snowflake, read on a schedule. The shadow AI view shows what nobody has registered.
-  </Card>
-  <Card title="Governance" href="/govern/registry">
-    A registry of approved agents with named owners, a registration policy that says what must be registered,
-    approvals with separation of duties, and an audit trail.
-  </Card>
-  <Card title="Control" href="/govern/control-actions">
-    Block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the
-    platform it runs on, with a control credential you grant per platform.
-  </Card>
-  <Card title="Runtime security" href="/runtime/llm-gateway">
-    An LLM gateway in front of every model provider, with virtual keys, budgets and logs, and guardrails that block, redact
-    or mask personal data, secrets, prompt injection and off-topic use in prompts and answers.
-  </Card>
-  <Card title="Posture" href="/posture/findings">
-    Thirty security policies checked continuously against the inventory, raising findings with severities, mapped
-    to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.
-  </Card>
-  <Card title="Observability and evals" href="/monitor/observability">
-    Traces of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over
-    time so you know when one gets worse.
-  </Card>
-</CardGroup>
+<div className="oc-ledger">
+  <div className="oc-row">
+    <Icon icon="radar" />
+    <a href="/discover/inventory">AI discovery</a>
+    <p><strong>One inventory</strong> of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, read on a schedule. The Shadow AI view shows what nobody has registered.</p>
+  </div>
+  <div className="oc-row">
+    <Icon icon="clipboard-check" />
+    <a href="/govern/registry">Governance</a>
+    <p><strong>A registry</strong> of approved agents with named owners, a registration policy that says what must be registered, approvals with separation of duties, and an audit trail.</p>
+  </div>
+  <div className="oc-row">
+    <Icon icon="octagon-x" />
+    <a href="/govern/control-actions">Control</a>
+    <p><strong>Block or quarantine</strong> an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on, with a control credential you grant per platform.</p>
+  </div>
+  <div className="oc-row">
+    <Icon icon="shield" />
+    <a href="/runtime/llm-gateway">Runtime security</a>
+    <p><strong>An LLM gateway</strong> in front of every model provider, with virtual keys, budgets and logs, and guardrails that block, redact or mask personal data, secrets, prompt injection and off-topic use in prompts and answers.</p>
+  </div>
+  <div className="oc-row">
+    <Icon icon="scan-search" />
+    <a href="/posture/findings">Posture</a>
+    <p><strong>Thirty security policies</strong> checked continuously against the inventory, raising findings with severities, mapped to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.</p>
+  </div>
+  <div className="oc-row">
+    <Icon icon="activity" />
+    <a href="/monitor/observability">Observability and evals</a>
+    <p><strong>Traces</strong> of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over time so you know when one gets worse.</p>
+  </div>
+</div>
 
 ## Who it is for
 
-- **Security** teams accountable for AI they did not build and cannot see. OpenController gives them the
-  inventory, the owner of every agent, the findings, and the stop button.
-- **AI and platform leaders** who want teams to build agents without a review bottleneck. The registry and the
-  gateway make the approved path the easy path.
-- **Governance, risk and compliance** who need evidence: which AI systems exist, who owns them, what controls apply,
-  and how that maps to the frameworks auditors ask about.
+<div className="oc-cols">
+  <div>
+    <div className="oc-t">Security</div>
+    <p>Teams accountable for AI they did not build and cannot see. OpenController gives them the inventory, the owner of every agent, the findings, and the stop button.</p>
+  </div>
+  <div>
+    <div className="oc-t">AI and platform leaders</div>
+    <p>Those who want teams to build agents without a review bottleneck. The registry and the gateway make the approved path the easy path.</p>
+  </div>
+  <div>
+    <div className="oc-t">Governance, risk and compliance</div>
+    <p>Those who need evidence: which AI systems exist, who owns them, what controls apply, and how that maps to the frameworks auditors ask about.</p>
+  </div>
+</div>
 
 ## How it treats your environment
 
-- **Read-only by default.** Discovery lists and describes. It never invokes an agent, reads a conversation or
-  fetches a secret value.
-- **Control is opt-in, per platform.** Blocking, sharing and deleting need a second credential you grant when you
-  are ready, and every action is audited.
-- **Deployed in your environment.** One installation per organization, with secrets in HashiCorp Vault. Traces and
-  logs stay in your trace store.
+<div className="oc-strip">
+  <div>
+    <div className="oc-t">Read-only by default</div>
+    <p>Discovery lists and describes. It never invokes an agent, reads a conversation or fetches a secret value.</p>
+  </div>
+  <div>
+    <div className="oc-t">Control is opt-in, per platform</div>
+    <p>Blocking, sharing and deleting need a second credential you grant when you are ready, and every action is audited.</p>
+  </div>
+  <div>
+    <div className="oc-t">Deployed in your environment</div>
+    <p>One installation per organization, with secrets in HashiCorp Vault. Traces and logs stay in your trace store.</p>
+  </div>
+</div>
 
 ## Start here
 
-<CardGroup cols={2}>
-  <Card title="What is shadow AI" href="/get-started/what-is-shadow-ai">
-    The problem, the risks by asset kind, and why it will not wait.
-  </Card>
-  <Card title="How it works" href="/get-started/how-it-works">
-    Discover, govern, control, observe, evaluate: one agent, in order.
-  </Card>
-  <Card title="Responding to discoveries" href="/govern/respond">
-    A framework for what discovery finds: triage, investigate, decide.
-  </Card>
-  <Card title="A rollout plan" href="/get-started/rollout">
-    What to do in the first week, the first month and the first quarter.
-  </Card>
-</CardGroup>
+<ul className="oc-links">
+  <li><a href="/get-started/what-is-shadow-ai">What is shadow AI</a><span>The problem, the risks by asset kind, and why it will not wait.</span></li>
+  <li><a href="/get-started/how-it-works">How it works</a><span>Discover, govern, control, observe, evaluate: one agent, in order.</span></li>
+  <li><a href="/govern/respond">Responding to discoveries</a><span>A framework for what discovery finds: triage, investigate, decide.</span></li>
+  <li><a href="/get-started/rollout">A rollout plan</a><span>What to do in the first week, the first month and the first quarter.</span></li>
+</ul>

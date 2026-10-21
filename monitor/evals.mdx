@@ -1,6 +1,7 @@
 ---
 title: "Evals"
 description: "The evals service judges your agents' traces with saved evaluators, and this is how to connect it and read its overview."
+icon: "flask-conical"
 ---
 
 Evals is OpenController's judging service. It reads records from a trace store, a span, a whole run or a conversation at a time, and has a model answer a question about each one: did the answer address the request, did it leak data, was it polite. The answers become scores, which show on the **Scores** page, feed the policy **OBS-2 Traced agents nobody evaluates** on [Findings](/posture/findings), and let monitors say when an agent got worse. The pages live under **Evals** in the console.

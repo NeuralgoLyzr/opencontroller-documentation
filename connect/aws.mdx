@@ -1,6 +1,7 @@
 ---
 title: "Connect an AWS account"
 description: "Create the cross-account roles OpenController assumes, connect the account, and see what discovery reads and control changes."
+icon: "cloud"
 ---
 
 OpenController reads an AWS account by assuming a read-only IAM role in it. It keeps no keys for your account: the role's trust policy lets OpenController's own identity in only when it presents the role's external ID. Each scan reads every enabled region.
