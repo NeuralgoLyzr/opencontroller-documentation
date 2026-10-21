@@ -37,6 +37,8 @@ for p in sorted(pages - listed):
 
 for f in sorted(glob.glob("**/*.mdx", recursive=True)):
     s = open(f).read()
+    if f.startswith("snippets/"):
+        continue
     if not s.startswith("---"):
         problems.append(f"{f}: no frontmatter")
     else:

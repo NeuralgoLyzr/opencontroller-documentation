@@ -146,6 +146,9 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-card:hover { border-color: var(--oc-primary); transform: translateY(-1px); }
 .oc-card-media { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; margin-bottom: 0.5rem; border-radius: calc(var(--oc-radius) - 2px); background: var(--oc-primary-soft); color: var(--oc-primary); }
 .oc-card-media svg { width: 1.125rem; height: 1.125rem; }
+.oc-card-media.is-logo { background: var(--oc-paper); border: 1px solid var(--oc-border); color: var(--oc-foreground); }
+.oc-card-media.is-logo svg { width: 1.25rem; height: 1.25rem; }
+.oc-cards-logos .oc-card { gap: 0.25rem; }
 .oc-card .oc-t { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
 .oc-card span { font-size: 0.9rem; line-height: 1.55; color: var(--oc-muted-foreground); }
 

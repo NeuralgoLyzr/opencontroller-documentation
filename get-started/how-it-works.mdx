@@ -18,7 +18,7 @@ the one before it.
     and the **Shadow AI** page listing what nobody has registered. Scans repeat on a schedule, so the inventory
     tracks what changes.
 
-    <Card title="Connect a cloud" href="/connect/overview" />
+    <Card icon="cable" title="Connect a cloud" href="/connect/overview" />
   </Step>
   <Step title="Govern">
     Someone registers an agent, from Shadow AI or from the inventory, naming an owner. The request lands in
@@ -26,7 +26,7 @@ the one before it.
     and the **Registry** is the resulting list of approved agents, their owners and their state. Governance is the
     paperwork that makes the next step defensible.
 
-    <Card title="The registry" href="/govern/registry" />
+    <Card icon="book-check" title="The registry" href="/govern/registry" />
   </Step>
   <Step title="Control">
     For agents that should not run, or should not reach the people they reach, OpenController acts on the platform
@@ -34,7 +34,7 @@ the one before it.
     end organization-wide sharing, and delete it. What is possible depends on the platform; the control page says
     exactly which combinations work.
 
-    <Card title="Control actions" href="/govern/control-actions" />
+    <Card icon="octagon-x" title="Control actions" href="/govern/control-actions" />
   </Step>
   <Step title="Observe">
     Agents that are allowed to run send traces to OpenController's trace store through an OpenTelemetry collector.
@@ -42,13 +42,13 @@ the one before it.
     and the issues found in the traces. Traffic through the **LLM Gateway** is logged and checked by **Guardrails**
     on the way in and out.
 
-    <Card title="Observability" href="/monitor/observability" />
+    <Card icon="telescope" title="Observability" href="/monitor/observability" />
   </Step>
   <Step title="Evaluate">
     **Evals** judges the traces: evaluators score an agent's answers for the qualities you choose, on demand or on a
     schedule, so you see whether an agent is getting better or worse after each change.
 
-    <Card title="Evals" href="/monitor/evals" />
+    <Card icon="flask-conical" title="Evals" href="/monitor/evals" />
   </Step>
 </Steps>
 
@@ -58,11 +58,11 @@ Every connection has a read credential, which discovery needs, and an optional c
 control step needs. You can run the first two steps with read access only, and grant control per platform when you
 are ready to act.
 
-<Card title="Connections and credentials" href="/connect/overview" />
+<Card icon="cable" title="Connections and credentials" href="/connect/overview" />
 
 ## Where posture fits
 
 Alongside the five steps, **Findings** and **Security policies** check the inventory continuously against the
 frameworks you choose and raise findings when an agent falls short.
 
-<Card title="Posture" href="/posture/findings" />
+<Card icon="shield-alert" title="Posture" href="/posture/findings" />

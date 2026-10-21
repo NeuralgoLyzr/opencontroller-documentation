@@ -4,6 +4,8 @@ description: "What a connection is, the two credentials it holds, and how the In
 icon: "cable"
 ---
 
+import { CloudLogo } from '/snippets/logos.mdx'
+
 A **connection** is one account OpenController reads: an AWS account, a Microsoft tenant, a Databricks workspace, a Google Cloud project, folder or organization, an Anthropic organization, or a Snowflake account. Discovery reads each connection on a schedule and records the AI agents it finds, and everything they use, in the inventory. Discovery only reads. It never invokes an agent, reads a conversation or fetches a secret value.
 
 ## Two credentials
@@ -58,14 +60,14 @@ A scan reads one cloud. Each account, region and resource family is its own **so
 
 ## Supported clouds and platforms
 
-<CardGroup cols={2}>
-  <Card title="AWS" href="/connect/aws">Bedrock agents, AgentCore, the AWS Agent Registry and guardrails, through a read-only role.</Card>
-  <Card title="Microsoft" href="/connect/microsoft">Copilot Studio, Agent Builder, the Agent 365 catalog and Azure AI Foundry, as an Entra app.</Card>
-  <Card title="Google Cloud" href="/connect/google-cloud">Agent Runtime, Managed Agents, Agent Registry and CX Agent Studio, as a service account.</Card>
-  <Card title="Databricks" href="/connect/databricks">Serving endpoints, Agent Bricks, Genie, models, MCP servers and skills, as a service principal.</Card>
-  <Card title="Anthropic" href="/connect/anthropic">The Claude models and API keys an organization uses, with an Admin API key.</Card>
-  <Card title="Snowflake" href="/connect/snowflake">Cortex Agents, CoWork, MCP servers, Cortex Search and semantic views, as a service user.</Card>
-</CardGroup>
+<div className="oc-cards oc-cards-logos">
+  <a className="oc-card" href="/connect/aws"><div className="oc-card-media is-logo"><CloudLogo name="aws" /></div><div className="oc-t">AWS</div><span>Bedrock agents, AgentCore, the AWS Agent Registry and guardrails, through a read-only role.</span></a>
+  <a className="oc-card" href="/connect/microsoft"><div className="oc-card-media is-logo"><CloudLogo name="microsoft" /></div><div className="oc-t">Microsoft</div><span>Copilot Studio, Agent Builder, the Agent 365 catalog and Azure AI Foundry, as an Entra app.</span></a>
+  <a className="oc-card" href="/connect/google-cloud"><div className="oc-card-media is-logo"><CloudLogo name="gcp" /></div><div className="oc-t">Google Cloud</div><span>Agent Runtime, Managed Agents, Agent Registry and CX Agent Studio, as a service account.</span></a>
+  <a className="oc-card" href="/connect/databricks"><div className="oc-card-media is-logo"><CloudLogo name="databricks" /></div><div className="oc-t">Databricks</div><span>Serving endpoints, Agent Bricks, Genie, models, MCP servers and skills, as a service principal.</span></a>
+  <a className="oc-card" href="/connect/anthropic"><div className="oc-card-media is-logo"><CloudLogo name="anthropic" /></div><div className="oc-t">Anthropic</div><span>The Claude models and API keys an organization uses, with an Admin API key.</span></a>
+  <a className="oc-card" href="/connect/snowflake"><div className="oc-card-media is-logo"><CloudLogo name="snowflake" /></div><div className="oc-t">Snowflake</div><span>Cortex Agents, CoWork, MCP servers, Cortex Search and semantic views, as a service user.</span></a>
+</div>
 
 ## Who can do this
 
