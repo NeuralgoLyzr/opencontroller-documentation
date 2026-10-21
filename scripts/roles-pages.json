@@ -24,6 +24,11 @@
   "/discover/map": [
     "graph:read"
   ],
+  "/discover/overview": [
+    "assets:read",
+    "registry:read",
+    "observability:read"
+  ],
   "/discover/people": [
     "spend:people"
   ],
