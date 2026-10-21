@@ -171,7 +171,8 @@
     if (!header || header.parentNode.querySelector(".oc-answer")) return;
     var place = CONSOLE[location.pathname.replace(/\/$/, "")];
     var who = document.querySelector("#content-area .oc-who");
-    if (!place && !who) return;
+    var inAtlas = window.__ocAtlas && window.__ocAtlas.pages[location.pathname.replace(/\/$/, "")];
+    if (!place && !who && !inAtlas) return;
     var strip = document.createElement("div");
     strip.className = "oc-answer";
     var html = "";
@@ -261,10 +262,44 @@
     });
   }
 
+  // The controls a page helps evidence, from atlas.js (generated from the Frameworks page):
+  // one chip per framework with its count, the codes in the chip's title.
+  function controlsCell() {
+    var atlas = window.__ocAtlas;
+    var strip = document.querySelector("#content-area .oc-answer");
+    if (!atlas || !strip || strip.querySelector(".oc-answer-fw")) return;
+    var mine = atlas.pages[location.pathname.replace(/\/$/, "")];
+    if (!mine) return;
+    var chips = atlas.frameworks.filter(function (f) { return mine[f.id] && mine[f.id].length; }).map(function (f) {
+      return '<a class="oc-fw" href="/posture/frameworks" title="' + esc(mine[f.id].join(", ")) + '">' + esc(f.label) + " <b>" + mine[f.id].length + "</b></a>";
+    });
+    if (!chips.length) return;
+    var cell = document.createElement("div");
+    cell.className = "oc-answer-cell oc-answer-fw";
+    cell.innerHTML = '<span class="oc-answer-k">Framework controls</span><span class="oc-answer-v">' + chips.join("") + "</span>";
+    strip.appendChild(cell);
+  }
+
+  // The atlas's framework picker: one column lit, the rest recede. Event delegation, so it
+  // survives Mintlify re-rendering the page.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-fw-pick]");
+    if (!b) return;
+    var atlas = b.closest(".oc-atlas");
+    if (!atlas) return;
+    var id = b.getAttribute("data-fw-pick");
+    var same = atlas.getAttribute("data-fw") === id;
+    var next = same ? "all" : id;
+    atlas.setAttribute("data-fw", next);
+    Array.prototype.forEach.call(atlas.querySelectorAll("[data-fw-pick]"), function (x) {
+      x.setAttribute("aria-pressed", x.getAttribute("data-fw-pick") === next ? "true" : "false");
+    });
+  });
+
   var pending;
   function run() {
     clearTimeout(pending);
-    pending = setTimeout(function () { answerStrip(); bindNodes(); stepper(); }, 120);
+    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); }, 120);
   }
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   run();

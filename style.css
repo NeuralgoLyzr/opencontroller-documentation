@@ -49,8 +49,8 @@ code, pre, kbd, samp, .font-mono {
 body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-settings: "ss01", "cv05"; }
 
 /* The console's soft colours: its good, warning, destructive, model and alternate accents, one per capability. */
-:root { --oc-slate: #3d5a86; --oc-green: #3f7a4f; --oc-ochre: #a5671c; --oc-rust: #9e3b28; --oc-violet: #7a5a8c; --oc-sienna: #a0522d; --oc-tint: 12%; }
-.dark { --oc-slate: #9db2d4; --oc-green: #6faa83; --oc-ochre: #cfa25a; --oc-rust: #d4685a; --oc-violet: #ae92c9; --oc-sienna: #cc8459; --oc-tint: 16%; }
+:root { --oc-border-strong: #d2cdc0; --oc-slate: #3d5a86; --oc-green: #3f7a4f; --oc-ochre: #a5671c; --oc-rust: #9e3b28; --oc-violet: #7a5a8c; --oc-sienna: #a0522d; --oc-tint: 12%; }
+.dark { --oc-border-strong: #38362f; --oc-slate: #9db2d4; --oc-green: #6faa83; --oc-ochre: #cfa25a; --oc-rust: #d4685a; --oc-violet: #ae92c9; --oc-sienna: #cc8459; --oc-tint: 16%; }
 .tone-discover { --oc-tone: var(--oc-green); }
 .tone-govern { --oc-tone: var(--oc-ochre); }
 .tone-control { --oc-tone: var(--oc-rust); }
@@ -60,7 +60,6 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-card-media { background: color-mix(in srgb, var(--oc-tone, var(--oc-primary)) var(--oc-tint), transparent); color: var(--oc-tone, var(--oc-primary)); }
 .oc-card:hover { border-color: var(--oc-tone, var(--oc-primary)) !important; }
 .oc-t[class*="tone-"]::before, .oc-strip .oc-t::before { content: ""; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--oc-tone, var(--oc-primary)); margin-right: 0.5rem; vertical-align: 0.05em; }
-.oc-cols > div[class*="tone-"] .oc-t { border-top-color: var(--oc-tone); }
 
 /* Callouts in the same colours, on the page's own paper, in place of Tailwind's pastels. */
 .callout { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-sidebar) !important; align-items: flex-start !important; }
@@ -162,10 +161,6 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 #assistant-entry, #assistant-entry-mobile, .chat-assistant-floating-input { display: none !important; }
 
 /* The home page: a quickstart banner, a tabbed panel on the diagrams, and capability cards. */
-.oc-banner { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin: 0.5rem 0 1.5rem; padding: 1.125rem 1.5rem; border-radius: var(--oc-radius); border: 1px solid var(--oc-border); background: var(--oc-sidebar); color: var(--oc-foreground); }
-.oc-banner .oc-t { display: block; font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.2rem; }
-.oc-banner span { font-size: 0.9375rem; color: var(--oc-muted-foreground); }
-.oc-banner-actions { display: flex; gap: 0.5rem; flex: none; }
 .oc-btn { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.9rem; border-radius: var(--oc-radius); border: 1px solid var(--oc-border) !important; background: var(--oc-paper); color: var(--oc-foreground) !important; font-size: 0.875rem; font-weight: 600; text-decoration: none !important; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 120ms cubic-bezier(0.16, 1, 0.3, 1); }
 .oc-btn:hover { border-color: var(--oc-muted-foreground) !important; }
 .oc-btn-primary { background: var(--oc-primary); border-color: var(--oc-primary) !important; color: #fff !important; }
@@ -194,9 +189,6 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-card span { font-size: 0.9rem; line-height: 1.55; color: var(--oc-muted-foreground); }
 
 /* Three readers, side by side, as plain prose. */
-.oc-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; margin-top: 1.25rem; }
-.oc-cols .oc-t { margin: 0 0 0.5rem; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; padding-top: 0.75rem; border-top: 2px solid var(--oc-foreground); }
-.oc-cols p { margin: 0; font-size: 0.9375rem; color: var(--oc-muted-foreground); }
 
 /* Three commitments, as a strip. */
 .oc-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 1.25rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); overflow: hidden; }
@@ -217,9 +209,7 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-links li:hover::after { transform: translateX(3px); color: var(--oc-primary); }
 
 @media (max-width: 760px) {
-  .oc-banner { flex-direction: column; align-items: flex-start; }
-  .oc-cards { grid-template-columns: 1fr; }
-  .oc-cols, .oc-strip { grid-template-columns: 1fr; }
+    .oc-cards { grid-template-columns: 1fr; }
   .oc-strip > div { border-left: 0; border-top: 1px solid var(--oc-border); }
   .oc-strip > div:first-child { border-top: 0; }
   .oc-links li { grid-template-columns: 1fr auto; }
@@ -362,4 +352,77 @@ td.oc-lit { box-shadow: none; }
   .oc-answer { grid-template-columns: 1fr; }
   .oc-panel-head { padding-right: 1.5rem; }
   .oc-play { position: static; margin-top: 0.5rem; }
+}
+
+/* ---- The control framework atlas (snippets/atlas.mdx, generated) ------------------------ */
+
+.oc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0.25rem 0 2rem; }
+.oc-actions span { flex: 1 1 18rem; font-size: 0.875rem; color: var(--oc-muted-foreground); }
+
+/* The categories in the console's Findings colours. */
+.oc-cat-gov { --oc-cat: var(--oc-border-strong); }
+.oc-cat-exp { --oc-cat: var(--oc-rust); }
+.oc-cat-iam { --oc-cat: var(--oc-muted-foreground); }
+.oc-cat-agy { --oc-cat: var(--oc-sienna); }
+.oc-cat-obs { --oc-cat: var(--oc-foreground); }
+.oc-cat-rt { --oc-cat: var(--oc-slate); }
+.oc-cat-dat { --oc-cat: var(--oc-ochre); }
+.oc-cat-sup { --oc-cat: var(--oc-violet); }
+
+.oc-atlas { margin: 0 0 3rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-paper); overflow: hidden; }
+.oc-atlas-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--oc-border); background: var(--oc-sidebar); }
+.oc-atlas-count { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: var(--oc-muted-foreground); }
+.oc-atlas-count b { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; color: var(--oc-foreground); font-variant-numeric: tabular-nums; margin-right: 0.25rem; }
+.oc-atlas-pick { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0.1875rem; border: 1px solid var(--oc-border); border-radius: calc(var(--oc-radius) + 2px); background: var(--oc-paper); }
+.oc-atlas-pick button { height: 1.75rem; padding: 0 0.625rem; border: 0; border-radius: calc(var(--oc-radius) - 2px); background: transparent; color: var(--oc-muted-foreground); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1), color 140ms cubic-bezier(0.16, 1, 0.3, 1); }
+.oc-atlas-pick button:hover { color: var(--oc-foreground); background: var(--oc-muted); }
+.oc-atlas-pick button[aria-pressed="true"] { color: var(--oc-paper); background: var(--oc-foreground); }
+.oc-atlas-scroll { overflow-x: auto; }
+.prose .oc-atlas-grid, .oc-atlas-grid { display: table !important; width: 100% !important; max-width: none !important; min-width: 44rem; margin: 0 !important; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; }
+.oc-atlas-grid .oc-atlas-corner { width: 13rem; }
+.oc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.oc-atlas-grid thead th { padding: 0.75rem 0.5rem 0.625rem !important; text-align: center; vertical-align: bottom; border-bottom: 1px solid var(--oc-border) !important; background: var(--oc-paper); font-size: 0.75rem !important; font-weight: 600; letter-spacing: 0 !important; text-transform: none !important; color: var(--oc-muted-foreground) !important; }
+.oc-atlas-grid tbody th, .oc-atlas-grid tbody td { padding: 0.5rem !important; vertical-align: middle; border-bottom: 1px solid var(--oc-border) !important; }
+.oc-atlas-grid tbody td { text-align: center; }
+.oc-atlas-grid tbody th { text-align: left; font-weight: 400; background: var(--oc-paper); position: sticky; left: 0; z-index: 1; padding-left: 1rem !important; }
+.oc-atlas-grid tbody tr:last-child th, .oc-atlas-grid tbody tr:last-child td { border-bottom: 0 !important; }
+.oc-atlas-cat { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--oc-foreground) !important; text-decoration: none !important; border: 0 !important; }
+.oc-atlas-cat:hover { color: var(--oc-primary) !important; }
+.oc-atlas-cat i { flex: none; width: 0.625rem; height: 0.625rem; border-radius: 2px; background: var(--oc-cat); }
+
+/* A cell is one number on a tint that deepens with the count; the codes wait for a pick. */
+.oc-cell { display: inline-flex; flex-direction: column; align-items: center; gap: 0.375rem; cursor: help; }
+.oc-n { display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; padding: 0 0.375rem; border-radius: calc(var(--oc-radius) - 2px); font-size: 0.875rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--oc-foreground); background: color-mix(in srgb, var(--oc-primary) 10%, var(--oc-paper)); }
+.oc-n[data-n="2"] { background: color-mix(in srgb, var(--oc-primary) 20%, var(--oc-paper)); }
+.oc-n[data-n="3"] { background: color-mix(in srgb, var(--oc-primary) 32%, var(--oc-paper)); }
+.oc-n[data-n="4"] { background: color-mix(in srgb, var(--oc-primary) 46%, var(--oc-paper)); color: var(--oc-paper); }
+.dark .oc-n[data-n="4"] { color: #121110; }
+.oc-codes { display: none; flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
+.oc-ctl { display: inline-block; padding: 0.05rem 0.375rem; border: 1px solid var(--oc-border); border-bottom-width: 2px; border-radius: 4px; background: var(--oc-sidebar); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; line-height: 1.5; white-space: nowrap; color: var(--oc-foreground); }
+.oc-ctl-none { color: var(--oc-border-strong); font-size: 1.125rem; line-height: 2rem; }
+.oc-atlas-note { margin: 0 !important; padding: 0.75rem 1rem; border-top: 1px solid var(--oc-border); font-size: 0.75rem !important; color: var(--oc-muted-foreground); background: var(--oc-sidebar); max-width: none !important; }
+
+/* One framework picked: its column lights and opens to its codes, the rest recede. */
+.oc-atlas td, .oc-atlas thead th { transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.oc-atlas:not([data-fw="all"]) [data-fw-col] { opacity: 0.3; }
+.oc-atlas[data-fw="owasp-llm"] [data-fw-col="owasp-llm"], .oc-atlas[data-fw="owasp-agentic"] [data-fw-col="owasp-agentic"],
+.oc-atlas[data-fw="mitre-atlas"] [data-fw-col="mitre-atlas"], .oc-atlas[data-fw="nist-ai-rmf"] [data-fw-col="nist-ai-rmf"],
+.oc-atlas[data-fw="iso-42001"] [data-fw-col="iso-42001"], .oc-atlas[data-fw="eu-ai-act"] [data-fw-col="eu-ai-act"],
+.oc-atlas[data-fw="aws-security-hub"] [data-fw-col="aws-security-hub"] { opacity: 1; background: color-mix(in srgb, var(--oc-primary) 6%, var(--oc-paper)); }
+.oc-atlas[data-fw="owasp-llm"] td[data-fw-col="owasp-llm"] .oc-codes, .oc-atlas[data-fw="owasp-agentic"] td[data-fw-col="owasp-agentic"] .oc-codes,
+.oc-atlas[data-fw="mitre-atlas"] td[data-fw-col="mitre-atlas"] .oc-codes, .oc-atlas[data-fw="nist-ai-rmf"] td[data-fw-col="nist-ai-rmf"] .oc-codes,
+.oc-atlas[data-fw="iso-42001"] td[data-fw-col="iso-42001"] .oc-codes, .oc-atlas[data-fw="eu-ai-act"] td[data-fw-col="eu-ai-act"] .oc-codes,
+.oc-atlas[data-fw="aws-security-hub"] td[data-fw-col="aws-security-hub"] .oc-codes { display: flex; }
+.oc-atlas:not([data-fw="all"]) .oc-atlas-grid { table-layout: auto; }
+
+/* Each page's controls, in the answer strip. */
+.oc-fw { display: inline-flex; align-items: center; gap: 0.35rem; height: 1.5rem; padding: 0 0.5rem; border: 1px solid var(--oc-border); border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: var(--oc-foreground) !important; text-decoration: none !important; background: var(--oc-sidebar); }
+.oc-fw b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--oc-muted-foreground); }
+.oc-fw:hover { border-color: var(--oc-muted-foreground); }
+
+@media (max-width: 760px) {
+  .oc-strip { grid-template-columns: 1fr; }
+  .oc-atlas-head { padding: 0.75rem; }
+  .oc-atlas-grid .oc-atlas-corner { width: 10rem; }
+  .oc-actions span { flex-basis: 100%; }
 }

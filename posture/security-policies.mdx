@@ -4,11 +4,19 @@ description: "The thirty checks the posture runs over your inventory, what each 
 icon: "list-checks"
 ---
 
+import { Atlas } from '/snippets/atlas.mdx'
+
 A security policy is one detector the posture runs over the inventory. Each one tests a single risk, such as an API key that never expires or an agent that calls models around the LLM gateway, on the clouds where it can be seen. When a policy matches an asset, that is a finding on [Findings](/posture/findings). The **Security policies** page, under Posture, is where you decide which policies run.
 
 Security policies are not the same as governance policies. The **Policies** page under Govern holds the registration policy: what counts as a shadow asset, what a registration request must state, who approves it. Security policies only read the inventory and report.
 
 **Who can do this:** `posture:read` lets you read the page. Switching a policy on or off, or setting the allowed model providers, needs `posture:govern`. Each change is written to the audit log.
+
+## Policies by framework
+
+Each row is a category of policies, as Findings groups them, and each number counts the controls in one framework that the category's policies answer. Pick a framework to see its controls. The mapping is the one on [Frameworks](/posture/frameworks).
+
+<Atlas />
 
 ## Turning policies on and off
 

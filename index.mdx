@@ -7,15 +7,10 @@ icon: "book-open"
 
 import { Diagram } from '/snippets/diagrams.mdx'
 
-<div className="oc-banner">
-  <div>
-    <div className="oc-t">Quickstart</div>
-    <span>Connect one cloud with a read credential and see your AI inventory in minutes. Nothing moves.</span>
-  </div>
-  <div className="oc-banner-actions">
-    <a className="oc-btn oc-btn-primary" href="/get-started/quickstart">Get started</a>
-    <a className="oc-btn" href="/connect/overview">Connect a cloud</a>
-  </div>
+<div className="oc-actions">
+  <a className="oc-btn oc-btn-primary" href="/get-started/quickstart">Get started</a>
+  <a className="oc-btn" href="/connect/overview">Connect a cloud</a>
+  <span>Connect one cloud with a read credential and see your AI inventory in minutes. Nothing moves.</span>
 </div>
 
 <div className="oc-panel">
@@ -49,58 +44,6 @@ import { Diagram } from '/snippets/diagrams.mdx'
       Evaluators judge the traces with a model and record scores, and monitors say when an agent gets worse. [Evals](/monitor/evals).
     </Tab>
   </Tabs>
-</div>
-
-## What it covers
-
-<div className="oc-cards">
-  <a className="oc-card tone-discover" href="/discover/inventory">
-    <div className="oc-card-media"><Icon icon="radar" /></div>
-    <div className="oc-t">AI discovery</div>
-    <span>One inventory of every agent, model, MCP server, tool, identity and memory across AWS, Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, read on a schedule. Shadow AI shows what nobody has registered.</span>
-  </a>
-  <a className="oc-card tone-govern" href="/govern/registry">
-    <div className="oc-card-media"><Icon icon="clipboard-check" /></div>
-    <div className="oc-t">Governance</div>
-    <span>A registry of approved agents with named owners, a registration policy, approvals with separation of duties, and an audit trail.</span>
-  </a>
-  <a className="oc-card tone-control" href="/govern/control-actions">
-    <div className="oc-card-media"><Icon icon="octagon-x" /></div>
-    <div className="oc-t">Control</div>
-    <span>Block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on.</span>
-  </a>
-  <a className="oc-card tone-runtime" href="/runtime/llm-gateway">
-    <div className="oc-card-media"><Icon icon="shield" /></div>
-    <div className="oc-t">Runtime security</div>
-    <span>An LLM gateway with virtual keys, budgets and logs, and guardrails that block, redact or mask personal data, secrets, prompt injection and off-topic use.</span>
-  </a>
-  <a className="oc-card tone-posture" href="/posture/findings">
-    <div className="oc-card-media"><Icon icon="scan-search" /></div>
-    <div className="oc-t">Posture</div>
-    <span>Thirty security policies checked continuously, raising findings with severities, mapped to the OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU AI Act.</span>
-  </a>
-  <a className="oc-card tone-observe" href="/monitor/observability">
-    <div className="oc-card-media"><Icon icon="activity" /></div>
-    <div className="oc-t">Observability and evals</div>
-    <span>Traces of what agents did and what they cost, issues surfaced from them, and evaluators that score agents over time.</span>
-  </a>
-</div>
-
-## Who it is for
-
-<div className="oc-cols">
-  <div className="tone-posture">
-    <div className="oc-t">Security</div>
-    <p>Teams accountable for AI they did not build and cannot see. OpenController gives them the inventory, the owner of every agent, the findings, and the stop button.</p>
-  </div>
-  <div className="tone-runtime">
-    <div className="oc-t">AI and platform leaders</div>
-    <p>Those who want teams to build agents without a review bottleneck. The registry and the gateway make the approved path the easy path.</p>
-  </div>
-  <div className="tone-govern">
-    <div className="oc-t">Governance, risk and compliance</div>
-    <p>Those who need evidence: which AI systems exist, who owns them, what controls apply, and how that maps to the frameworks auditors ask about.</p>
-  </div>
 </div>
 
 ## How it treats your environment
