@@ -47,7 +47,9 @@ python3 scripts/flags.py --check   # docs.json matches flags.json
 
 CI runs all four on every pull request and on `main`. `flags.json` turns parts of the site on and off (the API
 reference, for one); apply a change with `python3 scripts/flags.py`. Diagrams are drawn by `scripts/diagrams.py`
-into `snippets/diagrams.mdx`; edit the script, never the snippet.
+into `snippets/diagrams.mdx`; edit the script, never the snippet. The framework atlas (`scripts/atlas.py`) and the
+permission table (`scripts/roles.py`, from the platform's source) are generated the same way. Pages never carry a
+"Who can do this" paragraph: list a page's permissions in `scripts/roles-pages.json` instead.
 
 ## Content boundaries
 

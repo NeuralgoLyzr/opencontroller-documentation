@@ -6,8 +6,6 @@ icon: "scroll-text"
 
 The audit log is the organization's record. It lives under **Settings, Audit log** (the `/audit` address redirects there). It has two tabs, each backed by its own log.
 
-**Who can do this:** `actions:read` (a viewer's permission) for **AI assets**. `audit:read` (an administrator's) for **Identity & access**; without it only the first tab is shown.
-
 ## AI assets
 
 Every [control action](/govern/control-actions) taken on an agent, newest first, including the ones that failed. Each entry shows what was done (Shared with, Removed, Ended organization-wide sharing, Published, Blocked, Unblocked, Deleted, Routed through the LLM gateway, Taken off the LLM gateway), on which asset, when, by whom, and whether the agent was published afterwards. A failed entry carries the error.

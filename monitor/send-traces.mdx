@@ -6,8 +6,6 @@ icon: "send"
 
 An agent sends its traces to OpenController's intake, an OTLP endpoint on the console's own address. The intake checks the API key, stamps the project and its agent onto the trace, and forwards it to the collector that writes the store. Each project's **Setup** page fills the snippets below in with your project's id and address.
 
-**Who can do this:** the key's service account needs `observability:send`: an operator or administrator role, or a custom role with that permission. Creating the key needs `service-accounts:write`.
-
 ## The endpoint
 
 | | |

@@ -27,8 +27,6 @@ Click **Run scan**. It starts one scan per cloud with something to read: AWS alw
 
 A cloud already scanning is left to finish: starting another returns "a scan of that provider is already running". One scan is bounded by `DISCOVERY_SCAN_TIMEOUT` (default `15m`). If the service stops while a scan is running, that scan is marked failed.
 
-Who can do this: `scans:run` (Operator). Reading scans needs `scans:read` (Viewer).
-
 ## How often discovery runs
 
 Each enabled connection is rescanned once per interval, counted from its last scan, whoever started it. So a scan you start pushes the next automatic one back, and a restart neither forgets the schedule nor rescans at once. The scheduler looks for due scans every minute.
@@ -45,8 +43,6 @@ Administrators can set an interval per connection under **Settings**, **Scan sch
 | **Last scan** | When it last started, or **Never**. |
 
 To change it, pick a **Connection** (or **All connections**) and **Scan every**: 5 min, 15 min, 30 min, 1 hour, 6 hours, 12 hours, 1 day, **Custom…** (a number of **Minutes** from 1 to 10080), **Off: only when started**, or **Default**. Click **Save**. The change is recorded in the audit log.
-
-Who can do this: `scans:schedule` (Admin) to change; `scans:read` to view.
 
 ## Read a scan's result
 

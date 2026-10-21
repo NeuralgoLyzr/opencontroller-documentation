@@ -8,8 +8,6 @@ import { Diagram } from '/snippets/diagrams.mdx'
 
 Observability is the record of what your agents did at runtime: every run, its model calls, tools, tokens, cost and failures, read from an OpenTelemetry trace store. The posture tells you what an agent could do; observability tells you what it did. The policies **OBS-1** and **OBS-2** on [Findings](/posture/findings) read the same data to say which agents nobody traces or evaluates.
 
-**Who can do this:** `observability:read` reads traces and what they cost (a viewer; scoped to the teams whose projects you belong to). `observability:content` reads what was asked and answered (an operator); without it inputs and outputs are hidden. `observability:projects` makes, changes and removes projects (an administrator). `observability:send` sends traces to a project (an operator, or a service account with that permission). Connecting the trace store needs `modules:endpoint`.
-
 ## The connection
 
 OpenController does not store traces itself. An OpenTelemetry Collector writes them to ClickHouse, and the console reads them from there with a read-only user. Until a store is connected, every observability page says **No trace store connected** and links to the settings.

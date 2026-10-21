@@ -45,3 +45,4 @@ jobs:
       - run: python3 scripts/check.py
       - run: python3 scripts/flags.py --check
       - run: python3 scripts/atlas.py --check
+      - run: python3 scripts/roles.py --check

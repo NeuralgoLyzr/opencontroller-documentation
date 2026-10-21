@@ -36,6 +36,19 @@ to `docs.json`, and commit both.
 | Flag | What it shows |
 |---|---|
 | `apiReference` | The API reference tab: the guide pages and the endpoints from `api-reference/openapi.json`. |
+| `fineTuning` | The Fine-tuning page, in an Improve group before Ask Ctrl. |
+
+## Generated pages
+
+Three parts of the site are generated, never edited by hand, and CI fails when one is stale:
+
+| Script | Writes | From |
+|---|---|---|
+| `scripts/diagrams.py` | `snippets/diagrams.mdx` | The drawings in the script. |
+| `scripts/atlas.py` | `snippets/atlas.mdx`, `atlas.js` | The Frameworks page and the policy catalog on Security policies. |
+| `scripts/roles.py` | `snippets/roles.mdx`, `roles.js` | The platform's permission catalogs, read from `../../services/platform` (or `OC_PLATFORM`), and `scripts/roles-pages.json`, which says which pages use which permissions. |
+
+Pages do not repeat who can do what: the answer strip under each title names the roles, from `roles.js`, and the Roles page holds the full table. When a page starts using a permission, add it to `scripts/roles-pages.json` and run `python3 scripts/roles.py`.
 
 ## Diagrams
 

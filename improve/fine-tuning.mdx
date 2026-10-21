@@ -2,15 +2,13 @@
 title: "Fine-tuning"
 description: "Train small models of your own on what your agents do, in the OpenFinetuner studio shown inside OpenController."
 icon: "graduation-cap"
+hidden: true
 ---
 
 Fine-tuning trains small models of your own on what your agents do. The training runs in its own studio,
 OpenFinetuner, on the machines it trains on. OpenController does not train anything itself. It shows the studio's
 own console in place, under **Fine-tuning** in the sidebar, and routes every call that console makes through its
 own API, so your roles decide what each person may do and every change is recorded with their name.
-
-**Who can do this.** Connecting the studio needs `modules:endpoint` (the admin role). Once connected, viewers read,
-operators train, and admins manage the studio's tokens; see [What each role may do](#what-each-role-may-do).
 
 ## Before it is connected
 

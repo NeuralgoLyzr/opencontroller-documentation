@@ -120,9 +120,8 @@
             ]
           },
           {
-            "group": "Improve",
+            "group": "Ask Ctrl",
             "pages": [
-              "improve/fine-tuning",
               "assistant/ask-ctrl"
             ]
           },
@@ -137,6 +136,12 @@
               "connect/anthropic",
               "connect/snowflake",
               "connect/scans"
+            ]
+          },
+          {
+            "group": "Administration",
+            "pages": [
+              "administration/roles"
             ]
           }
         ]

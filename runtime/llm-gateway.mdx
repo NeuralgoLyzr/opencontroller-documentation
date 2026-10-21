@@ -27,8 +27,6 @@ Until a gateway is connected, every page says **No LLM gateway connected** and o
 
 ## Connect the gateway
 
-Who can do this: `modules:endpoint`, held by the Admin role by default.
-
 <Steps>
   <Step title="Open the connection page">
     Go to **Settings**, then **LLM Gateway**.
@@ -96,15 +94,6 @@ The key decides which providers and models the call may reach, and its budget an
 own content rules then check the prompt and the answer.
 
 <Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
-
-## Who can do what
-
-| Permission | Default role | Allows |
-|---|---|---|
-| `modules:read` | Viewer | Read the gateway's pages. |
-| `modules:use` | Operator | Change teams, customers, routing, content rules and prompts; search logs by content. |
-| `modules:govern` | Admin | Change virtual keys, providers and provider keys. |
-| `modules:endpoint` | Admin | Connect, check and disconnect the gateway. |
 
 ## API
 

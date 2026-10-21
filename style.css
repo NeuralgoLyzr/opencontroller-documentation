@@ -49,8 +49,8 @@ code, pre, kbd, samp, .font-mono {
 body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-settings: "ss01", "cv05"; }
 
 /* The console's soft colours: its good, warning, destructive, model and alternate accents, one per capability. */
-:root { --oc-border-strong: #d2cdc0; --oc-slate: #3d5a86; --oc-green: #3f7a4f; --oc-ochre: #a5671c; --oc-rust: #9e3b28; --oc-violet: #7a5a8c; --oc-sienna: #a0522d; --oc-tint: 12%; }
-.dark { --oc-border-strong: #38362f; --oc-slate: #9db2d4; --oc-green: #6faa83; --oc-ochre: #cfa25a; --oc-rust: #d4685a; --oc-violet: #ae92c9; --oc-sienna: #cc8459; --oc-tint: 16%; }
+:root { --oc-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E"); --oc-teal: #2f7a76; --oc-rose: #9b4d6e; --oc-border-strong: #d2cdc0; --oc-slate: #3d5a86; --oc-green: #3f7a4f; --oc-ochre: #a5671c; --oc-rust: #9e3b28; --oc-violet: #7a5a8c; --oc-sienna: #a0522d; --oc-tint: 12%; }
+.dark { --oc-teal: #6fb3ae; --oc-rose: #d08aa8; --oc-border-strong: #38362f; --oc-slate: #9db2d4; --oc-green: #6faa83; --oc-ochre: #cfa25a; --oc-rust: #d4685a; --oc-violet: #ae92c9; --oc-sienna: #cc8459; --oc-tint: 16%; }
 .tone-discover { --oc-tone: var(--oc-green); }
 .tone-govern { --oc-tone: var(--oc-ochre); }
 .tone-control { --oc-tone: var(--oc-rust); }
@@ -205,7 +205,7 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-links a { font-weight: 600; text-decoration: none !important; border-bottom: 0 !important; color: var(--oc-foreground) !important; }
 .oc-links li:hover a { color: var(--oc-primary) !important; }
 .oc-links span { color: var(--oc-muted-foreground); font-size: 0.9375rem; }
-.oc-links li::after { content: "→"; color: var(--oc-muted-foreground); transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
+.oc-links li::after { content: ""; width: 1rem; height: 1rem; background: currentColor; -webkit-mask: var(--oc-arrow) center / contain no-repeat; mask: var(--oc-arrow) center / contain no-repeat; color: var(--oc-muted-foreground); transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
 .oc-links li:hover::after { transform: translateX(3px); color: var(--oc-primary); }
 
 @media (max-width: 760px) {
@@ -272,13 +272,6 @@ html[data-tone="observe"] { --oc-tone: var(--oc-sienna); }
 /* The reading line: a hairline under the navbar that fills as you read. */
 .oc-reading { position: fixed; top: 0; left: 0; z-index: 60; width: 100%; height: 2px; background: var(--oc-tone, var(--oc-primary)); transform-origin: 0 50%; transform: scaleX(0); transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
 
-/* Who can do this: the permissions as keys on a strip. */
-.oc-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; margin: 1.25rem 0 1.75rem; padding: 0.75rem 1rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); font-size: 0.9375rem; line-height: 1.6; }
-.oc-who-label { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--oc-tone, var(--oc-primary)); }
-.oc-who-label svg { width: 0.875rem; height: 0.875rem; }
-.oc-who-body { flex: 1 1 24rem; min-width: 0; color: var(--oc-foreground); }
-.oc-who-body code { background: var(--oc-paper) !important; border: 1px solid var(--oc-border) !important; border-bottom-width: 2px !important; border-radius: 4px !important; padding: 0.05em 0.4em !important; font-size: 0.8125rem !important; color: var(--oc-foreground) !important; }
-
 /* HTTP methods as tags in front of their paths. */
 .oc-method { display: inline-block; margin-right: 0.4rem; padding: 0.05em 0.4em; border-radius: 4px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; vertical-align: 0.1em; color: var(--oc-paper); background: var(--oc-muted-foreground); }
 .dark .oc-method { color: #121110; }
@@ -304,7 +297,6 @@ code.oc-method { padding: 0.05em 0.4em !important; border: 0 !important; color: 
   @keyframes oc-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 }
 @media (max-width: 760px) {
-  .oc-who { padding: 0.625rem 0.75rem; }
   .oc-keys { display: none; }
 }
 
@@ -324,6 +316,9 @@ code.oc-method { padding: 0.05em 0.4em !important; border: 0 !important; color: 
 .oc-role-admin { --oc-tone: var(--oc-rust); }
 .oc-role-operator { --oc-tone: var(--oc-ochre); }
 .oc-role-viewer { --oc-tone: var(--oc-green); }
+.oc-role-owner { --oc-tone: var(--oc-violet); }
+a.oc-role { text-decoration: none !important; border: 0 !important; }
+a.oc-role:hover { box-shadow: inset 0 0 0 1px var(--oc-tone); }
 /* The eyebrow above the title says what the sidebar already says. */
 #content-area #header nav, #content-area #header [class*="eyebrow"] { display: none !important; }
 
@@ -342,7 +337,8 @@ td.oc-lit { box-shadow: none; }
 .oc-play span { color: inherit !important; font-size: inherit !important; }
 .oc-play .oc-pause-i, .oc-play.is-on .oc-play-i { display: none; }
 .oc-play.is-on .oc-pause-i { display: block; }
-.oc-play.is-on { background: var(--oc-foreground); color: var(--oc-paper); border-color: var(--oc-foreground); }
+.oc-play.is-on { background: var(--oc-primary); color: #fff; border-color: var(--oc-primary); }
+.dark .oc-play.is-on { color: #141311; }
 .oc-panel [role="tab"] { position: relative; }
 .oc-panel [role="tab"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--oc-tone, var(--oc-primary)); transform: scaleX(0); transform-origin: 0 50%; }
 .oc-panel.oc-playing [role="tab"][aria-selected="true"]::after { animation: oc-step 4200ms linear forwards; }
@@ -361,14 +357,14 @@ td.oc-lit { box-shadow: none; }
 .oc-actions span { flex: 1 1 18rem; font-size: 0.875rem; color: var(--oc-muted-foreground); }
 
 /* The categories in the console's Findings colours. */
-.oc-cat-gov { --oc-cat: var(--oc-border-strong); }
+.oc-cat-gov { --oc-cat: var(--oc-green); }
 .oc-cat-exp { --oc-cat: var(--oc-rust); }
-.oc-cat-iam { --oc-cat: var(--oc-muted-foreground); }
+.oc-cat-iam { --oc-cat: var(--oc-violet); }
 .oc-cat-agy { --oc-cat: var(--oc-sienna); }
-.oc-cat-obs { --oc-cat: var(--oc-foreground); }
+.oc-cat-obs { --oc-cat: var(--oc-teal); }
 .oc-cat-rt { --oc-cat: var(--oc-slate); }
 .oc-cat-dat { --oc-cat: var(--oc-ochre); }
-.oc-cat-sup { --oc-cat: var(--oc-violet); }
+.oc-cat-sup { --oc-cat: var(--oc-rose); }
 
 .oc-atlas { margin: 0 0 3rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-paper); overflow: hidden; }
 .oc-atlas-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--oc-border); background: var(--oc-sidebar); }
@@ -377,14 +373,16 @@ td.oc-lit { box-shadow: none; }
 .oc-atlas-pick { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0.1875rem; border: 1px solid var(--oc-border); border-radius: calc(var(--oc-radius) + 2px); background: var(--oc-paper); }
 .oc-atlas-pick button { height: 1.75rem; padding: 0 0.625rem; border: 0; border-radius: calc(var(--oc-radius) - 2px); background: transparent; color: var(--oc-muted-foreground); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1), color 140ms cubic-bezier(0.16, 1, 0.3, 1); }
 .oc-atlas-pick button:hover { color: var(--oc-foreground); background: var(--oc-muted); }
-.oc-atlas-pick button[aria-pressed="true"] { color: var(--oc-paper); background: var(--oc-foreground); }
+.oc-atlas-pick button[aria-pressed="true"] { color: #fff; background: var(--oc-primary); }
+.dark .oc-atlas-pick button[aria-pressed="true"] { color: #141311; }
 .oc-atlas-scroll { overflow-x: auto; }
 .prose .oc-atlas-grid, .oc-atlas-grid { display: table !important; width: 100% !important; max-width: none !important; min-width: 44rem; margin: 0 !important; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; }
 .oc-atlas-grid .oc-atlas-corner { width: 13rem; }
 .oc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .oc-atlas-grid thead th { padding: 0.75rem 0.5rem 0.625rem !important; text-align: center; vertical-align: bottom; border-bottom: 1px solid var(--oc-border) !important; background: var(--oc-paper); font-size: 0.75rem !important; font-weight: 600; letter-spacing: 0 !important; text-transform: none !important; color: var(--oc-muted-foreground) !important; }
 .oc-atlas-grid tbody th, .oc-atlas-grid tbody td { padding: 0.5rem !important; vertical-align: middle; border-bottom: 1px solid var(--oc-border) !important; }
-.oc-atlas-grid tbody td { text-align: center; }
+.oc-atlas-grid tbody td { text-align: center; border-left: 1px solid var(--oc-border); }
+.oc-atlas-grid thead th[data-fw-col] { border-left: 1px solid var(--oc-border); }
 .oc-atlas-grid tbody th { text-align: left; font-weight: 400; background: var(--oc-paper); position: sticky; left: 0; z-index: 1; padding-left: 1rem !important; }
 .oc-atlas-grid tbody tr:last-child th, .oc-atlas-grid tbody tr:last-child td { border-bottom: 0 !important; }
 .oc-atlas-cat { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--oc-foreground) !important; text-decoration: none !important; border: 0 !important; }
@@ -394,10 +392,12 @@ td.oc-lit { box-shadow: none; }
 /* A cell is one number on a tint that deepens with the count; the codes wait for a pick. */
 .oc-cell { display: inline-flex; flex-direction: column; align-items: center; gap: 0.375rem; cursor: help; }
 .oc-n { display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; padding: 0 0.375rem; border-radius: calc(var(--oc-radius) - 2px); font-size: 0.875rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--oc-foreground); background: color-mix(in srgb, var(--oc-primary) 10%, var(--oc-paper)); }
-.oc-n[data-n="2"] { background: color-mix(in srgb, var(--oc-primary) 20%, var(--oc-paper)); }
-.oc-n[data-n="3"] { background: color-mix(in srgb, var(--oc-primary) 32%, var(--oc-paper)); }
-.oc-n[data-n="4"] { background: color-mix(in srgb, var(--oc-primary) 46%, var(--oc-paper)); color: var(--oc-paper); }
-.dark .oc-n[data-n="4"] { color: #121110; }
+.oc-n[data-n="2"] { background: color-mix(in srgb, var(--oc-primary) 22%, var(--oc-paper)); }
+.oc-n[data-n="3"] { background: color-mix(in srgb, var(--oc-primary) 34%, var(--oc-paper)); }
+.oc-n[data-n="4"] { background: color-mix(in srgb, var(--oc-primary) 46%, var(--oc-paper)); }
+.dark .oc-n[data-n="1"] { background: color-mix(in srgb, var(--oc-primary) 12%, var(--oc-paper)); }
+.dark .oc-n[data-n="2"] { background: color-mix(in srgb, var(--oc-primary) 24%, var(--oc-paper)); }
+.dark .oc-n[data-n="3"] { background: color-mix(in srgb, var(--oc-primary) 36%, var(--oc-paper)); }
 .oc-codes { display: none; flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
 .oc-ctl { display: inline-block; padding: 0.05rem 0.375rem; border: 1px solid var(--oc-border); border-bottom-width: 2px; border-radius: 4px; background: var(--oc-sidebar); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; line-height: 1.5; white-space: nowrap; color: var(--oc-foreground); }
 .oc-ctl-none { color: var(--oc-border-strong); font-size: 1.125rem; line-height: 2rem; }
@@ -414,7 +414,6 @@ td.oc-lit { box-shadow: none; }
 .oc-atlas[data-fw="mitre-atlas"] td[data-fw-col="mitre-atlas"] .oc-codes, .oc-atlas[data-fw="nist-ai-rmf"] td[data-fw-col="nist-ai-rmf"] .oc-codes,
 .oc-atlas[data-fw="iso-42001"] td[data-fw-col="iso-42001"] .oc-codes, .oc-atlas[data-fw="eu-ai-act"] td[data-fw-col="eu-ai-act"] .oc-codes,
 .oc-atlas[data-fw="aws-security-hub"] td[data-fw-col="aws-security-hub"] .oc-codes { display: flex; }
-.oc-atlas:not([data-fw="all"]) .oc-atlas-grid { table-layout: auto; }
 
 /* Each page's controls, in the answer strip. */
 .oc-fw { display: inline-flex; align-items: center; gap: 0.35rem; height: 1.5rem; padding: 0 0.5rem; border: 1px solid var(--oc-border); border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: var(--oc-foreground) !important; text-decoration: none !important; background: var(--oc-sidebar); }
@@ -433,18 +432,69 @@ td.oc-lit { box-shadow: none; }
    and throw the provider marks to the corner. */
    A diagram is still until it scrolls into view (ui.js adds .oc-live). Then its parts arrive in
    drawing order, a signal runs each line the way it points, and OpenController's pill breathes.
-   Nothing moves for those who asked for less motion. */
+   Nothing moves for those who asked for less motion. A diagram is never blank: it waits at a
+   quarter strength and comes alive the moment any of it is on screen. */
 .oc-diagram .oc-flow { opacity: 0; stroke-dasharray: 3 14; }
 .oc-diagram .oc-pulse { opacity: 0; transform-box: fill-box; transform-origin: center; }
 @media (prefers-reduced-motion: no-preference) {
-  .oc-diagram.oc-ready > * { opacity: 0; }
+  .oc-diagram.oc-ready > * { opacity: 0.25; }
   .oc-diagram.oc-live > * { animation: oc-draw 520ms cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 18ms); }
   .oc-diagram.oc-live > .oc-flow { animation: oc-flow-in 400ms ease-out both, oc-flow 1.6s linear infinite; animation-delay: calc(600ms + var(--i, 0) * 18ms), 0s; }
   .oc-diagram.oc-live > .oc-pulse { animation: oc-breathe 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite; animation-delay: 900ms; }
   .oc-diagram.oc-live > g.oc-node > rect { transition: stroke 160ms cubic-bezier(0.16, 1, 0.3, 1); }
   .oc-diagram.oc-paused * { animation-play-state: paused !important; }
-  @keyframes oc-draw { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes oc-draw { from { opacity: 0.25; } to { opacity: 1; } }
   @keyframes oc-flow-in { from { opacity: 0; } to { opacity: 0.9; } }
   @keyframes oc-flow { from { stroke-dashoffset: 17; } to { stroke-dashoffset: 0; } }
   @keyframes oc-breathe { 0% { opacity: 0.55; transform: scale(1); } 70% { opacity: 0; transform: scale(1.08); } 100% { opacity: 0; transform: scale(1.08); } }
+}
+
+/* The atlas's category links carry a drawn arrow, quiet until hovered. */
+.oc-atlas-cat .oc-go { width: 0.875rem; height: 0.875rem; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; opacity: 0.45; transition: opacity 140ms cubic-bezier(0.16, 1, 0.3, 1), transform 140ms cubic-bezier(0.16, 1, 0.3, 1); }
+.oc-atlas-cat:hover .oc-go { opacity: 1; transform: translateX(2px); }
+
+/* The answer strip's crumb separator, drawn. */
+.oc-crumb .oc-sep { width: 0.75rem; height: 0.75rem; fill: none; stroke: var(--oc-muted-foreground); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* A diagram keeps its labels readable on a phone: it scrolls sideways rather than shrinking,
+   with a fade at the edge saying there is more. */
+.oc-diagram-wrap { max-width: 100%; }
+@media (max-width: 760px) {
+  .oc-diagram-wrap { overflow-x: auto; -webkit-mask: linear-gradient(to right, #000 82%, transparent); mask: linear-gradient(to right, #000 82%, transparent); padding-bottom: 0.25rem; }
+  .oc-diagram-wrap .oc-diagram { min-width: 620px; }
+  .oc-panel [role="tablist"] { flex-wrap: wrap; row-gap: 0.25rem; }
+  /* A framework picked on a phone: the category and that one column. */
+  .oc-atlas:not([data-fw="all"]) [data-fw-col] { display: none; }
+  .oc-atlas[data-fw="owasp-llm"] [data-fw-col="owasp-llm"], .oc-atlas[data-fw="owasp-agentic"] [data-fw-col="owasp-agentic"],
+  .oc-atlas[data-fw="mitre-atlas"] [data-fw-col="mitre-atlas"], .oc-atlas[data-fw="nist-ai-rmf"] [data-fw-col="nist-ai-rmf"],
+  .oc-atlas[data-fw="iso-42001"] [data-fw-col="iso-42001"], .oc-atlas[data-fw="eu-ai-act"] [data-fw-col="eu-ai-act"],
+  .oc-atlas[data-fw="aws-security-hub"] [data-fw-col="aws-security-hub"] { display: table-cell; }
+  .oc-atlas:not([data-fw="all"]) .oc-atlas-grid { min-width: 0; }
+}
+
+/* ---- Roles and permissions (snippets/roles.mdx, generated) ------------------------------ */
+.oc-roles { margin: 1rem 0 2rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-paper); overflow: hidden; }
+.oc-scroll { overflow-x: auto; }
+.prose .oc-roles-grid, .oc-roles-grid { display: table !important; width: 100% !important; max-width: none !important; min-width: 40rem; margin: 0 !important; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; }
+.oc-roles-grid thead th { position: sticky; top: 0; z-index: 2; padding: 0.75rem 1rem !important; text-align: left; background: var(--oc-sidebar); border-bottom: 1px solid var(--oc-border) !important; font-size: 0.75rem !important; font-weight: 600; letter-spacing: 0 !important; text-transform: none !important; color: var(--oc-muted-foreground) !important; }
+.oc-roles-grid thead th.oc-roles-col { width: 6.5rem; text-align: center; }
+.oc-roles-section th { padding: 1rem 1rem 0.5rem !important; text-align: left; font-size: 0.8125rem !important; font-weight: 700; color: var(--oc-foreground); background: var(--oc-paper); border-bottom: 1px solid var(--oc-border) !important; scroll-margin-top: 6rem; }
+.oc-roles-grid tbody tr:not(.oc-roles-section) th, .oc-roles-grid tbody td { padding: 0.625rem 1rem !important; vertical-align: top; border-bottom: 1px solid var(--oc-border) !important; }
+.oc-roles-grid tbody tr:not(.oc-roles-section) { scroll-margin-top: 6rem; }
+.oc-roles-grid tbody tr:not(.oc-roles-section):target { background: color-mix(in srgb, var(--oc-primary) 8%, var(--oc-paper)); }
+.oc-roles-grid tbody tr:not(.oc-roles-section) th { text-align: left; font-weight: 400; }
+.oc-roles-grid tbody th code { font-size: 0.8125rem !important; padding: 0.05em 0.4em !important; background: var(--oc-sidebar) !important; border: 1px solid var(--oc-border) !important; border-bottom-width: 2px !important; border-radius: 4px !important; color: var(--oc-foreground) !important; }
+.oc-roles-team { display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 600; line-height: 1.6; vertical-align: 0.1em; color: var(--oc-teal); background: color-mix(in srgb, var(--oc-teal) var(--oc-tint), transparent); cursor: help; }
+.oc-roles-sum { display: block; margin-top: 0.3rem; color: var(--oc-foreground); line-height: 1.5; }
+.oc-roles-where { display: flex; flex-wrap: wrap; gap: 0.15rem 0.75rem; margin-top: 0.3rem; font-size: 0.8125rem; }
+.oc-roles-where a { color: var(--oc-primary) !important; text-decoration: none !important; border: 0 !important; }
+.oc-roles-where a:hover { text-decoration: underline !important; text-underline-offset: 0.2em; }
+.oc-roles-grid td { text-align: center; vertical-align: middle !important; border-left: 1px solid var(--oc-border); }
+.oc-roles-grid td svg { width: 1rem; height: 1rem; fill: none; stroke: var(--oc-muted-foreground); stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
+.oc-roles-grid td.oc-least { background: color-mix(in srgb, var(--oc-primary) 8%, var(--oc-paper)); }
+.oc-roles-grid td.oc-least svg { stroke: var(--oc-primary); }
+.oc-roles-grid td.oc-not span { color: var(--oc-border-strong); }
+@media (max-width: 760px) {
+  .oc-roles-grid thead th.oc-roles-col { width: 4.25rem; padding: 0.75rem 0.25rem !important; }
+  .oc-roles-grid tbody td { padding: 0.625rem 0.25rem !important; }
 }

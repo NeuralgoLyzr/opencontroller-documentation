@@ -2,7 +2,7 @@
 //
 // 1. The section's tone follows you: the path sets data-tone on <html>, and the stylesheet
 //    colours the current sidebar row, the table of contents and the reading line from it.
-// 2. A "Who can do this" paragraph becomes a permission strip, with the permissions as keys.
+// 2. (Retired: who can act now lives on the Roles page and in the answer strip.)
 // 3. HTTP methods in the API tables and lists become method tags.
 // 4. [ and ] move to the previous and next page; the footer says so.
 // 5. A reading line under the navbar shows how far down the page you are.
@@ -27,31 +27,6 @@
     var t = tone(location.pathname);
     if (t) document.documentElement.setAttribute("data-tone", t);
     else document.documentElement.removeAttribute("data-tone");
-  }
-
-  // "Who can do this: `assets:read` to read…" → a strip with a key mark, the label, and the rest.
-  function permissionStrips(root) {
-    // Mintlify renders a paragraph as <p>, or as <span data-as="p"> inside a custom block.
-    var ps = root.querySelectorAll('p:not(.oc-done), span[data-as="p"]:not(.oc-done)');
-    for (var i = 0; i < ps.length; i++) {
-      var p = ps[i];
-      var first = p.firstElementChild;
-      var text = (p.textContent || "").replace(/\s+/g, " ").trim();
-      if (!/^Who can do this:?/i.test(text)) continue;
-      p.classList.add("oc-done");
-      if (first && first.tagName === "STRONG" && /^Who can do this/i.test(first.textContent)) p.removeChild(first);
-      // Drop the leading label and colon from a plain-text start.
-      if (p.firstChild && p.firstChild.nodeType === 3) p.firstChild.nodeValue = p.firstChild.nodeValue.replace(/^\s*Who can do this:?\s*/i, "");
-      var strip = document.createElement("div");
-      strip.className = "oc-who";
-      strip.innerHTML =
-        '<span class="oc-who-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 21.4l10.5-10.5"/><circle cx="16.5" cy="7.5" r="4.5"/><path d="M7.5 16.5l2 2M10.5 13.5l2 2"/></svg>Who can do this</span>';
-      var body = document.createElement("span");
-      body.className = "oc-who-body";
-      while (p.firstChild) body.appendChild(p.firstChild);
-      strip.appendChild(body);
-      p.parentNode.replaceChild(strip, p);
-    }
   }
 
   // `GET /v1/assets` → the method as a tag, the path as code.
@@ -122,7 +97,6 @@
       setTone();
       var root = document.getElementById("content-container");
       if (!root) return;
-      permissionStrips(root);
       methodTags(root);
       pageLinks();
       readingLine();
@@ -162,7 +136,6 @@
     "/connect/anthropic": ["Integrations", "Anthropic"], "/connect/snowflake": ["Integrations", "Snowflake"], "/connect/scans": ["Integrations", "Scans"],
     "/get-started/quickstart": ["Integrations"], "/get-started/modules": ["Overview"],
   };
-  var ROLES = [["admin", /\badmin(istrator)?s?\b/i], ["operator", /\boperators?\b/i], ["viewer", /\bviewers?\b/i]];
 
   function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
@@ -170,23 +143,31 @@
     var header = document.querySelector("#content-area #header");
     if (!header || header.parentNode.querySelector(".oc-answer")) return;
     var place = CONSOLE[location.pathname.replace(/\/$/, "")];
-    var who = document.querySelector("#content-area .oc-who");
+    var here = location.pathname.replace(/\/$/, "");
+    var data = window.__ocRoles;
+    var perms = data && data.pages[here];
     var inAtlas = window.__ocAtlas && window.__ocAtlas.pages[location.pathname.replace(/\/$/, "")];
-    if (!place && !who && !inAtlas) return;
+    if (!place && !perms && !inAtlas) return;
     var strip = document.createElement("div");
     strip.className = "oc-answer";
     var html = "";
     if (place) {
       var mark = document.querySelector('#navigation-items a[aria-current="page"] svg');
       html += '<div class="oc-answer-cell"><span class="oc-answer-k">In the console</span><span class="oc-answer-v oc-crumb">' +
-        (mark ? mark.outerHTML : "") + place.map(function (p) { return "<span>" + esc(p) + "</span>"; }).join('<i aria-hidden="true">›</i>') + "</span></div>";
+        (mark ? mark.outerHTML : "") + place.map(function (p) { return "<span>" + esc(p) + "</span>"; }).join('<svg class="oc-sep" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>') + "</span></div>";
     }
-    if (who) {
-      var text = who.textContent || "";
-      var roles = ROLES.filter(function (r) { return r[1].test(text); }).map(function (r) { return r[0]; });
+    // Who can act: the least role of each permission the page uses, from roles.js, which
+    // scripts/roles.py builds from the platform's own permission catalogs.
+    if (perms && perms.length) {
+      var order = ["viewer", "operator", "admin", "owner"];
+      var by = {};
+      perms.forEach(function (p) { var r = data.least[p]; if (r) (by[r] = by[r] || []).push(p); });
+      var roles = order.filter(function (r) { return by[r]; });
       if (roles.length) {
         html += '<div class="oc-answer-cell"><span class="oc-answer-k">Who can act</span><span class="oc-answer-v">' +
-          roles.map(function (r) { return '<span class="oc-role oc-role-' + r + '">' + r + "</span>"; }).join("") + "</span></div>";
+          roles.map(function (r) {
+            return '<a class="oc-role oc-role-' + r + '" href="/administration/roles#perm-' + by[r][0].replace(":", "-") + '" title="' + esc(by[r].join(", ")) + '">' + r + "</a>";
+          }).join("") + "</span></div>";
       }
     }
     strip.innerHTML = html;
@@ -202,7 +183,7 @@
     var words = name.split(/\s+/).filter(function (w) { return w && !STOP.test(w); });
     var key = words.length ? words[words.length - 1] : name;
     var re = new RegExp("\\b" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "s?\\b", "i");
-    var blocks = document.querySelectorAll("#content-area p, #content-area span[data-as='p'], #content-area li, #content-area td, #content-area .oc-who");
+    var blocks = document.querySelectorAll("#content-area p, #content-area span[data-as='p'], #content-area li, #content-area td");
     for (var i = 0; i < blocks.length; i++) {
       var b = blocks[i];
       if (b.closest(".oc-diagram") || b.querySelector("p, li")) continue;
@@ -290,7 +271,8 @@
     var mine = atlas.pages[location.pathname.replace(/\/$/, "")];
     if (!mine) return;
     var chips = atlas.frameworks.filter(function (f) { return mine[f.id] && mine[f.id].length; }).map(function (f) {
-      return '<a class="oc-fw" href="/posture/frameworks" title="' + esc(mine[f.id].join(", ")) + '">' + esc(f.label) + " <b>" + mine[f.id].length + "</b></a>";
+      var codes = mine[f.id].join(", ");
+      return '<a class="oc-fw" href="/posture/security-policies?fw=' + f.id + '#policies-by-framework" title="' + esc(codes) + '" aria-label="' + esc(f.label + ": " + codes + ". Open in Policies by framework") + '">' + esc(f.label) + " <b>" + mine[f.id].length + "</b></a>";
     });
     if (!chips.length) return;
     var cell = document.createElement("div");
@@ -301,19 +283,28 @@
 
   // The atlas's framework picker: one column lit, the rest recede. Event delegation, so it
   // survives Mintlify re-rendering the page.
+  function pick(atlas, next) {
+    atlas.setAttribute("data-fw", next);
+    Array.prototype.forEach.call(atlas.querySelectorAll("[data-fw-pick]"), function (x) {
+      x.setAttribute("aria-pressed", x.getAttribute("data-fw-pick") === next ? "true" : "false");
+    });
+  }
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("[data-fw-pick]");
     if (!b) return;
     var atlas = b.closest(".oc-atlas");
     if (!atlas) return;
     var id = b.getAttribute("data-fw-pick");
-    var same = atlas.getAttribute("data-fw") === id;
-    var next = same ? "all" : id;
-    atlas.setAttribute("data-fw", next);
-    Array.prototype.forEach.call(atlas.querySelectorAll("[data-fw-pick]"), function (x) {
-      x.setAttribute("aria-pressed", x.getAttribute("data-fw-pick") === next ? "true" : "false");
-    });
+    pick(atlas, atlas.getAttribute("data-fw") === id ? "all" : id);
   });
+  // A framework chip on another page arrives with ?fw=: open the atlas on that framework.
+  function pickFromUrl() {
+    var atlas = document.querySelector(".oc-atlas:not(.oc-url-picked)");
+    var fw = new URLSearchParams(location.search).get("fw");
+    if (!atlas || !fw || !atlas.querySelector('[data-fw-pick="' + fw.replace(/[^a-z0-9-]/g, "") + '"]')) return;
+    atlas.classList.add("oc-url-picked");
+    pick(atlas, fw);
+  }
 
   // A diagram comes alive when it scrolls into view: its parts are numbered in drawing order
   // for the stagger, and it pauses when it leaves the screen so nothing runs unseen.
@@ -323,7 +314,7 @@
       if (e.isIntersecting) { d.classList.add("oc-live"); d.classList.remove("oc-paused"); }
       else if (d.classList.contains("oc-live")) d.classList.add("oc-paused");
     });
-  }, { threshold: 0.25 }) : null;
+  }, { threshold: 0 }) : null;
   function liveDiagrams() {
     var ds = document.querySelectorAll(".oc-diagram:not(.oc-ready)");
     for (var i = 0; i < ds.length; i++) {
@@ -337,7 +328,7 @@
   var pending;
   function run() {
     clearTimeout(pending);
-    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); liveDiagrams(); }, 120);
+    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); liveDiagrams(); pickFromUrl(); }, 120);
   }
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   run();

@@ -6,8 +6,6 @@ icon: "circle-dollar-sign"
 
 The **Cost** page turns the traces into a bill. It sums what every model call cost across all projects, or within one project, for a window of time, and breaks the total down by whoever or whatever you want to charge it to. Where the posture shows risk, Cost shows spend, and both use the same projects and agents.
 
-**Who can do this:** `observability:read`, scoped to the teams whose projects you can read.
-
 ## Where prices come from
 
 A price travels with the span. OpenController reads the GenAI usage cost attribute, or the OpenInference total cost, from each model call and adds them up; it does not keep a price list of its own for traced calls.
