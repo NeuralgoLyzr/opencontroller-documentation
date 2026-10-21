@@ -28,7 +28,7 @@
   },
   "styling": {
     "codeblocks": "dark",
-    "eyebrows": "breadcrumbs"
+    "eyebrows": "none"
   },
   "favicon": "/favicon.svg",
   "logo": {

@@ -63,7 +63,8 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-cols > div[class*="tone-"] .oc-t { border-top-color: var(--oc-tone); }
 
 /* Callouts in the same colours, on the page's own paper, in place of Tailwind's pastels. */
-.callout { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-sidebar) !important; border-left: 3px solid var(--oc-tone, var(--oc-primary)) !important; }
+.callout { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-sidebar) !important; align-items: flex-start !important; }
+.callout > div:first-child { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; margin-top: -0.125rem !important; border-radius: calc(var(--oc-radius) - 2px); background: color-mix(in srgb, var(--oc-tone, var(--oc-primary)) var(--oc-tint), transparent); }
 .callout:has([class*="text-yellow"]), .callout:has([class*="text-amber"]) { --oc-tone: var(--oc-ochre); }
 .callout:has([class*="text-red"]), .callout:has([class*="text-rose"]) { --oc-tone: var(--oc-rust); }
 .callout:has([class*="text-green"]), .callout:has([class*="text-emerald"]) { --oc-tone: var(--oc-green); }
@@ -267,3 +268,55 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .dark .oc-ask-form button { background: #9db2d4; color: #141311; }
 .oc-ask-panel footer { padding: 0.5rem 1rem 0.75rem; color: var(--oc-muted-foreground); font-size: 0.75rem; }
 @media (max-width: 640px) { .oc-ask-button span { display: none; } .oc-ask-panel { right: 1rem; left: 1rem; width: auto; } }
+
+/* ---- The page's own behaviour (ui.js) ---------------------------------------------------- */
+
+/* The section's tone follows you. */
+html[data-tone="discover"] { --oc-tone: var(--oc-green); }
+html[data-tone="govern"] { --oc-tone: var(--oc-ochre); }
+html[data-tone="control"] { --oc-tone: var(--oc-rust); }
+html[data-tone="runtime"] { --oc-tone: var(--oc-slate); }
+html[data-tone="posture"] { --oc-tone: var(--oc-violet); }
+html[data-tone="observe"] { --oc-tone: var(--oc-sienna); }
+#navigation-items li > a[aria-current="page"] svg, #navigation-items li > a.border-primary svg { color: var(--oc-tone, var(--oc-foreground)) !important; }
+#table-of-contents-layout a[class*="text-primary"], #table-of-contents-layout a[aria-current] { color: var(--oc-tone, var(--oc-primary)) !important; }
+#table-of-contents-layout a[class*="border-primary"], #table-of-contents-layout li[class*="border-primary"] { border-color: var(--oc-tone, var(--oc-primary)) !important; }
+
+/* The reading line: a hairline under the navbar that fills as you read. */
+.oc-reading { position: fixed; top: 0; left: 0; z-index: 60; width: 100%; height: 2px; background: var(--oc-tone, var(--oc-primary)); transform-origin: 0 50%; transform: scaleX(0); transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
+
+/* Who can do this: the permissions as keys on a strip. */
+.oc-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; margin: 1.25rem 0 1.75rem; padding: 0.75rem 1rem; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); font-size: 0.9375rem; line-height: 1.6; }
+.oc-who-label { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--oc-tone, var(--oc-primary)); }
+.oc-who-label svg { width: 0.875rem; height: 0.875rem; }
+.oc-who-body { flex: 1 1 24rem; min-width: 0; color: var(--oc-foreground); }
+.oc-who-body code { background: var(--oc-paper) !important; border: 1px solid var(--oc-border) !important; border-bottom-width: 2px !important; border-radius: 4px !important; padding: 0.05em 0.4em !important; font-size: 0.8125rem !important; color: var(--oc-foreground) !important; }
+
+/* HTTP methods as tags in front of their paths. */
+.oc-method { display: inline-block; margin-right: 0.4rem; padding: 0.05em 0.4em; border-radius: 4px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; line-height: 1.5; vertical-align: 0.1em; color: var(--oc-paper); background: var(--oc-muted-foreground); }
+.dark .oc-method { color: #121110; }
+.oc-method-get { background: var(--oc-green) !important; }
+.oc-method-post { background: var(--oc-slate) !important; }
+.oc-method-put, .oc-method-patch { background: var(--oc-ochre) !important; }
+.oc-method-delete { background: var(--oc-rust) !important; }
+code.oc-method { padding: 0.05em 0.4em !important; border: 0 !important; color: var(--oc-paper) !important; font-size: 0.6875rem !important; }
+.dark code.oc-method { color: #121110 !important; }
+.prose code.oc-path { white-space: nowrap; }
+
+/* The footer's page links as tiles, with the keys that move between them. */
+#content-container nav.grid { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--oc-border); position: relative; }
+#content-container nav.grid > a { padding: 0.875rem 1rem !important; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
+#content-container nav.grid > a:hover { border-color: var(--oc-tone, var(--oc-primary)); transform: translateY(-1px); }
+.oc-keys { grid-column: 1 / -1; margin: 0.25rem 0 0 !important; font-size: 0.75rem; color: var(--oc-muted-foreground); }
+.oc-keys span { margin: 0 0.35rem; opacity: 0.6; }
+.oc-keys kbd { display: inline-block; min-width: 1.25rem; padding: 0 0.3rem; border: 1px solid var(--oc-border); border-bottom-width: 2px; border-radius: 4px; background: var(--oc-paper); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; line-height: 1.5; text-align: center; color: var(--oc-foreground); }
+
+/* The page arrives: one rise on navigation, none for those who asked for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  #content-area { animation: oc-arrive 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes oc-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}
+@media (max-width: 760px) {
+  .oc-who { padding: 0.625rem 0.75rem; }
+  .oc-keys { display: none; }
+}
