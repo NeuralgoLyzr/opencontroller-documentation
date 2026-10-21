@@ -221,16 +221,24 @@
     })(nodes[i]);
   }
 
-  // The walkthrough: a play control steps the tabs every few seconds, and a line under the
-  // active tab shows the time left. Any touch stops it; a hidden tab pauses it.
-  var timer, playing = false, STEP = 4200;
+  // The walkthrough plays on its own and keeps cycling while it is on screen. A click on a tab
+  // jumps there and carries on; Pause stops it until Play; leaving the screen or the browser tab
+  // pauses it until it is back. Those who asked for less motion start paused.
+  var timer, playing = false, userPaused = false, onScreen = false, STEP = 4200;
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function tabs() { return Array.prototype.slice.call(document.querySelectorAll(".oc-panel [role='tablist'] [role='tab']")); }
   function current() { return tabs().findIndex(function (t) { return t.getAttribute("aria-selected") === "true"; }); }
   function go(i) { var ts = tabs(); if (!ts.length) return; ts[(i + ts.length) % ts.length].click(); }
-  function tick() {
-    if (!playing) return;
+  function restartLine() {
     var panel = document.querySelector(".oc-panel");
-    if (panel) { panel.classList.remove("oc-playing"); void panel.offsetWidth; panel.classList.add("oc-playing"); }
+    if (!panel) return;
+    panel.classList.remove("oc-playing"); void panel.offsetWidth;
+    if (playing) panel.classList.add("oc-playing");
+  }
+  function tick() {
+    clearTimeout(timer);
+    if (!playing) return;
+    restartLine();
     timer = setTimeout(function () { go(current() + 1); tick(); }, STEP);
   }
   function setPlaying(on) {
@@ -242,23 +250,34 @@
     if (panel) panel.classList.toggle("oc-playing", on);
     if (on) tick();
   }
+  function shouldPlay() { return onScreen && !userPaused && !document.hidden; }
   function stepper() {
     var panel = document.querySelector(".oc-panel");
     if (!panel || panel.querySelector(".oc-play")) return;
+    userPaused = calm;
     var head = panel.querySelector(".oc-panel-head");
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "oc-play";
     btn.setAttribute("aria-pressed", "false");
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path class="oc-play-i" d="M7 4.5v15l12-7.5z" fill="currentColor"/><path class="oc-pause-i" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg><span>Play</span>';
-    btn.addEventListener("click", function () { setPlaying(!playing); });
+    btn.addEventListener("click", function () { userPaused = playing; setPlaying(!playing); });
     head.appendChild(btn);
-    panel.addEventListener("pointerdown", function (e) { if (!e.target.closest(".oc-play")) setPlaying(false); });
-    document.addEventListener("visibilitychange", function () { if (document.hidden) setPlaying(false); });
+    // A tab chosen by hand restarts the clock from there.
+    panel.addEventListener("click", function (e) {
+      if (e.target.closest("[role='tab']") && playing) setTimeout(tick, 0);
+    });
+    if (typeof IntersectionObserver === "function") {
+      new IntersectionObserver(function (entries) {
+        onScreen = entries[0].isIntersecting;
+        setPlaying(shouldPlay());
+      }, { threshold: 0.35 }).observe(panel);
+    } else { onScreen = true; setPlaying(shouldPlay()); }
+    document.addEventListener("visibilitychange", function () { setPlaying(shouldPlay()); });
     document.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (!e.target.closest || !e.target.closest(".oc-panel")) return;
-      setPlaying(false); go(current() + (e.key === "ArrowRight" ? 1 : -1)); e.preventDefault();
+      go(current() + (e.key === "ArrowRight" ? 1 : -1)); if (playing) tick(); e.preventDefault();
     });
   }
 
@@ -296,10 +315,29 @@
     });
   });
 
+  // A diagram comes alive when it scrolls into view: its parts are numbered in drawing order
+  // for the stagger, and it pauses when it leaves the screen so nothing runs unseen.
+  var seen = typeof IntersectionObserver === "function" ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var d = e.target;
+      if (e.isIntersecting) { d.classList.add("oc-live"); d.classList.remove("oc-paused"); }
+      else if (d.classList.contains("oc-live")) d.classList.add("oc-paused");
+    });
+  }, { threshold: 0.25 }) : null;
+  function liveDiagrams() {
+    var ds = document.querySelectorAll(".oc-diagram:not(.oc-ready)");
+    for (var i = 0; i < ds.length; i++) {
+      var d = ds[i];
+      for (var k = 0; k < d.children.length; k++) d.children[k].style.setProperty("--i", Math.min(k, 40));
+      d.classList.add("oc-ready");
+      if (seen) seen.observe(d); else d.classList.add("oc-live");
+    }
+  }
+
   var pending;
   function run() {
     clearTimeout(pending);
-    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); }, 120);
+    pending = setTimeout(function () { answerStrip(); controlsCell(); bindNodes(); stepper(); liveDiagrams(); }, 120);
   }
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   run();

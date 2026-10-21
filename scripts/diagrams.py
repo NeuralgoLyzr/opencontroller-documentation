@@ -73,6 +73,7 @@ class Canvas:
     # The hero: a tall pill in the primary colour with the mark and a name.
     def hero(self, x, y, w, h, lines):
         t = self.t
+        self.add(f'<rect className="oc-pulse" x="{x}" y="{y}" width="{w}" height="{h}" rx="{w / 2}" fill="none" stroke="{t["primary"]}" stroke-width="2"/>')
         self.add(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{w / 2}" fill="{t["primary"]}"/>')
         cx = x + w / 2
         my = y + 34
@@ -96,6 +97,8 @@ class Canvas:
         dash = ' stroke-dasharray="4 4"' if dashed else ""
         mk = f' marker-end="url(#head-{self.t["id"]})"' if head else ""
         self.add(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="1.5"{dash}{mk}/>')
+        # The signal that travels the line once the diagram is in view (style.css animates it).
+        self.add(f'<path className="oc-flow" d="{d}" fill="none" stroke="{t["primary"]}" stroke-width="2" stroke-linecap="round"/>')
         if label:
             if at is None:
                 (x1, y1), (x2, y2) = pts[0], pts[-1] if len(pts) == 2 else pts[len(pts) // 2]

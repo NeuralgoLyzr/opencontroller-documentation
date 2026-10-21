@@ -339,6 +339,7 @@ td.oc-lit { box-shadow: none; }
 .oc-panel-head { position: relative; padding-right: 7rem; }
 .oc-play { position: absolute; right: 1.25rem; top: 0.875rem; display: inline-flex; align-items: center; gap: 0.4rem; height: 1.875rem; padding: 0 0.75rem; border: 1px solid var(--oc-border); border-radius: 999px; background: var(--oc-paper); color: var(--oc-foreground); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); }
 .oc-play:hover { border-color: var(--oc-muted-foreground); }
+.oc-play span { color: inherit !important; font-size: inherit !important; }
 .oc-play .oc-pause-i, .oc-play.is-on .oc-play-i { display: none; }
 .oc-play.is-on .oc-pause-i { display: block; }
 .oc-play.is-on { background: var(--oc-foreground); color: var(--oc-paper); border-color: var(--oc-foreground); }
@@ -425,4 +426,25 @@ td.oc-lit { box-shadow: none; }
   .oc-atlas-head { padding: 0.75rem; }
   .oc-atlas-grid .oc-atlas-corner { width: 10rem; }
   .oc-actions span { flex-basis: 100%; }
+}
+
+/* ---- The diagrams in motion ---------------------------------------------------------------
+   The entrance fades only: a CSS transform would replace the SVG's own transform attribute
+   and throw the provider marks to the corner. */
+   A diagram is still until it scrolls into view (ui.js adds .oc-live). Then its parts arrive in
+   drawing order, a signal runs each line the way it points, and OpenController's pill breathes.
+   Nothing moves for those who asked for less motion. */
+.oc-diagram .oc-flow { opacity: 0; stroke-dasharray: 3 14; }
+.oc-diagram .oc-pulse { opacity: 0; transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .oc-diagram.oc-ready > * { opacity: 0; }
+  .oc-diagram.oc-live > * { animation: oc-draw 520ms cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 18ms); }
+  .oc-diagram.oc-live > .oc-flow { animation: oc-flow-in 400ms ease-out both, oc-flow 1.6s linear infinite; animation-delay: calc(600ms + var(--i, 0) * 18ms), 0s; }
+  .oc-diagram.oc-live > .oc-pulse { animation: oc-breathe 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite; animation-delay: 900ms; }
+  .oc-diagram.oc-live > g.oc-node > rect { transition: stroke 160ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .oc-diagram.oc-paused * { animation-play-state: paused !important; }
+  @keyframes oc-draw { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes oc-flow-in { from { opacity: 0; } to { opacity: 0.9; } }
+  @keyframes oc-flow { from { stroke-dashoffset: 17; } to { stroke-dashoffset: 0; } }
+  @keyframes oc-breathe { 0% { opacity: 0.55; transform: scale(1); } 70% { opacity: 0; transform: scale(1.08); } 100% { opacity: 0; transform: scale(1.08); } }
 }
