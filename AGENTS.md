@@ -42,9 +42,12 @@ A module page may hold a how-to and a reference under separate headings. Explana
 vale sync && vale .        # style
 mint broken-links          # links
 python3 scripts/check.py   # navigation, frontmatter, internal links, images
+python3 scripts/flags.py --check   # docs.json matches flags.json
 ```
 
-CI runs all three on every pull request and on `main`.
+CI runs all four on every pull request and on `main`. `flags.json` turns parts of the site on and off (the API
+reference, for one); apply a change with `python3 scripts/flags.py`. Diagrams are drawn by `scripts/diagrams.py`
+into `snippets/diagrams.mdx`; edit the script, never the snippet.
 
 ## Content boundaries
 

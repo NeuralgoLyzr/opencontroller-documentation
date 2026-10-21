@@ -4,6 +4,8 @@ description: "One endpoint in front of your model providers, with virtual keys, 
 icon: "brain-circuit"
 ---
 
+import { Diagram } from '/snippets/diagrams.mdx'
+
 The LLM gateway is the endpoint your agents call instead of calling model providers directly. It holds the provider
 credentials, gives each agent or team a virtual key with a budget and rate limits, logs every call, and runs content
 rules (your guardrails) on what goes to a model and what comes back.
@@ -93,8 +95,7 @@ curl https://gateway.example.com/v1/chat/completions \
 The key decides which providers and models the call may reach, and its budget and rate limits apply. The gateway's
 own content rules then check the prompt and the answer.
 
-<img className="block dark:hidden" src="/images/diagrams/gateway-light.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
-<img className="hidden dark:block" src="/images/diagrams/gateway-dark.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+<Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
 
 ## Who can do what
 

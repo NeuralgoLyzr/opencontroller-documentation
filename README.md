@@ -22,9 +22,26 @@ Then open http://localhost:3000.
 vale sync && vale .
 mint broken-links
 python3 scripts/check.py
+python3 scripts/flags.py --check
 ```
 
 CI runs the same on every pull request.
+
+## Flags
+
+`flags.json` turns parts of the site on and off. A part that is off is out of the navigation, so it is neither
+listed nor searchable; its pages stay in the repository. Change a flag, run `python3 scripts/flags.py` to apply it
+to `docs.json`, and commit both.
+
+| Flag | What it shows |
+|---|---|
+| `apiReference` | The API reference tab: the guide pages and the endpoints from `api-reference/openapi.json`. |
+
+## Diagrams
+
+`scripts/diagrams.py` draws the diagrams as inline SVG into `snippets/diagrams.mdx`, in the console's palette
+through CSS variables, so they stay sharp at any width and follow the theme. A page shows one with
+`<Diagram name="traces" alt="..." />`. Edit the script, not the snippet.
 
 ## Publish
 

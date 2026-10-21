@@ -4,6 +4,8 @@ description: "The Registry is the catalog of approved AI assets: what your organ
 icon: "book-check"
 ---
 
+import { Diagram } from '/snippets/diagrams.mdx'
+
 An asset is registered when someone has stated who owns it and what it is for, and an administrator has approved that request. Until then, an asset of a kind the registry policy names is shadow. The Registry page lists what is approved.
 
 **Who can do this:** `registry:read` to see the page. `registry:request` to register an external agent. `registry:decide` to revoke.
@@ -34,8 +36,7 @@ An asset's standing in the registry is one of **Registered**, **Awaiting approva
 
 Rejecting, revoking or withdrawing returns the asset to shadow, and it can be requested again. A later request records the earlier ones under **Earlier requests** on the asset's Registration card.
 
-<img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
-<img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
+<Diagram name="states" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
 
 ## What is recorded
 

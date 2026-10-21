@@ -4,6 +4,8 @@ description: "AI agents nobody registered, running on platforms the organization
 icon: "scan-eye"
 ---
 
+import { Diagram } from '/snippets/diagrams.mdx'
+
 ## The problem
 
 Every major platform now lets anyone with a licence build an agent in an afternoon: Copilot Studio and Agent
@@ -58,8 +60,7 @@ OpenController reads each connected platform on a schedule and places every disc
 | **Registered** | Approved, with a named owner, in the registry. |
 | **Not governed** | A kind the registration policy does not require to be registered, listed for visibility. |
 
-<img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
-<img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+<Diagram name="states" alt="An asset moves from shadow to awaiting approval to registered, and back" />
 
 The **Shadow AI** page shows the shadow and awaiting-approval assets as a map from accounts to products to agents to
 what the agents use, with the share of governed assets that are registered across the top. From there you register

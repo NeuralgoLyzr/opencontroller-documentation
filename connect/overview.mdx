@@ -5,6 +5,7 @@ icon: "cable"
 ---
 
 import { CloudLogo } from '/snippets/logos.mdx'
+import { Diagram } from '/snippets/diagrams.mdx'
 
 A **connection** is one account OpenController reads: an AWS account, a Microsoft tenant, a Databricks workspace, a Google Cloud project, folder or organization, an Anthropic organization, or a Snowflake account. Discovery reads each connection on a schedule and records the AI agents it finds, and everything they use, in the inventory. Discovery only reads. It never invokes an agent, reads a conversation or fetches a secret value.
 
@@ -21,8 +22,7 @@ The control credential can be one of its own (recommended), a copy of the read c
 
 Secrets go to your secrets manager at `integrations/<connection id>/client-secret` and `integrations/<connection id>/control/client-secret`. They are never returned by the API and never logged.
 
-<img className="block dark:hidden" src="/images/diagrams/credentials-light.png" alt="The read credential lists and describes; the control credential changes" />
-<img className="hidden dark:block" src="/images/diagrams/credentials-dark.png" alt="The read credential lists and describes; the control credential changes" />
+<Diagram name="credentials" alt="The read credential lists and describes; the control credential changes" />
 
 ## The Integrations page
 

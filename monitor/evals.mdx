@@ -4,6 +4,8 @@ description: "The evals service judges your agents' traces with saved evaluators
 icon: "flask-conical"
 ---
 
+import { Diagram } from '/snippets/diagrams.mdx'
+
 Evals is OpenController's judging service. It reads records from a trace store, a span, a whole run or a conversation at a time, and has a model answer a question about each one: did the answer address the request, did it leak data, was it polite. The answers become scores, which show on the **Scores** page, feed the policy **OBS-2 Traced agents nobody evaluates** on [Findings](/posture/findings), and let monitors say when an agent got worse. The pages live under **Evals** in the console.
 
 **Who can do this:** anyone with `modules:read` reads the pages, with what was asked and answered gated by `observability:content`. `modules:use` (an operator) creates and runs evaluators, tasks, monitors, datasets, prompts and experiments. `modules:govern` (an administrator) manages the connections to trace stores and models. Connecting the service itself needs `modules:endpoint`.
@@ -12,8 +14,7 @@ Evals is OpenController's judging service. It reads records from a trace store, 
 
 The evals service is its own container with its own MongoDB database. Until it is connected, the Evals pages say **No evals service connected** and link to the settings.
 
-<img className="block dark:hidden" src="/images/diagrams/evals-light.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
-<img className="hidden dark:block" src="/images/diagrams/evals-dark.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
+<Diagram name="evals" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
 
 <Steps>
 <Step title="Deploy it">

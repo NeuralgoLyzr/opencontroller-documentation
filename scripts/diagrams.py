@@ -1,33 +1,24 @@
 #!/usr/bin/env python3
-"""Draws the site's diagrams and renders them to PNG, light and dark.
+"""Draws the site's diagrams as inline SVG, one for both themes.
 
-Each diagram is laid out by hand here, with the console's palette, Manrope
-and JetBrains Mono, and rendered at 2x through headless Chrome so the fonts
-are real. Run from the site's root:
+Each diagram is laid out by hand here. Colours are CSS variables that
+style.css sets for light and dark, and the text takes the page's own fonts,
+so a diagram stays sharp at any width and follows the theme. Run from the
+site's root:
 
-    python3 scripts/diagrams.py            # every diagram, both themes
-    python3 scripts/diagrams.py system     # one diagram
+    python3 scripts/diagrams.py
 
-Output: images/diagrams/<name>-light.png and <name>-dark.png, embedded in
-the pages as two <img> tags, one shown per theme.
+Output: snippets/diagrams.mdx, which exports <Diagram name="..." alt="..." />.
 """
 import os
-import subprocess
-import sys
-import tempfile
 
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-OUT = os.path.join(os.path.dirname(__file__), "..", "images", "diagrams")
+OUT = os.path.join(os.path.dirname(__file__), "..", "snippets", "diagrams.mdx")
 
-# The console's tokens (apps/console/src/index.css), by theme.
-THEMES = {
-    "light": dict(bg="#ffffff", fg="#141311", muted_fg="#635d51", surface="#f8f7f4", muted="#e8e4dd",
-                  border="#e3ded4", border_strong="#d2cdc0", primary="#3d5a86", primary_fg="#fdfcf9",
-                  alt="#a0522d", ok="#3f7d5a", line="#a39e95"),
-    "dark": dict(bg="#1a1917", fg="#ebe8e3", muted_fg="#a39e95", surface="#1f1e1b", muted="#23221f",
-                 border="#2a2926", border_strong="#38362f", primary="#9db2d4", primary_fg="#121110",
-                 alt="#cc8459", ok="#7fb894", line="#635d51"),
-}
+# The console's tokens, as the variables style.css defines per theme.
+TOKENS = {k: f"var(--oc-dg-{k.replace('_', '-')})" for k in
+          ("bg", "fg", "muted_fg", "surface", "muted", "border", "border_strong", "primary", "primary_fg", "alt", "ok", "line")}
+
 FONT = "Manrope, ui-sans-serif, system-ui, sans-serif"
 MONO = "'JetBrains Mono', ui-monospace, monospace"
 
@@ -115,12 +106,6 @@ class Canvas:
         self.add(f'<rect x="{x - w / 2}" y="{y - 9}" width="{w}" height="18" rx="9" fill="{t["bg"]}" stroke="{t["border"]}"/>')
         self.text(x, y + 3.5, s, size=size, weight=600, color=t["muted_fg"], anchor="middle")
 
-    def svg(self):
-        t = self.t
-        head = (f'<defs><marker id="head-{t["id"]}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
-                f'orient="auto-start-reverse"><path d="M0 0.5L9.5 5L0 9.5z" fill="{t["line"]}"/></marker></defs>')
-        return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.w}" height="{self.h}" viewBox="0 0 {self.w} {self.h}">'
-                + head + "".join(self.parts) + "</svg>")
 
 
 def esc(s):
@@ -346,29 +331,39 @@ DIAGRAMS = {
 }
 
 
+# SVG attributes JSX spells in camel case.
+ATTRS = ("stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "marker-end", "text-anchor",
+         "font-family", "font-size", "font-weight", "letter-spacing", "fill-rule")
+
+
+def jsx(svg):
+    for a in ATTRS:
+        head, *rest = a.split("-")
+        svg = svg.replace(f" {a}=", " " + head + "".join(p.title() for p in rest) + "=")
+    return svg
+
+
 def render(name, w, h, draw):
-    for theme, tokens in THEMES.items():
-        t = dict(tokens, id=theme)
-        c = Canvas(w, h, t)
-        draw(c)
-        html = (f'<!doctype html><meta charset="utf-8">'
-                f'<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">'
-                f'<style>html,body{{margin:0;background:transparent}}svg{{display:block}}</style>'
-                f'<body>{c.svg()}</body>')
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as f:
-            f.write(html)
-            path = f.name
-        out = os.path.join(OUT, f"{name}-{theme}.png")
-        subprocess.run([CHROME, "--headless=new", "--hide-scrollbars", "--force-device-scale-factor=2",
-                        "--default-background-color=00000000", f"--window-size={w},{h}", "--virtual-time-budget=8000",
-                        f"--screenshot={out}", f"file://{path}"], check=True, capture_output=True)
-        os.unlink(path)
-        print(f"{out} ({w}x{h} @2x)")
+    c = Canvas(w, h, dict(TOKENS, id=name))
+    draw(c)
+    body = jsx("".join(c.parts))
+    marker = (f'<defs><marker id="head-{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
+              f'orient="auto-start-reverse"><path d="M0 0.5L9.5 5L0 9.5z" fill="{TOKENS["line"]}"/></marker></defs>')
+    return (f'export const {name.title()} = ({{ alt }}) => (\n'
+            f'  <svg className="oc-diagram" role="img" aria-label={{alt}} viewBox="0 0 {w} {h}" '
+            f'style={{{{ maxWidth: "{w * 1.15:.0f}px" }}}} xmlns="http://www.w3.org/2000/svg">{marker}{body}</svg>\n);\n')
 
 
 if __name__ == "__main__":
-    os.makedirs(OUT, exist_ok=True)
-    names = sys.argv[1:] or list(DIAGRAMS)
-    for n in names:
-        w, h, draw = DIAGRAMS[n]
-        render(n, w, h, draw)
+    parts = ["{/* Generated by scripts/diagrams.py. Do not edit by hand. */}\n"]
+    for n, (w, h, draw) in DIAGRAMS.items():
+        parts.append(render(n, w, h, draw))
+    names = ", ".join(f"{n}: {n.title()}" for n in DIAGRAMS)
+    parts.append(f"export const DIAGRAMS = {{ {names} }};\n\n"
+                 "export const Diagram = ({ name, alt }) => {\n"
+                 "  const D = DIAGRAMS[name];\n"
+                 "  return <D alt={alt} />;\n"
+                 "};\n")
+    with open(OUT, "w") as f:
+        f.write("\n".join(parts))
+    print(f"{OUT}: {len(DIAGRAMS)} diagrams")

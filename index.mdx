@@ -5,6 +5,8 @@ mode: "wide"
 icon: "book-open"
 ---
 
+import { Diagram } from '/snippets/diagrams.mdx'
+
 <div className="oc-banner">
   <div>
     <div className="oc-t">Quickstart</div>
@@ -23,33 +25,27 @@ icon: "book-open"
   </div>
   <Tabs>
     <Tab title="Discover">
-      <img className="block dark:hidden" src="/images/diagrams/system-light.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
-      <img className="hidden dark:block" src="/images/diagrams/system-dark.png" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
+      <Diagram name="system" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
       Discovery reads each connected cloud with a read credential and lists every agent and everything each agent uses: models, tools, MCP servers, identities, memories, sharing. It never invokes an agent, reads a conversation or fetches a secret. [AI Inventory](/discover/inventory) and [Shadow AI](/discover/shadow-ai).
     </Tab>
     <Tab title="Govern">
-      <img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
-      <img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="An asset moves from shadow to awaiting approval to registered, and back" />
+      <Diagram name="states" alt="An asset moves from shadow to awaiting approval to registered, and back" />
       Someone registers an agent and names an owner. An approver registers or rejects it, under a policy that says which kinds must be registered and whether approvals need separation of duties. [Registry](/govern/registry), [Approvals](/govern/approvals) and [Policies](/govern/policies).
     </Tab>
     <Tab title="Control">
-      <img className="block dark:hidden" src="/images/diagrams/credentials-light.png" alt="A read credential for discovery, a separate control credential for changes" />
-      <img className="hidden dark:block" src="/images/diagrams/credentials-dark.png" alt="A read credential for discovery, a separate control credential for changes" />
+      <Diagram name="credentials" alt="A read credential for discovery, a separate control credential for changes" />
       With a control credential you grant per platform, block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on. Every action is audited. [Control actions](/govern/control-actions).
     </Tab>
     <Tab title="Run">
-      <img className="block dark:hidden" src="/images/diagrams/gateway-light.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
-      <img className="hidden dark:block" src="/images/diagrams/gateway-dark.png" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
+      <Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
       Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block, redact or mask personal data, secrets, prompt injection and off-topic use. [LLM gateway](/runtime/llm-gateway) and [Guardrails](/runtime/guardrails).
     </Tab>
     <Tab title="Observe">
-      <img className="block dark:hidden" src="/images/diagrams/traces-light.png" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
-      <img className="hidden dark:block" src="/images/diagrams/traces-dark.png" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
+      <Diagram name="traces" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
       Agents send traces to a collector in your environment. The console shows what each run did, what it cost and where it failed, and raises issues from the traces. [Observability](/monitor/observability).
     </Tab>
     <Tab title="Evaluate">
-      <img className="block dark:hidden" src="/images/diagrams/evals-light.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
-      <img className="hidden dark:block" src="/images/diagrams/evals-dark.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
+      <Diagram name="evals" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
       Evaluators judge the traces with a model and record scores, and monitors say when an agent gets worse. [Evals](/monitor/evals).
     </Tab>
   </Tabs>
