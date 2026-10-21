@@ -31,8 +31,11 @@ for tab in nav["navigation"]["tabs"]:
 
 for p in sorted(listed - pages):
     problems.append(f"docs.json lists {p}, which does not exist")
+# Pages a flag has turned off (flags.json, scripts/flags.py) are meant to be out of the navigation.
+flags = json.load(open("flags.json"))
+off = () if flags.get("apiReference") else ("api-reference/",)
 for p in sorted(pages - listed):
-    if not p.startswith("snippets/"):
+    if not p.startswith("snippets/") and not p.startswith(off):
         problems.append(f"{p}.mdx is not in docs.json")
 
 for f in sorted(glob.glob("**/*.mdx", recursive=True)):
