@@ -1,2 +1,3 @@
 # The Google package is fetched by `vale sync`; only our own rules are kept here.
 styles/Google/
+scripts/__pycache__/
