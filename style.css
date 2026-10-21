@@ -48,6 +48,31 @@ code, pre, kbd, samp, .font-mono {
 
 body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-settings: "ss01", "cv05"; }
 
+/* The console's soft colours: its good, warning, destructive, model and alternate accents, one per capability. */
+:root { --oc-slate: #3d5a86; --oc-green: #3f7a4f; --oc-ochre: #a5671c; --oc-rust: #9e3b28; --oc-violet: #7a5a8c; --oc-sienna: #a0522d; --oc-tint: 12%; }
+.dark { --oc-slate: #9db2d4; --oc-green: #6faa83; --oc-ochre: #cfa25a; --oc-rust: #d4685a; --oc-violet: #ae92c9; --oc-sienna: #cc8459; --oc-tint: 16%; }
+.tone-discover { --oc-tone: var(--oc-green); }
+.tone-govern { --oc-tone: var(--oc-ochre); }
+.tone-control { --oc-tone: var(--oc-rust); }
+.tone-runtime { --oc-tone: var(--oc-slate); }
+.tone-posture { --oc-tone: var(--oc-violet); }
+.tone-observe { --oc-tone: var(--oc-sienna); }
+.oc-card-media { background: color-mix(in srgb, var(--oc-tone, var(--oc-primary)) var(--oc-tint), transparent); color: var(--oc-tone, var(--oc-primary)); }
+.oc-card:hover { border-color: var(--oc-tone, var(--oc-primary)) !important; }
+.oc-t[class*="tone-"]::before, .oc-strip .oc-t::before { content: ""; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--oc-tone, var(--oc-primary)); margin-right: 0.5rem; vertical-align: 0.05em; }
+.oc-cols > div[class*="tone-"] .oc-t { border-top-color: var(--oc-tone); }
+
+/* Callouts in the same colours, on the page's own paper, in place of Tailwind's pastels. */
+.callout { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-sidebar) !important; border-left: 3px solid var(--oc-tone, var(--oc-primary)) !important; }
+.callout:has([class*="text-yellow"]), .callout:has([class*="text-amber"]) { --oc-tone: var(--oc-ochre); }
+.callout:has([class*="text-red"]), .callout:has([class*="text-rose"]) { --oc-tone: var(--oc-rust); }
+.callout:has([class*="text-green"]), .callout:has([class*="text-emerald"]) { --oc-tone: var(--oc-green); }
+.callout:has([class*="text-sky"]), .callout:has([class*="text-blue"]) { --oc-tone: var(--oc-slate); }
+.callout:has([class*="text-zinc"]), .callout:has([class*="text-gray"]) { --oc-tone: var(--oc-muted-foreground); }
+.callout > div:first-child, .callout > div:first-child svg { color: var(--oc-tone, var(--oc-primary)) !important; }
+.callout .prose, .callout [class*="text-"] { color: var(--oc-foreground) !important; }
+.callout code { color: var(--oc-foreground) !important; border-color: var(--oc-border) !important; }
+
 /* The diagrams' colours, from the console's palette, read by snippets/diagrams.mdx. */
 :root { --oc-dg-bg: #ffffff; --oc-dg-fg: #141311; --oc-dg-muted-fg: #635d51; --oc-dg-surface: #f8f7f4; --oc-dg-muted: #e8e4dd; --oc-dg-border: #e3ded4; --oc-dg-border-strong: #d2cdc0; --oc-dg-primary: #3d5a86; --oc-dg-primary-fg: #fdfcf9; --oc-dg-alt: #a0522d; --oc-dg-ok: #3f7d5a; --oc-dg-line: #a39e95; }
 .dark { --oc-dg-bg: #1a1917; --oc-dg-fg: #ebe8e3; --oc-dg-muted-fg: #a39e95; --oc-dg-surface: #1f1e1b; --oc-dg-muted: #23221f; --oc-dg-border: #2a2926; --oc-dg-border-strong: #38362f; --oc-dg-primary: #9db2d4; --oc-dg-primary-fg: #121110; --oc-dg-alt: #cc8459; --oc-dg-ok: #7fb894; --oc-dg-line: #635d51; }
@@ -103,7 +128,6 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .card h2 { font-size: 1rem !important; line-height: 1.4; margin-top: 0.75rem !important; }
 .card > div { padding: 1.125rem 1.25rem !important; }
 .card:hover { border-color: var(--oc-primary) !important; transform: translateY(-1px); }
-.callout { border-color: var(--oc-border) !important; }
 .prose img { border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); padding: 0.75rem; }
 
 /* The shell: the console's side panel. 16rem wide on its sidebar tone; rows 2rem high with a
