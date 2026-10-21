@@ -8,7 +8,7 @@ description: "AI agents nobody registered, running on platforms the organisation
 Every major platform now lets anyone with a licence build an agent in an afternoon: Copilot Studio and Agent
 Builder in Microsoft 365, Bedrock and AgentCore in AWS, Agent Runtime and CX Agent Studio in Google Cloud, Genie in
 Databricks, Cortex Agents in Snowflake. The agent gets an identity, is pointed at data, is given tools, and is shared
-with colleagues. None of that passes through the security team, and none of the platforms tells them.
+with colleagues. None of that passes through a review, and none of the platforms tells anyone.
 
 Shadow AI is the result: every agent, model deployment, MCP server, tool and identity that exists in your clouds
 without anyone having registered it, reviewed it, or taken ownership of it. It is rarely hidden on purpose. It is
@@ -35,7 +35,7 @@ including people who should never see the data behind it.
 
 **Shadow spend.** Every one of these calls a model, and the bill arrives with no owner to send it to.
 
-## Why this matters for security leaders
+## Why it will not wait
 
 - **Accountability has landed.** The OWASP LLM and agentic Top 10, MITRE ATLAS, NIST AI RMF, ISO 42001 and the EU
   AI Act all expect an inventory of AI systems with a named owner and controls per system. An auditor will ask for
@@ -43,7 +43,7 @@ including people who should never see the data behind it.
 - **The blast radius is an identity, not a chatbot.** When an agent is compromised, what matters is the identity it
   runs as, the data it can reach and the tools it can call. Those are the things shadow AI leaves unreviewed.
 - **The platforms will not do this for you.** Each one sees only its own agents and offers admin tooling built for
-  its own tenant, not for a security team watching five clouds.
+  its own tenant, not for one team watching five clouds.
 - **It compounds.** Agents are cheap to create and are rarely retired. The number only grows until something
   counts them.
 
@@ -76,7 +76,7 @@ per platform, when you are ready.
 
 <CardGroup cols={2}>
   <Card title="Responding to discoveries" href="/govern/respond">
-    A framework for the security team: triage, investigate, decide.
+    A framework for what discovery finds: triage, investigate, decide.
   </Card>
   <Card title="The Shadow AI page" href="/discover/shadow-ai">
     How to read the map and register what you find.
