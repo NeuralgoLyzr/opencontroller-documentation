@@ -40,7 +40,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm i -g mint
+      # Pinned: an unpinned install takes whatever mint npm has just published, which once
+      # named a dependency npm did not have yet. Move it with the local preview.
+      - run: npm i -g mint@4.2.1084
       - run: mint broken-links
       - run: python3 scripts/check.py
       - run: python3 scripts/flags.py --check
