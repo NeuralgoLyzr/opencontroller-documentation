@@ -6,16 +6,8 @@ description: "Discover, govern, control, observe and evaluate: what OpenControll
 OpenController follows one agent through five steps. Each step is a section of the console, and each one builds on
 the one before it.
 
-```mermaid
-flowchart TB
-  d["Discover"] -- "assets, owners, relationships" --> g["Govern"]
-  g -- "the registry: who is allowed" --> c["Control"]
-  c -- "what still runs" --> o["Observe"]
-  o -- "traces" --> e["Evaluate"]
-  e -- "scores, back to the owner" --> g
-  rc["Read credential"] -.-> d
-  cc["Control credential"] -.-> c
-```
+<img className="block dark:hidden" src="/images/diagrams/flow-light.png" alt="Discover, govern, control, observe and evaluate, in order" />
+<img className="hidden dark:block" src="/images/diagrams/flow-dark.png" alt="Discover, govern, control, observe and evaluate, in order" />
 
 <Steps>
   <Step title="Discover">

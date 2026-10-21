@@ -33,18 +33,8 @@ An asset's standing in the registry is one of **Registered**, **Awaiting approva
 
 Rejecting, revoking or withdrawing returns the asset to shadow, and it can be requested again. A later request records the earlier ones under **Earlier requests** on the asset's Registration card.
 
-```mermaid
-stateDiagram-v2
-  [*] --> shadow: discovered
-  shadow --> pending: Request
-  pending --> registered: Approve
-  pending --> rejected: Reject
-  pending --> withdrawn: Withdraw
-  registered --> revoked: Revoke
-  rejected --> shadow
-  withdrawn --> shadow
-  revoked --> shadow
-```
+<img className="block dark:hidden" src="/images/diagrams/states-light.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
+<img className="hidden dark:block" src="/images/diagrams/states-dark.png" alt="A registration moves from shadow to pending to registered, or back through rejected, withdrawn or revoked" />
 
 ## What is recorded
 

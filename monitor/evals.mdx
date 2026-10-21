@@ -11,15 +11,8 @@ Evals is OpenController's judging service. It reads records from a trace store, 
 
 The evals service is its own container with its own MongoDB database. Until it is connected, the Evals pages say **No evals service connected** and link to the settings.
 
-```mermaid
-flowchart TB
-  store[("Trace store")] -- "spans, runs, conversations" --> svc["Evals service"]
-  svc -- "an evaluator's question about each record" --> model["Judge model"]
-  model -- "answer" --> svc
-  svc --> scores["Scores"]
-  scores --> pages["Scores page and Findings"]
-  scores --> mon["Monitors: alert when an agent gets worse"]
-```
+<img className="block dark:hidden" src="/images/diagrams/evals-light.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
+<img className="hidden dark:block" src="/images/diagrams/evals-dark.png" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
 
 <Steps>
 <Step title="Deploy it">

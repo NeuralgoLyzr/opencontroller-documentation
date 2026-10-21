@@ -18,14 +18,8 @@ The control credential can be one of its own (recommended), a copy of the read c
 
 Secrets go to your secrets manager at `integrations/<connection id>/client-secret` and `integrations/<connection id>/control/client-secret`. They are never returned by the API and never logged.
 
-```mermaid
-flowchart TB
-  sm["Your secrets manager"] -. "holds both credentials" .-> disc
-  sm -.-> ctl
-  disc["Discovery, Verify and Spend"] -- "read credential: lists and describes, changes nothing" --> acct
-  ctl["Control actions"] -- "control credential: share, block, publish, delete" --> acct
-  acct["The account: agents, models, tools, identities"]
-```
+<img className="block dark:hidden" src="/images/diagrams/credentials-light.png" alt="The read credential lists and describes; the control credential changes" />
+<img className="hidden dark:block" src="/images/diagrams/credentials-dark.png" alt="The read credential lists and describes; the control credential changes" />
 
 ## The Integrations page
 
