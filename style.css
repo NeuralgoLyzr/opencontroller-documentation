@@ -493,3 +493,9 @@ html[data-page-mode="wide"]:not([data-current-path="/"]) .mdx-content > :not(.oc
 
 /* No label above the title: the sidebar already says where you are. */
 #content-area #header nav, #content-area #header [class*="eyebrow"] { display: none !important; }
+
+/* The sidebar on one pair of edges: the search box and the bottom bar take the rows' width, and
+   the search icon sits on the rows' icon line. */
+#sidebar-content div:has(> #search-bar-entry) { margin-left: -0.5rem; margin-right: -0.5rem; }
+#sidebar-content #search-bar-entry { padding-left: 0.5rem !important; font-size: 0.8125rem; }
+.almond-nav-bottom-section { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
