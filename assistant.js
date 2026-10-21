@@ -34,10 +34,10 @@ const CONFIG = {
   panel.setAttribute("aria-label", "Ask the docs");
   panel.hidden = true;
   panel.innerHTML =
-    '<header><h2>Ask the docs</h2><button class="oc-ask-close" aria-label="Close">&times;</button></header>' +
+    '<header><h2>Ask the docs</h2><button class="oc-ask-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>' +
     '<div class="oc-ask-messages" role="log" aria-live="polite"></div>' +
     '<form class="oc-ask-form"><textarea rows="1" placeholder="How do I block an agent?" aria-label="Your question"></textarea>' +
-    '<button type="submit" aria-label="Send">&rarr;</button></form>' +
+    '<button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
     '<footer>Answers come from these pages. Check the page before you act.</footer>';
   document.body.append(button, panel);
 
