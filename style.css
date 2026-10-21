@@ -498,3 +498,6 @@ td.oc-lit { box-shadow: none; }
   .oc-roles-grid thead th.oc-roles-col { width: 4.25rem; padding: 0.75rem 0.25rem !important; }
   .oc-roles-grid tbody td { padding: 0.625rem 0.25rem !important; }
 }
+
+/* No footer: the GitHub link is gone from docs.json, and the host's credit line is hidden. */
+#footer a[href*="mintlify.com"], #footer:not(:has(a:not([href*="mintlify.com"]))) { display: none !important; }
