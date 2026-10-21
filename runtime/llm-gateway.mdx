@@ -92,6 +92,17 @@ curl https://gateway.example.com/v1/chat/completions \
 The key decides which providers and models the call may reach, and its budget and rate limits apply. The gateway's
 own content rules then check the prompt and the answer.
 
+```mermaid
+flowchart TB
+  app["Your application"] -- "POST /v1/chat/completions with x-bf-vk" --> gw["LLM gateway"]
+  gw -- "the key's providers, models, budget, rate limits" --> rules["Content rules: your guardrails"]
+  rules -- "prompt passed" --> prov["Model provider"]
+  prov -- "answer" --> rules
+  rules -- "passed, redacted or blocked" --> app
+  gw -.-> logs["Logs and spend"]
+  rules -.-> viol["Guardrail violations"]
+```
+
 ## Who can do what
 
 | Permission | Default role | Allows |

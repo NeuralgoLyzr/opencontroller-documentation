@@ -11,6 +11,16 @@ Evals is OpenController's judging service. It reads records from a trace store, 
 
 The evals service is its own container with its own MongoDB database. Until it is connected, the Evals pages say **No evals service connected** and link to the settings.
 
+```mermaid
+flowchart TB
+  store[("Trace store")] -- "spans, runs, conversations" --> svc["Evals service"]
+  svc -- "an evaluator's question about each record" --> model["Judge model"]
+  model -- "answer" --> svc
+  svc --> scores["Scores"]
+  scores --> pages["Scores page and Findings"]
+  scores --> mon["Monitors: alert when an agent gets worse"]
+```
+
 <Steps>
 <Step title="Deploy it">
 With the Helm chart, `evals.enabled` installs it; `evals.existingSecret` names the secret `<release>-evals-env` that holds its keys, `evals.database` the MongoDB database (default `evals`) and `evals.workers` how many judging workers run. Run on its own, it reads `PORT` (default `8080`), `MONGODB_URI`, `MONGODB_DATABASE`, `EVALS_API_KEY` (what the platform signs in with), `EVALS_SECRET_KEY` (what it seals connection secrets with), `EVALS_WORKERS` (default 2), `EVALS_MODEL_CALLS` (default 4 at a time), `EVALS_MODEL_CALLS_PER_MINUTE` (default 60), and `EVALS_CODE_EVALUATORS=true` to allow code evaluators. `EVALS_WEBHOOK_HTTP` and `EVALS_WEBHOOK_PRIVATE` let monitor alerts reach plain-HTTP or private-network webhooks.

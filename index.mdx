@@ -10,6 +10,22 @@ decide which ones are allowed, act on the ones that are not, and watch the ones 
 It does this without moving anything. Agents stay where they were built. OpenController holds read access to each
 platform, and, where you grant it, the narrower access it needs to act.
 
+```mermaid
+flowchart TB
+  clouds["Your clouds and platforms\nAWS, Microsoft, Google Cloud, Databricks, Anthropic, Snowflake"]
+  subgraph oc["OpenController"]
+    direction LR
+    inv["Inventory and map"] --> reg["Registry and approvals"] --> ctl["Control actions"]
+    gw["LLM gateway and guardrails"]
+    obs["Traces and cost"] --> ev["Evals"]
+  end
+  clouds -- "scans read, on a schedule" --> inv
+  ctl -- "block, share, delete" --> clouds
+  apps["Your applications"] -- "model calls, with a virtual key" --> gw
+  gw --> providers["Model providers"]
+  agents["Your agents"] -- "OTLP traces" --> obs
+```
+
 ## What it covers
 
 <CardGroup cols={2}>

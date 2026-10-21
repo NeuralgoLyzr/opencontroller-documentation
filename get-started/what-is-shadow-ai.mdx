@@ -33,6 +33,16 @@ OpenController reads each connected platform and places every discovered asset i
 | **Registered** | Approved, with an owner, in the registry. |
 | **Unmanaged** | Discovered on a platform where OpenController cannot register or act, listed for visibility. |
 
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> Shadow: discovered
+  Shadow --> Awaiting_approval: someone registers it
+  Awaiting_approval --> Registered: approved
+  Awaiting_approval --> Shadow: rejected or withdrawn
+  Registered --> Shadow: revoked
+```
+
 The **Shadow AI** page shows the shadow and awaiting-approval assets, with the share of governed assets that are
 registered, as a map from accounts to products to agents to what the agents use. From there you register one agent
 or a whole connection at once, which sends it for approval.

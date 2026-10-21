@@ -11,6 +11,14 @@ Observability is the record of what your agents did at runtime: every run, its m
 
 OpenController does not store traces itself. An OpenTelemetry Collector writes them to ClickHouse, and the console reads them from there with a read-only user. Until a store is connected, every observability page says **No trace store connected** and links to the settings.
 
+```mermaid
+flowchart TB
+  agent["Your agent, with an OpenTelemetry SDK"] -- "OTLP over HTTP, the project's key in a header" --> col["OpenTelemetry Collector"]
+  col -- "writes" --> ch[("ClickHouse")]
+  ch -- "read-only user" --> console["Observability pages: traces, issues, cost"]
+  ch -- "records" --> evals["Evals service"]
+```
+
 <Steps>
 <Step title="Open Settings, then Observability">
 Set **Provider** to **ClickHouse**, the only kind offered. Enter the **Base URL** of its HTTP interface, for example `https://clickhouse.example.com:8443`, or `http://clickhouse:8123` beside a local stack. Give it a read-only user.
