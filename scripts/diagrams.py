@@ -57,15 +57,18 @@ class Canvas:
         self.text(tx, y + h / 2 + 4, label, size=11.5, weight=600 if strong else 500, mono=mono)
 
     # A node: a card with a title and an optional second line.
+    # Each node is a group the page can point at: ui.js lights the prose that names it on hover.
     def node(self, x, y, w, h, title, sub=None, accent=None):
         t = self.t
         stroke = accent or t["border_strong"]
+        self.add(f'<g className="oc-node" data-name="{esc(title)}" tabIndex="0">')
         self.add(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{t["bg"]}" stroke="{stroke}"/>')
         if sub:
             self.text(x + w / 2, y + h / 2 - 2, title, size=12.5, weight=700, anchor="middle")
             self.text(x + w / 2, y + h / 2 + 13, sub, size=10.5, weight=500, color=t["muted_fg"], anchor="middle")
         else:
             self.text(x + w / 2, y + h / 2 + 4.5, title, size=12.5, weight=700, anchor="middle")
+        self.add("</g>")
 
     # The hero: a tall pill in the primary colour with the mark and a name.
     def hero(self, x, y, w, h, lines):

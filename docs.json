@@ -28,7 +28,7 @@
   },
   "styling": {
     "codeblocks": "dark",
-    "eyebrows": "none"
+    "eyebrows": "section"
   },
   "favicon": "/favicon.svg",
   "logo": {

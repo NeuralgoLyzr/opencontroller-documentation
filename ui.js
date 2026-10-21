@@ -135,3 +135,137 @@
   new MutationObserver(decorate).observe(document.body, { childList: true, subtree: true });
   decorate();
 })();
+
+// ---- The estate reader ------------------------------------------------------------------
+// 6. An answer strip under the title: where the page lives in the console, and who can act.
+// 7. A diagram's nodes light the prose that names them.
+// 8. The home page's walkthrough plays as a stepper.
+(function () {
+  "use strict";
+  if (window.__ocEstate) return;
+  window.__ocEstate = true;
+
+  // Where each page lives in the console: the sidebar section and the page.
+  var CONSOLE = {
+    "/discover/overview": ["Overview"], "/discover/inventory": ["Discover", "AI Inventory"], "/discover/map": ["Discover", "AI Inventory", "Map"],
+    "/discover/shadow-ai": ["Discover", "Shadow AI"], "/discover/people": ["Discover", "People"], "/discover/spend": ["Spend"],
+    "/govern/registry": ["Govern", "Registry"], "/govern/approvals": ["Govern", "Approvals"], "/govern/policies": ["Govern", "Policies"],
+    "/govern/audit-log": ["Settings", "Audit log"], "/govern/respond": ["Discover", "Shadow AI"], "/govern/control-actions": ["Discover", "AI Inventory", "an asset's Actions"],
+    "/monitor/observability": ["Monitor", "Observability"], "/monitor/send-traces": ["Monitor", "Observability", "Setup"], "/monitor/traces-and-issues": ["Monitor", "Observability", "Traces"],
+    "/monitor/cost": ["Monitor", "Observability", "Cost"], "/monitor/evals": ["Monitor", "Evals"], "/monitor/evaluators-and-tasks": ["Monitor", "Evals", "Evaluators"],
+    "/monitor/monitors-and-datasets": ["Monitor", "Evals", "Monitors"], "/runtime/llm-gateway": ["Runtime", "LLM Gateway"], "/runtime/virtual-keys": ["Runtime", "LLM Gateway", "Virtual keys"],
+    "/runtime/teams-and-customers": ["Runtime", "LLM Gateway", "Teams & customers"], "/runtime/gateway-logs": ["Runtime", "LLM Gateway", "Logs"], "/runtime/guardrails": ["Runtime", "Guardrails"],
+    "/runtime/guardrail-checks": ["Runtime", "Guardrails", "Checks"], "/runtime/guardrail-violations": ["Runtime", "Guardrail Violations"], "/runtime/guardrails-api": ["Runtime", "Guardrails"],
+    "/posture/findings": ["Posture", "Findings"], "/posture/security-policies": ["Posture", "Security policies"], "/posture/frameworks": ["Posture", "Findings", "Frameworks"],
+    "/improve/fine-tuning": ["Improve", "Fine-tuning"], "/assistant/ask-ctrl": ["Ask Ctrl"], "/connect/overview": ["Integrations"], "/connect/aws": ["Integrations", "AWS"],
+    "/connect/microsoft": ["Integrations", "Microsoft"], "/connect/google-cloud": ["Integrations", "Google Cloud"], "/connect/databricks": ["Integrations", "Databricks"],
+    "/connect/anthropic": ["Integrations", "Anthropic"], "/connect/snowflake": ["Integrations", "Snowflake"], "/connect/scans": ["Integrations", "Scans"],
+    "/get-started/quickstart": ["Integrations"], "/get-started/modules": ["Overview"],
+  };
+  var ROLES = [["admin", /\badmin(istrator)?s?\b/i], ["operator", /\boperators?\b/i], ["viewer", /\bviewers?\b/i]];
+
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function answerStrip() {
+    var header = document.querySelector("#content-area #header");
+    if (!header || header.parentNode.querySelector(".oc-answer")) return;
+    var place = CONSOLE[location.pathname.replace(/\/$/, "")];
+    var who = document.querySelector("#content-area .oc-who");
+    if (!place && !who) return;
+    var strip = document.createElement("div");
+    strip.className = "oc-answer";
+    var html = "";
+    if (place) {
+      var mark = document.querySelector('#navigation-items a[aria-current="page"] svg');
+      html += '<div class="oc-answer-cell"><span class="oc-answer-k">In the console</span><span class="oc-answer-v oc-crumb">' +
+        (mark ? mark.outerHTML : "") + place.map(function (p) { return "<span>" + esc(p) + "</span>"; }).join('<i aria-hidden="true">›</i>') + "</span></div>";
+    }
+    if (who) {
+      var text = who.textContent || "";
+      var roles = ROLES.filter(function (r) { return r[1].test(text); }).map(function (r) { return r[0]; });
+      if (roles.length) {
+        html += '<div class="oc-answer-cell"><span class="oc-answer-k">Who can act</span><span class="oc-answer-v">' +
+          roles.map(function (r) { return '<span class="oc-role oc-role-' + r + '">' + r + "</span>"; }).join("") + "</span></div>";
+      }
+    }
+    strip.innerHTML = html;
+    header.parentNode.insertBefore(strip, header.nextSibling);
+  }
+
+  // Hovering a node lights every paragraph, row and item that names it.
+  var lit = [];
+  function unlight() { lit.forEach(function (e) { e.classList.remove("oc-lit"); }); lit = []; }
+  var STOP = /^(your|the|a|an|with|in|of|and|or|on|to|service|pages|page|store)$/i;
+  function light(name) {
+    unlight();
+    var words = name.split(/\s+/).filter(function (w) { return w && !STOP.test(w); });
+    var key = words.length ? words[words.length - 1] : name;
+    var re = new RegExp("\\b" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "s?\\b", "i");
+    var blocks = document.querySelectorAll("#content-area p, #content-area span[data-as='p'], #content-area li, #content-area td, #content-area .oc-who");
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      if (b.closest(".oc-diagram") || b.querySelector("p, li")) continue;
+      if (re.test(b.textContent || "")) { b.classList.add("oc-lit"); lit.push(b); }
+    }
+  }
+  function bindNodes() {
+    var nodes = document.querySelectorAll(".oc-diagram .oc-node:not(.oc-bound)");
+    for (var i = 0; i < nodes.length; i++) (function (n) {
+      n.classList.add("oc-bound");
+      var name = n.getAttribute("data-name") || "";
+      n.addEventListener("mouseenter", function () { light(name); n.closest(".oc-diagram").classList.add("oc-focus"); });
+      n.addEventListener("focus", function () { light(name); n.closest(".oc-diagram").classList.add("oc-focus"); });
+      n.addEventListener("mouseleave", function () { unlight(); n.closest(".oc-diagram").classList.remove("oc-focus"); });
+      n.addEventListener("blur", function () { unlight(); n.closest(".oc-diagram").classList.remove("oc-focus"); });
+    })(nodes[i]);
+  }
+
+  // The walkthrough: a play control steps the tabs every few seconds, and a line under the
+  // active tab shows the time left. Any touch stops it; a hidden tab pauses it.
+  var timer, playing = false, STEP = 4200;
+  function tabs() { return Array.prototype.slice.call(document.querySelectorAll(".oc-panel [role='tablist'] [role='tab']")); }
+  function current() { return tabs().findIndex(function (t) { return t.getAttribute("aria-selected") === "true"; }); }
+  function go(i) { var ts = tabs(); if (!ts.length) return; ts[(i + ts.length) % ts.length].click(); }
+  function tick() {
+    if (!playing) return;
+    var panel = document.querySelector(".oc-panel");
+    if (panel) { panel.classList.remove("oc-playing"); void panel.offsetWidth; panel.classList.add("oc-playing"); }
+    timer = setTimeout(function () { go(current() + 1); tick(); }, STEP);
+  }
+  function setPlaying(on) {
+    playing = on;
+    clearTimeout(timer);
+    var panel = document.querySelector(".oc-panel");
+    var btn = panel && panel.querySelector(".oc-play");
+    if (btn) { btn.setAttribute("aria-pressed", on ? "true" : "false"); btn.querySelector("span").textContent = on ? "Pause" : "Play"; btn.classList.toggle("is-on", on); }
+    if (panel) panel.classList.toggle("oc-playing", on);
+    if (on) tick();
+  }
+  function stepper() {
+    var panel = document.querySelector(".oc-panel");
+    if (!panel || panel.querySelector(".oc-play")) return;
+    var head = panel.querySelector(".oc-panel-head");
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "oc-play";
+    btn.setAttribute("aria-pressed", "false");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path class="oc-play-i" d="M7 4.5v15l12-7.5z" fill="currentColor"/><path class="oc-pause-i" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg><span>Play</span>';
+    btn.addEventListener("click", function () { setPlaying(!playing); });
+    head.appendChild(btn);
+    panel.addEventListener("pointerdown", function (e) { if (!e.target.closest(".oc-play")) setPlaying(false); });
+    document.addEventListener("visibilitychange", function () { if (document.hidden) setPlaying(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (!e.target.closest || !e.target.closest(".oc-panel")) return;
+      setPlaying(false); go(current() + (e.key === "ArrowRight" ? 1 : -1)); e.preventDefault();
+    });
+  }
+
+  var pending;
+  function run() {
+    clearTimeout(pending);
+    pending = setTimeout(function () { answerStrip(); bindNodes(); stepper(); }, 120);
+  }
+  new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
+  run();
+})();
