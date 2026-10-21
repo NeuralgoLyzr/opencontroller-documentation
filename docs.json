@@ -191,7 +191,7 @@
     }
   },
   "search": {
-    "prompt": "Search the docs, or ask a question"
+    "prompt": "Search the docs"
   },
   "footer": {
     "links": [

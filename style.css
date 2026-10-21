@@ -497,5 +497,7 @@ html[data-page-mode="wide"]:not([data-current-path="/"]) .mdx-content > :not(.oc
 /* The sidebar on one pair of edges: the search box and the bottom bar take the rows' width, and
    the search icon sits on the rows' icon line. */
 #sidebar-content div:has(> #search-bar-entry) { margin-left: -0.5rem; margin-right: -0.5rem; }
-#sidebar-content #search-bar-entry { padding-left: 0.5rem !important; font-size: 0.8125rem; }
+#sidebar-content #search-bar-entry { height: 2.25rem !important; padding: 0 0.5rem !important; font-size: 0.8125rem; border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-paper) !important; box-shadow: none !important; color: var(--oc-muted-foreground); transition: border-color 140ms cubic-bezier(0.16, 1, 0.3, 1); }
+#sidebar-content #search-bar-entry:hover { border-color: var(--oc-border-strong) !important; }
+#sidebar-content #search-bar-entry kbd, #sidebar-content #search-bar-entry [class*="kbd"] { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; color: var(--oc-muted-foreground); }
 .almond-nav-bottom-section { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
