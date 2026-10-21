@@ -50,6 +50,12 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 
 /* The reading column: wide, as Stripe and Cloudflare run it, with the sidebar at the console's width. */
 :root { --content-width: 48rem; }
+/* The reading column sits against the sidebar, not centred in the leftover space, so a wide
+   screen puts the hole on the right, past the table of contents, where it belongs. */
+@media (min-width: 1024px) {
+  #content-container { padding-left: 3rem; padding-right: 3rem; }
+  #content-container > .flex-row-reverse { justify-content: flex-end; padding-left: 0; margin-left: 0; }
+}
 
 /* The type scale: one display size, a lead, then a measured body. */
 #content-container h1, .prose h1 {
