@@ -4,6 +4,8 @@ description: "The map draws the whole estate as a graph, account by account, col
 icon: "waypoints"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 The map is the estate as a graph: every account's agents and what they use, across the clouds. Its default coloring is compliance, so an agent calling a shadow MCP server shows a red edge into it. The same map serves two pages.
 
 **Where it lives:** the map is the **Map** view of both AI Inventory and Shadow AI. On AI Inventory it opens on the whole estate; on Shadow AI it opens with **Non-compliant only** on. The old `/graph` and `/risk-map` addresses redirect to the Shadow AI map. There is no separate graph page.
@@ -50,4 +52,4 @@ Selecting an asset shows its registry badge with the next step (**Register it**,
 
 Before anything is discovered the map reads "Nothing discovered yet": connect an account and run a scan.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

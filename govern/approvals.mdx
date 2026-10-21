@@ -4,6 +4,8 @@ description: "Approvals is the queue of registration requests waiting for an adm
 icon: "stamp"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Every request to register an asset lands here. Approving one registers the asset; rejecting it leaves the asset shadow. The **Decided** tab keeps rejected, revoked and withdrawn registrations, with who decided and why.
 
 ## The page
@@ -58,4 +60,4 @@ A block from the Access card on a shadow agent can register it as pending in the
 
 OpenController does not send notifications when a request is made or decided. The queue, and the **Pending** count on this page and on the Overview, are how administrators see what waits.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

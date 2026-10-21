@@ -4,6 +4,8 @@ description: "The actions OpenController can take on an agent in its own cloud, 
 icon: "octagon-x"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Control changes an agent where it runs: who can reach it, whether it runs, and whether it exists. Every attempt, successful or not, asks for a reason and is written to the audit log. The actions are offered on the **Access** card of an agent's page, under **Identity & access**.
 
 ## The actions
@@ -88,4 +90,4 @@ Anything not in these tables, including every Databricks and Anthropic asset, ha
 
 A Copilot Studio agent can be blocked in Microsoft 365 as well; the card says **Blocked in Microsoft 365** and links to the admin center, since only it lifts that block.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

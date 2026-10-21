@@ -4,6 +4,8 @@ description: "The Spend page totals what your organization spends on AI: the clo
 icon: "circle-dollar-sign"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Spend is money. It adds up the bills of the connected clouds and AI providers, the licences people hold at the prices you set, and the model calls OpenController traces, and shows where each goes. Who holds which licence is the [People](/discover/people) page.
 
 ## Time ranges
@@ -53,4 +55,4 @@ A source's state is **Read**, **Needs a permission** (the missing permission is 
 Model calls through the LLM gateway or seen in traces are shown apart from the bills. A call through Bedrock or Azure is already in that cloud's bill.
 </Note>
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

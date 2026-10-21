@@ -6,6 +6,7 @@ mode: "wide"
 ---
 
 import { RoleTable } from '/snippets/roles.mdx'
+import { ApiLink } from '/snippets/api-link.mdx'
 
 Every request to OpenController needs one permission, such as `scans:run` to start a scan. A role is a set of permissions. Each person and each service account holds one role in the organization, and the console shows only what that role allows.
 
@@ -56,4 +57,4 @@ Each row is one permission, the platform's own description of it, and the docs p
 
 <RoleTable />
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

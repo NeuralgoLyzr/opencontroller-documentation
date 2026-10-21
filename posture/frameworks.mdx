@@ -4,6 +4,8 @@ description: "The seven security and governance frameworks the posture maps its 
 icon: "landmark"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Every security policy answers to one or more controls in a published framework, so a finding can be read as evidence against a standard your auditors already use. The posture maps its policies to seven frameworks. The **Frameworks** panel on [Findings](/posture/findings) shows how many of each framework's controls have findings, and the **Security policies** page lists policies by framework. Each framework has a guide in the console, opened from **Framework guides** on [Security policies](/posture/security-policies), with the framework's official documentation and a **Covered by the policies** table.
 
 The posture covers what can be seen in an inventory: configuration, identity, exposure, ownership and whether an agent is traced and evaluated. Controls about what happens at runtime, such as a model's answers, belong to the [LLM gateway's guardrails](/runtime/guardrails) and to [evals](/monitor/evals).
@@ -108,4 +110,4 @@ AWS Security Hub's controls for Amazon Bedrock AgentCore, the managed runtime fo
 - On [Security policies](/posture/security-policies), browse by **framework** to see which controls are covered and whether each policy is on.
 - **Export** on Findings writes the open findings to CSV with a Frameworks column, one row per finding.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

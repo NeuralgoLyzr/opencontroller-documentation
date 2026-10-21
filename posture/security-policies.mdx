@@ -6,6 +6,7 @@ mode: "wide"
 ---
 
 import { Atlas } from '/snippets/atlas.mdx'
+import { ApiLink } from '/snippets/api-link.mdx'
 
 A security policy is one detector the posture runs over the inventory. Each one tests a single risk, such as an API key that never expires or an agent that calls models around the LLM gateway, on the clouds where it can be seen. When a policy matches an asset, that is a finding on [Findings](/posture/findings). The **Security policies** page, under Posture, is where you decide which policies run.
 
@@ -83,4 +84,4 @@ A few details worth knowing when you read a finding:
 - **OBS-1** counts an agent as traced when a project stood for it in the last 30 days; **OBS-2** counts it as evaluated when a result scored it in the last 90 days.
 - **RT-1** applies to platforms where agents are built in code, where a guardrail or the gateway is the only runtime protection.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

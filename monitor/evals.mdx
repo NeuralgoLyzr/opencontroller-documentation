@@ -5,6 +5,7 @@ icon: "flask-conical"
 ---
 
 import { Diagram } from '/snippets/diagrams.mdx'
+import { ApiLink } from '/snippets/api-link.mdx'
 
 Evals is OpenController's judging service. It reads records from a trace store, a span, a whole run or a conversation at a time, and has a model answer a question about each one: did the answer address the request, did it leak data, was it polite. The answers become scores, which show on the **Scores** page, feed the policy **OBS-2 Traced agents nobody evaluates** on [Findings](/posture/findings), and let monitors say when an agent got worse. The pages live under **Evals** in the console.
 
@@ -62,4 +63,4 @@ Judge on a schedule and alert on change, test against a dataset with known answe
 | **Prompts** | The prompt hub: versioned prompts you can try on a dataset |
 | **Connections** | The trace stores evals reads records from, and the models it judges with |
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

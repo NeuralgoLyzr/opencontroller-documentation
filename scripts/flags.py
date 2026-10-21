@@ -12,6 +12,9 @@ a page still answers at its URL. Run from the site's root:
 Flags:
     apiReference   the API reference tab (api-reference/, and the OpenAPI endpoints)
     fineTuning     the Fine-tuning page, in an Improve group before Ask Ctrl (improve/)
+
+The apiReference flag also writes snippets/api-link.mdx, the <ApiLink /> pages close
+with: a line pointing at the API reference while it is on, nothing while it is off.
 """
 import glob
 import json
@@ -60,6 +63,14 @@ def hide(prefix, hidden, write):
     return changed
 
 
+def api_link(on):
+    if on:
+        return ("{/* Written by scripts/flags.py from flags.json. Do not edit by hand. */}\n\n"
+                'export const ApiLink = () => <p>The <a href="/api-reference/overview">API reference</a> lists the endpoints behind this page.</p>;\n')
+    return ("{/* Written by scripts/flags.py from flags.json. Do not edit by hand. */}\n\n"
+            "export const ApiLink = () => null;\n")
+
+
 def off(flags):
     """The page prefixes the flags turn off, for scripts/check.py."""
     return tuple(p for f, p in PREFIX.items() if not flags.get(f))
@@ -73,6 +84,16 @@ def main():
     stale = []
     for flag, prefix in PREFIX.items():
         stale += hide(prefix, not flags.get(flag), write=not check)
+    link = api_link(bool(flags.get("apiReference")))
+    try:
+        current = open("snippets/api-link.mdx").read()
+    except FileNotFoundError:
+        current = None
+    if current != link:
+        stale.append("snippets/api-link.mdx")
+        if not check:
+            with open("snippets/api-link.mdx", "w") as f:
+                f.write(link)
     if check:
         if wanted != docs or stale:
             print("docs.json or the pages do not match flags.json: run python3 scripts/flags.py", file=sys.stderr)

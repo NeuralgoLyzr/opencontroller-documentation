@@ -4,6 +4,8 @@ description: "The People page lists everyone in the connected tenants who holds 
 icon: "users"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Spend is the money; People is who it is spent on. A person here is an email address in a connected tenant that holds a licence (read from Microsoft 365) or has a bill put down to it (Claude Code use, read from Anthropic). The page shows the last 30 days.
 
 <Note>
@@ -44,4 +46,4 @@ People show once Microsoft 365 or Anthropic is connected under Integrations and 
 
 The Spend page's **Licences** panel links here as "Who holds them: People", and its **Top spenders** panel as "Everyone: People". Licence prices are set on Spend with `spend:prices` and apply here.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

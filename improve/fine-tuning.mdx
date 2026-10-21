@@ -5,6 +5,8 @@ icon: "graduation-cap"
 hidden: true
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 Fine-tuning trains small models of your own on what your agents do. The training runs in its own studio,
 OpenFinetuner, on the machines it trains on. OpenController does not train anything itself. It shows the studio's
 own console in place, under **Fine-tuning** in the sidebar, and routes every call that console makes through its
@@ -99,4 +101,4 @@ OpenController. Training machines connect to the studio directly.
 - An answer from the studio is read up to 16 MiB. Larger trained weights are downloaded from the studio directly:
   use **Open on its own**.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

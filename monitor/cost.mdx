@@ -4,6 +4,8 @@ description: "What your agents' model calls cost, over time and broken down by p
 icon: "circle-dollar-sign"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 The **Cost** page turns the traces into a bill. It sums what every model call cost across all projects, or within one project, for a window of time, and breaks the total down by whoever or whatever you want to charge it to. Where the posture shows risk, Cost shows spend, and both use the same projects and agents.
 
 ## Where prices come from
@@ -49,4 +51,4 @@ The window is **Last hour**, **Last 24 hours**, **Last 7 days** or **Last 30 day
 
 To charge cost to an agent, give each project its **Agent** in the project's settings; see [Observability](/monitor/observability). To charge it to a team or a customer, route the agent through the gateway with a virtual key owned by that [team or customer](/runtime/teams-and-customers).
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

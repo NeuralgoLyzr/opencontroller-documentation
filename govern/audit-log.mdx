@@ -4,6 +4,8 @@ description: "The audit log records every change made from OpenController, wheth
 icon: "scroll-text"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 The audit log is the organization's record. It lives under **Settings, Audit log** (the `/audit` address redirects there). It has two tabs, each backed by its own log; the second, **Identity & access**, is shown only to roles holding `audit:read`.
 
 ## AI assets
@@ -64,4 +66,4 @@ Each event carries the request id it happened in, so it can be matched to the AP
 
 Both logs are kept in the platform's MongoDB database without a time limit; there is no retention setting. The console has no export button. To export, page through the API with `limit` and `offset`.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

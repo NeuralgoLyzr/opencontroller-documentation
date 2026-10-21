@@ -38,7 +38,7 @@ to `docs.json`, and commit both.
 
 | Flag | What it shows |
 |---|---|
-| `apiReference` | The API reference tab: the guide pages and the endpoints from `api-reference/openapi.json`. |
+| `apiReference` | The API reference tab: the guide pages and the endpoints from `api-reference/openapi.json`. It also writes `snippets/api-link.mdx`, the `<ApiLink />` a page closes with: a link to the reference while on, nothing while off. |
 | `fineTuning` | The Fine-tuning page, in an Improve group before Ask Ctrl. |
 
 ## Generated pages

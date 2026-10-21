@@ -4,6 +4,8 @@ description: "What the posture found across your inventory, by severity, cloud, 
 icon: "shield-alert"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 A finding is one security policy that matched one asset in your inventory: an agent anyone can call without signing in, a tool that reads credentials from its environment, a published agent nobody traces. The **Findings** page is the posture's report. It is evaluated in the background after each scan, so it follows the inventory rather than needing a run of its own.
 
 ## How findings are produced
@@ -50,4 +52,4 @@ Evidence shows what was found, not secret values. A credential policy reports th
 
 **Export** downloads the open findings as a CSV named `findings-<timestamp>.csv`, with the columns Policy, Title, Severity, Asset, Kind, Cloud, Account, Owner, First seen, Evidence and Frameworks. The export is the usual way to hand an audit the evidence for a framework; see [Frameworks](/posture/frameworks).
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

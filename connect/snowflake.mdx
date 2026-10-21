@@ -4,6 +4,8 @@ description: "Create the read and control users with the generated setup script,
 icon: "cloud"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 OpenController reads a **Snowflake account** as a **service user** whose role sees what the account holds and reads none of its data. One connection is one account. It discovers **CoWork** and the **Cortex Agents** it serves, Snowflake-managed **MCP servers**, **Cortex Search** services, **semantic views** and models in the Model Registry.
 
 A connection has two users:
@@ -134,4 +136,4 @@ Seven sources per account, named `snowflake:<account>:global:<family>`: `cortex.
 
 Click the trash icon on the row: the stored private keys are deleted. Then in Snowflake run `DROP USER OPENCONTROLLER_READ; DROP ROLE OPENCONTROLLER_READ;`, the same for the control user, and `DROP DATABASE OPENCONTROLLER;` if control was on.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

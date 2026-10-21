@@ -4,6 +4,8 @@ description: "Policies are the rules OpenController governs by. The registry pol
 icon: "scale"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 A policy is the registry's rules, kept as data an administrator edits. Today the Policies page holds one policy, the registry policy. It decides which discovered assets are shadow until registered, and what an approval needs. Changes apply to new requests and decisions from the moment they are saved; past requests keep the version they were made under.
 
 ## The registry policy
@@ -42,4 +44,4 @@ The block links to **Posture, Security policies**, where the posture checks are 
 
 The policy's kinds decide what reaches [Approvals](/govern/approvals): only assets of a governed kind can be requested. Separation of duties decides who may approve. The version in force when a request is made is recorded on the registration as **Policy**, so a later change does not alter what was agreed.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />

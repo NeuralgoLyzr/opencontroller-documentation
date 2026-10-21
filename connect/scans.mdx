@@ -4,6 +4,8 @@ description: "How discovery scans run, how often, how to start one by hand, and 
 icon: "refresh-cw"
 ---
 
+import { ApiLink } from '/snippets/api-link.mdx'
+
 A **scan** reads a cloud and writes what it finds to the inventory. Scans run on their own, one interval after each connection's last scan, and whenever you start one. Every scan is listed under **Discovery scans** on the **Integrations** page, and each has its own page at `/integrations/scans/<id>`.
 
 ## The scan list
@@ -60,4 +62,4 @@ A failed source keeps what the last good scan recorded. Nothing is removed from 
 
 Scan records are kept for 30 days.
 
-The [API reference](/api-reference/overview) lists the endpoints behind this page.
+<ApiLink />
