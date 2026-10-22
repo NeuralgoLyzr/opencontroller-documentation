@@ -1,0 +1,119 @@
+---
+title: "Use cloud guardrails"
+description: "Connect AWS Bedrock Guardrails, Azure AI Content Safety or Google Model Armor, and run them from a guardrail."
+sidebarTitle: "Cloud guardrails"
+icon: "cloud"
+---
+
+<Note>
+  Before you start:
+  - The **Guardrails** module is on. See [Modules](/administer/modules).
+  - You have the **Admin** role.
+  - In the cloud, you can make what the connection needs: an IAM role in AWS, a Content Safety resource's key in Azure, or a service account key in Google Cloud.
+  - Optional: an [integration](/discover/connect-accounts) for the same cloud account, to keep the connection with that account's other credentials.
+</Note>
+
+| Provider | Checks it runs | What the connection holds |
+|---|---|---|
+| **AWS Bedrock Guardrails** | AWS Bedrock guardrail | An IAM role that only the guardrail engine may assume, with an external ID. No secret. |
+| **Azure AI Content Safety** | Azure content safety, Azure Prompt Shields, Azure personal data | The resource's endpoint and key. |
+| **Google Model Armor** | Google Model Armor | The project, the location and a service account key. |
+
+<Info>A cloud check sends the text to that cloud, in your account. The other checks keep the text inside your OpenController.</Info>
+
+<Steps>
+  <Step title="Open the connection dialog">
+    Start from one of these places:
+
+    - **Integrations**, on the row of the cloud account. The row says **Guardrails:** and how many connections it has. Select **Add** (or **Manage**), then **Add** next to the provider.
+    - **Integrations** > **Guardrails only**, for a connection that belongs to no integration. Select **Add** next to the provider.
+    - In a guardrail, in the **Cloud provider guardrails** step. Turn on the check, then select **Add connection** next to **Connection**.
+
+    {/* SCREENSHOT: gr-cloud-integrations | later | Not taken: preview's Integrations page shows account IDs in an error. */}
+  </Step>
+  <Step title="Fill in the connection">
+    The dialog is named **Connect** and the provider, for example **Connect AWS Bedrock Guardrails**. Every connection has:
+
+    - **Name**: up to 80 characters, for example `Bedrock, production`.
+    - **Integration**: the cloud account it belongs to, in Integrations, or **None: guardrails only**. When you start from an integration's row, this is set.
+
+    The rest depends on the provider.
+
+    <Tabs>
+      <Tab title="AWS Bedrock Guardrails">
+        The dialog starts with **1. Make the role in the AWS account**:
+
+        1. Deploy the stack it names from **The template**, or select **Copy the AWS CLI command** and run it. The stack makes the role `opencontroller-guardrails`. The role may list, read and apply the account's Bedrock guardrails. Only the guardrail engine may assume it, and only with the external ID shown.
+        2. **Trusts** and **External ID** are shown with copy buttons, for your own setup.
+
+        Then **2. Tell OpenController the role**:
+
+        - **Role ARN**: the setup stack's `RoleArn` output, for example `arn:aws:iam::<account id>:role/opencontroller-guardrails`. With an integration linked, the role must be in that integration's account.
+        - **Region**: where its Bedrock guardrails are. Default: **US East (N. Virginia)**.
+
+      </Tab>
+      <Tab title="Azure AI Content Safety">
+        - **Endpoint**: the Content Safety resource's endpoint, from **Keys and Endpoint** in the Azure portal. For example `https://<resource>.cognitiveservices.azure.com/`.
+        - **Key**: **KEY 1** or **KEY 2**.
+        - **Language endpoint** (optional): for Azure personal data, when it is another resource (Azure AI Language). Empty: the endpoint above.
+        - **Language key** (optional): that resource's key. Empty: the key above. It needs **Language endpoint**.
+
+        <Warning>The keys are kept in the secrets manager and never shown again. When you change the connection later, leave a key empty to keep the stored one.</Warning>
+      </Tab>
+      <Tab title="Google Model Armor">
+        - **Project ID**: the Google Cloud project, for example `my-project`. With an integration that reads one project linked, it is set to that project.
+        - **Location**: where its Model Armor templates are: a region such as `us-central1`, or `us` or `eu`. Default: `us-central1`.
+        - **Service account key**: a JSON key of a service account with the **Model Armor User** role, and **Model Armor Viewer** to list templates.
+
+        <Warning>The key is kept in the secrets manager and never shown again. When you change the connection later, leave it empty to keep the stored one.</Warning>
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Connect">
+    Select **Connect**. You see "*name* connected".
+  </Step>
+  <Step title="Use it in a guardrail">
+    1. Open a guardrail in the editor, and open the **Cloud provider guardrails** step.
+    2. Turn on the check, for example **AWS Bedrock guardrail**.
+    3. Choose the **Connection**. Connections are grouped by the integration they belong to; those that belong to none are under **Guardrails only**.
+    4. Set the check's own settings. For AWS, choose the **Guardrail** discovery found in that account and region, or type its ID or ARN if discovery found none, and its **Version** (`DRAFT` by default). See [Cloud provider guardrails](/secure/guardrails/checks#cloud-provider-guardrails) for every setting.
+    5. Select **Save changes**.
+  </Step>
+</Steps>
+
+## Change or remove a connection
+
+Connections are listed in **Integrations**: on each cloud account's row (**Guardrails:** > **Manage**), and under **Guardrails only**. Each connection shows where it reaches and **Used by** the guardrails that use it.
+
+- **Change** (pencil icon): change its name, its integration or its settings. Linking a guardrails-only connection to an integration is done here.
+- **Setup** (AWS only): shows the role again: the stack, the role, whom it trusts and its external ID.
+- **Remove** (trash icon): the guardrail engine stops using it at once, and for Azure and Google its key is deleted from the secrets manager. Nothing in the cloud changes.
+
+While a guardrail uses a connection, you cannot remove it ("Guardrails use it: change them first"). Change those guardrails first.
+
+When you remove an integration, its guardrail connections stay, for guardrails only. Each keeps its own role or key.
+
+**Settings** > **Modules** > **Guardrails** shows how many connections each provider has, under **Cloud credentials**. Select **Manage in Integrations** to go to them.
+
+## Check it worked
+
+- The connection shows in **Integrations**, with "Not used by a guardrail" until a guardrail uses it, then **Used by** and the guardrail's name.
+- The guardrail's sentence says, for example, "Runs an AWS Bedrock guardrail."
+- [Try the guardrail](/secure/guardrails/try-it) with a text the cloud's guardrail should catch. Its station on the path shows what it did.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Guardrail checks" icon="list-checks" href="/secure/guardrails/checks#cloud-provider-guardrails">
+    Each cloud check's settings and defaults.
+  </Card>
+  <Card title="Try a guardrail on text" icon="flask-conical" href="/secure/guardrails/try-it">
+    See what the cloud's guardrail does to your text.
+  </Card>
+  <Card title="Connect your accounts" icon="plug" href="/discover/connect-accounts">
+    The cloud accounts your connections belong to.
+  </Card>
+  <Card title="AWS" icon="cloud" href="/integrations/aws">
+    Connect an AWS account for discovery.
+  </Card>
+</CardGroup>

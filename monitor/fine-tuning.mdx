@@ -1,0 +1,49 @@
+---
+title: "Fine-tune a model"
+description: "Train small models of your own on what your agents do, in the fine-tuning studio shown inside the console."
+sidebarTitle: "Fine-tuning"
+icon: "sliders-horizontal"
+---
+
+<Note>Needs the **Fine-tuning** module and a connected studio (OpenFinetuner). See [Modules](/administer/modules).</Note>
+
+The training runs in its own studio, OpenFinetuner, on the machines it trains on. Those machines connect to the studio directly, not through OpenController. The console shows the studio's pages in place, under your OpenController sign-in and roles.
+
+{/* SCREENSHOT: ft-hero | later | Not taken: preview's fine-tuning studio does not answer. */}
+
+## Open the studio
+
+Go to **Improve** > **Fine-tuning**. The sidebar shows the studio's own menu, as the studio sends it. The studio stays loaded as you move between its pages, and the address and the browser's back button follow it. When the studio refuses a change, the console shows why as a notification.
+
+{/* SCREENSHOT: ft-menu | later | Not taken: preview's fine-tuning studio does not answer. */}
+
+A dataset can be up to 64 MiB, sent whole in one request. A model loading, or a dataset fetched from Hugging Face, may take up to five minutes. Trained weights larger than 16 MiB do not pass through the console: select **On OpenFinetuner** at the top of the menu to open the studio in a new tab, and take them from there.
+
+## Connect the studio
+
+An Admin connects it in **Settings** > **Fine-tuning** (see [Modules](/administer/modules)), with:
+
+- The studio's address. It must differ from OpenController's own: the console frames only consoles at another address.
+- A bearer token: the studio's `SHADOWLM_API_KEY`, or better, a machine token made for OpenController in the studio (**Machines** > **Create machine token**), which can be revoked on its own. A studio run without authentication takes none.
+- Another address for its console, when the browser reaches it somewhere else.
+
+If the page says the studio has not answered, the address may be wrong, or the studio may not support being shown inside OpenController yet.
+
+## Who can use it
+
+Every call the studio makes goes through OpenController, so your role decides what you may do, and every change is recorded in the [Audit log](/administer/audit-log) with your name.
+
+- **Viewer** reads the studio's pages, but not a dataset's rows: those are what agents were asked and answered.
+- **Operator** also reads rows, adds and removes datasets and models, starts and cancels runs, takes trained weights, and uses the playground.
+- **Admin** and **Owner** also make and revoke machine tokens, set the studio's Hugging Face token, and connect the studio.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Turn on modules" icon="puzzle" href="/administer/modules">
+    Connect the fine-tuning studio.
+  </Card>
+  <Card title="Build datasets and test prompts" icon="table" href="/monitor/evals/datasets-prompts">
+    Test a model's answers against a golden set.
+  </Card>
+</CardGroup>

@@ -1,0 +1,175 @@
+---
+title: "Snowflake"
+description: "Connect a Snowflake account so OpenController finds its Cortex Agents, CoWork, MCP servers, Cortex Search services and semantic views."
+icon: "snowflake"
+---
+
+OpenController reads a Snowflake account as a **service user** whose role sees what the account holds and reads none
+of its data. One integration is one account. It uses up to two users:
+
+- **The read user** (required): discovery and Verify sign in as it. Its role changes nothing.
+- **The control user** (optional): changes OpenController makes are made as it. Its role manages grants on the account.
+
+Each user signs in one of two ways:
+
+- **Workload identity federation** (recommended): the user trusts OpenController's own AWS identity. No secret exists.
+- **Key pair**: OpenController generates an RSA key. The private half goes straight into your secrets manager and is
+  never shown; the setup script sets the public half on the user. Use it where OpenController has no AWS identity, such
+  as a trial.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** Cortex Agents with their models, tools, skills and instructions
+  (credentials masked); the CoWork object (formerly Snowflake Intelligence) and the agents it shows; Snowflake-managed and
+  external MCP servers; Cortex Search services; semantic views; Model Registry models.
+- **[Shadow AI](/discover/shadow-ai):** the owner role of each agent and MCP server, the roles and users that
+  can use or edit it, and whether `PUBLIC` holds it (exposure to the whole account).
+- **Control (optional):** share agents and MCP servers with roles and users, end access for everyone, publish to
+  CoWork, and block an agent.
+
+Neither user ever reads your table data, calls an agent, a search service, an MCP tool or an AI function, or reads
+conversations, traces or files users upload to CoWork.
+
+## Connect a Snowflake account
+
+<Steps>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Snowflake account**. Fill in:
+
+    | Field | What to enter |
+    |---|---|
+    | **Name** | A name for the account, for example `analytics`. |
+    | **Account identifier** | `orgname-account_name`, for example `myorg-myaccount`. In Snowsight: your name (bottom left) > **Account** > **View account details**. |
+    | **Warehouse** (optional) | A warehouse for the **Account usage** check and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. |
+    | **Read user** | Keep `OPENCONTROLLER_READ`, or enter another name. |
+    | **Read user: signs in with** | **Workload identity federation (recommended)** or **Key pair**. The form starts on **Key pair**. |
+    | **Control user** | **None: discovery only** for now. See [Turn on control](#turn-on-control-optional). |
+
+    Select **Connect**. The **Let analytics into Snowflake** dialog opens with a setup script made for this
+    connection, with a key-pair user's public key already in it.
+  </Step>
+  <Step title="Run the setup script in Snowflake">
+    Copy the script and run it in a Snowsight worksheet as **ACCOUNTADMIN**: it changes an account setting and creates
+    users, roles and a warehouse. What it grants is under [Permissions it uses](#permissions-it-uses).
+  </Step>
+  <Step title="Verify">
+    Select **Done**, then **Verify** on the row. The **Access** badge reads **Verified** when every check passes, or how
+    many were refused; without a warehouse it shows **1 refused** (**Account usage**).
+
+    | Check | Passes when |
+    |---|---|
+    | **Sign in** | The user signs in, and lands in the connection's own account. |
+    | **One role** | It acts as its own role alone, with no secondary roles. |
+    | **Read only** | Its role is not an administrator role, none of its grants changes anything, and it holds no other role. |
+    | **Agents**, **MCP servers**, **Cortex Search**, **Semantic views** | They are listed; the check shows how many. |
+    | **CoWork** | Shows how many agents the CoWork object holds, or that there is none. |
+    | **Inherited grants** | Says whether one set of grants covers every database. It never fails. |
+    | **Account usage** | The warehouse reads `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AGENT_USAGE_HISTORY`. **not set up** without a warehouse. |
+
+    With control on, Verify also runs **Control sign in**, **Control one role**, **Control scope** (`MANAGE GRANTS` on
+    the account), **Control CoWork** (`MODIFY` on the CoWork object) and **Control block state** (rights on the block
+    table).
+
+    Scans run every 5 minutes by default. They use `SHOW` and `DESCRIBE`, which need no warehouse.
+  </Step>
+</Steps>
+
+Every statement OpenController runs carries the query tag `opencontroller`, and runs as the users you created for it,
+so your own query history shows exactly what was run.
+
+## Turn on control (optional)
+
+On the connect form, set **Control user** to **A user of its own (recommended)**, keep `OPENCONTROLLER_CONTROL`, and
+choose **Control user: signs in with**; or select **Turn on** next to **Control: off** on a connected account's row.
+Then run the setup script again, from the **Setup** icon on the row.
+
+<Warning>
+The control role holds `MANAGE GRANTS` on the account. It can share and unshare any agent or MCP server, a block takes
+an agent from its owner role, and `MANAGE GRANTS` would let it grant itself anything. That is close to SECURITYADMIN's
+power. It changes grants, never your data.
+</Warning>
+
+| Action | Cortex Agent | MCP server | What runs |
+|---|---|---|---|
+| **Share** (can use, can edit) | Yes | Can use only | `GRANT USAGE` (or `MODIFY`) on the object to a role or user |
+| **Remove** | Yes | Yes | `REVOKE` each privilege the role or user holds on it. Not for the owner role, OpenController's own users and roles, or inherited grants. |
+| **End access for everyone** | Yes | Yes | `REVOKE … FROM ROLE PUBLIC` |
+| **Publish** | Yes | No | `ALTER SNOWFLAKE INTELLIGENCE … ADD AGENT`, adding the agent to CoWork |
+| **Block** | Yes | No | Records the agent's grants, takes ownership (`GRANT OWNERSHIP … COPY CURRENT GRANTS`), tags the agent with its owner, and revokes every grant except `OWNERSHIP` and `MONITOR` |
+| **Unblock** | Yes | No | Gives back the recorded grants and ownership. Grants to roles dropped since are skipped; with no record left, only ownership comes back. |
+
+A block keeps what it took in your own account (`OPENCONTROLLER.STATE.BLOCK_SNAPSHOTS` and the
+`OPENCONTROLLER.STATE.BLOCK_OWNER` tag), never in OpenController. It needs the connection's warehouse.
+
+## Rotate a key
+
+For a key-pair user, open the setup script (the **Setup** icon on the row) and select **Generate a new key for
+OPENCONTROLLER_READ** (or the control user), then **Generate**. The old key stops working at once: run the script's
+`ALTER USER … SET RSA_PUBLIC_KEY` line again before the next scan. A federation user has no key to rotate.
+
+## Permissions it uses
+
+The setup script first runs `ALTER ACCOUNT SET FEATURE_RBAC_INHERITED_GRANTS = 'ENABLED'`, so one set of grants covers
+every database. Each user gets a role of the same name, `TYPE = SERVICE`, that role as its default and no secondary
+roles.
+
+### Read role
+
+| Grant | What it allows |
+|---|---|
+| `INHERITED USAGE ON ALL DATABASES IN ACCOUNT`, `INHERITED USAGE ON ALL SCHEMAS IN ACCOUNT` | Reach the objects in every database and schema. |
+| `INHERITED MONITOR ON ALL AGENTS IN ACCOUNT` | The full agent spec and its grants, never the right to run one. |
+| `INHERITED USAGE ON ALL MCP SERVERS IN ACCOUNT` | Lists a server's tools. Calling one is refused without rights on what it wraps. |
+| `INHERITED MONITOR ON ALL CORTEX SEARCH SERVICES IN ACCOUNT` | Lists them; never queries one. |
+| `INHERITED REFERENCES ON ALL SEMANTIC VIEWS IN ACCOUNT` | Their structure, never their data. |
+| `USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT` | Which agents CoWork shows. Skip it if `SHOW SNOWFLAKE INTELLIGENCES` returns nothing. |
+| `DATABASE ROLE SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` | The account usage views. |
+| `APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER` | Trust Center findings (granted, not read yet). |
+| `USAGE` on the warehouse | The **Account usage** check. The script creates the warehouse: `XSMALL`, suspends after 60 seconds. |
+| With a separate control user: `USAGE` on `OPENCONTROLLER` and `OPENCONTROLLER.STATE`, `SELECT` on `BLOCK_SNAPSHOTS` | Read the block records. |
+
+It never holds `OWNERSHIP`, `MODIFY`, `OPERATE`, `MANAGE GRANTS`, `APPLY`, `INSERT`, `UPDATE`, `DELETE`, any `CREATE`
+privilege, an administrator role, or any other role; **Read only** fails if it does.
+
+### Control role (optional)
+
+| Grant | What it allows |
+|---|---|
+| `MANAGE GRANTS ON ACCOUNT` | Share, remove and block. |
+| `INHERITED USAGE ON ALL DATABASES IN ACCOUNT`, `INHERITED USAGE ON ALL SCHEMAS IN ACCOUNT` | Reach every agent and MCP server. |
+| `MODIFY ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT` | Publish to CoWork. |
+| `SELECT, INSERT, DELETE ON TABLE OPENCONTROLLER.STATE.BLOCK_SNAPSHOTS`, `USAGE` on its database and schema | Record and restore what a block took. The script creates the database, schema and table. |
+| `APPLY ON TAG OPENCONTROLLER.STATE.BLOCK_OWNER` | Tag a blocked agent with its owner. |
+| `USAGE` on the warehouse | Write the block records. |
+
+It holds no grant on your tables, only on its own `BLOCK_SNAPSHOTS`. With **The read user, copied**, all of this goes to
+the read role, and **Read only** then fails.
+
+A key-pair user's private key is stored in your secrets manager; the API returns only the public key. Workload identity
+federation stores nothing.
+
+## Remove the integration
+
+Removing it deletes the stored keys from your secrets manager and stops scans. Then drop what the script made in
+Snowflake (use your own names if you changed them):
+
+```sql
+DROP USER OPENCONTROLLER_READ;
+DROP ROLE OPENCONTROLLER_READ;
+DROP WAREHOUSE OPENCONTROLLER_WH;   -- if the script created it
+-- if control was on
+DROP USER OPENCONTROLLER_CONTROL;
+DROP ROLE OPENCONTROLLER_CONTROL;
+DROP DATABASE OPENCONTROLLER;
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Find agents that every user in the account can reach.
+  </Card>
+  <Card title="Register an agent" icon="list-checks" href="/govern/registry#register-an-agent">
+    Register the agents you approve.
+  </Card>
+</CardGroup>

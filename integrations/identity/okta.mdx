@@ -1,0 +1,142 @@
+---
+title: "Okta"
+description: "Let people sign in to the OpenController console with their Okta account, over OpenID Connect or SAML, and provision them with SCIM."
+icon: "log-in"
+---
+
+Okta signs people in to the console with **OpenID Connect**, through one of its authorization servers, or with **SAML
+2.0**, through an app. It can also provision people with **SCIM 2.0**. Okta groups map to roles in OpenController. For
+apps that call the LLM gateway as a person, see [Okta for gateway callers](/integrations/caller-identity/okta).
+
+Changing single sign-on needs the **Owner** role; an **Admin** can only read it. Below, `<console address>` is the
+address under **Settings** > **Authentication** > **Console address**: open the console at that same address, since the
+redirect URIs are built from the browser's address.
+
+## Connect Okta
+
+<Tabs>
+  <Tab title="OpenID Connect (recommended)">
+    <Steps>
+      <Step title="Create the app in Okta">
+        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **OIDC - OpenID Connect** >
+        **Single-Page Application**. Set:
+
+        - **Grant type:** Authorization Code and **Refresh Token** (the console renews sessions with `offline_access`).
+        - **Sign-in redirect URI:** `<console address>/auth/callback`
+        - **Sign-out redirect URI:** `<console address>/signed-out`
+
+        Assign the groups that may use OpenController, and note the **Client ID**. The app is public (PKCE): there is
+        no client secret.
+      </Step>
+      <Step title="Set up the authorization server">
+        Go to **Security** > **API** > **Authorization Servers** > **default** (or your custom one):
+
+        - **Access Policies:** a rule for the app that allows Authorization Code and Refresh Token, and the scopes
+          `openid`, `profile`, `email` and `offline_access`.
+        - **Claims:** add two claims on the **access token**:
+          - `email`, value `user.email`. Okta's access token carries no email otherwise, and every sign-in is refused
+            as outside your domains.
+          - `groups`, filter **Matches regex** `.*`, so group names arrive.
+        - Note the **Audience**.
+      </Step>
+      <Step title="Connect Okta in OpenController">
+        Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Okta**; under **Signs in with**,
+        **OpenID Connect**. Fill in:
+
+        | Field | What to enter |
+        |---|---|
+        | **Okta org URL** | `https://your-org.okta.com` (https only) |
+        | **Authorization server** (optional) | `default`, or the ID of a custom one. Empty means `default`. |
+        | **Client id** | The app's client ID. |
+        | **Audience** (optional) | The authorization server's audience. Empty means the client ID. |
+        | **Email domains** | The domains your people sign in with, for example `example.com`. Anyone from another domain is refused. |
+
+        {/* SCREENSHOT: identity-okta-form | reuse | Reuses /images/settings/sso-connect-form.png. */}
+        <Frame caption="Connecting Okta under Single sign-on">
+          <img src="/images/settings/sso-connect-form.png" alt="The Single sign-on form with Okta and OpenID Connect selected and the fields filled in." />
+        </Frame>
+
+        Select **Connect Okta**.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="SAML 2.0">
+    SAML also needs a secrets manager: OpenController's signing key is kept there.
+
+    <Steps>
+      <Step title="Create the app in Okta">
+        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **SAML 2.0**. Set:
+
+        - **Single sign-on URL:** `<console address>/saml/acs`
+        - **Audience URI (SP Entity ID):** `<console address>/saml/metadata`
+        - **Name ID format:** EmailAddress, with **Application username** set to the email, so the domain check passes.
+        - A group attribute statement named `groups`, filter **Matches regex** `.*`.
+
+        Copy the app ID from the app's metadata URL: `https://your-org.okta.com/app/<app id>/sso/saml/metadata`.
+      </Step>
+      <Step title="Connect Okta in OpenController">
+        Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Okta**; under **Signs in with**,
+        **SAML 2.0**. Fill in **Okta org URL**, **SAML app id** and **Email domains**, then select **Connect Okta**.
+
+        Check that the values under **1. In your identity provider, create a SAML application with these values** match
+        what you set in Okta.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+The **Single sign-on** page shows **IdP Connected** (or **IdP unreachable**). Open the console in a private window and
+select **Sign in with Okta** as a person in a mapped group.
+
+OpenID Connect sign-out also signs out of Okta. SAML sign-out ends only the console session; the Okta session stays.
+
+## Map Okta groups to roles
+
+Go to **Settings** > **Role mappings** (needs **Owner**). For each role, enter the Okta group names that grant it under
+**Granted to these groups or roles**, for example `opencontroller-admins` for **Admin**. A person in several mapped
+groups gets the highest role. Set **Anyone signed in whom nothing maps gets** to a default role (not **Owner**), or
+**no access** to refuse everyone else. Select **Save**.
+
+A `roles` claim is read too: a value that names a role, such as `admin`, grants it without a mapping.
+
+## Provision people with SCIM (optional)
+
+<Warning>
+Once a SCIM token exists, only people Okta has provisioned, and who are active, can sign in through SSO. Provision your
+people in Okta before you generate it.
+</Warning>
+
+1. On **Settings** > **Single sign-on**, under **3. Provisioning (SCIM 2.0, optional)**, copy the **SCIM base URL
+   (Tenant URL)** (`<console address>/scim/v2`).
+2. Select **Generate token**. Copy the token from the **Shown exactly once** dialog, then select **I stored it**. Only
+   its hash is kept; **Replace token** makes a new one and stops the old one.
+3. In Okta, open the app > **Provisioning** > **Integration**. Set the base URL, and authentication **HTTP Header** with
+   the token.
+4. Turn on **Create Users**, **Update User Attributes** and **Deactivate Users**, and push the groups you map to roles.
+   Pushed groups count toward role mappings.
+
+Deactivating or deleting a person in Okta ends their access on their next request.
+
+## What it uses
+
+| What | Value |
+|---|---|
+| Issuer | `https://your-org.okta.com/oauth2/default` (or `/oauth2/<custom server id>`) |
+| Scopes requested | `openid profile email offline_access` |
+| Claims read (access token) | Email from `preferred_username`, `email` or `upn` (an `email` with `email_verified` false is ignored); groups from `groups`; roles from `roles` |
+| SAML metadata | `https://your-org.okta.com/app/<app id>/sso/saml/metadata` |
+| Stored | Nothing of Okta's: the app is public (PKCE), and tokens are checked against Okta's published keys, never stored. For SAML, OpenController's own signing key, in your secrets manager. For SCIM, the token's hash. |
+
+**Change provider** signs out everyone signed in through SSO. **Disconnect** forgets the provider, the SAML signing key
+and the SCIM token; people already provisioned stay.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set up single sign-on with Okta" icon="list-checks" href="/administer/guide-sso-okta">
+    The end-to-end guide, with role mappings and SCIM.
+  </Card>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+</CardGroup>

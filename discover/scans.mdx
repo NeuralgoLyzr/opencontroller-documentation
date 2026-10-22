@@ -1,0 +1,45 @@
+---
+title: "Run and schedule scans"
+description: "Read your connected clouds now to bring the AI inventory up to date, and choose how often each connection is scanned on its own."
+sidebarTitle: "Scans"
+icon: "refresh-cw"
+---
+
+Scans run on their own, one schedule per connection, and you can start one at any time with **Run scan** (on **Overview**, or under **Discovery scans** on **Integrations**).
+
+## What a scan does
+
+- **Run scan** reads every enabled integration of each connected cloud. A cloud already scanning is left to finish.
+- With no AWS account connected, a scan reads the service's own AWS account.
+- A source is one resource family in one account and region. A source that fails keeps what the last good scan found, so nothing disappears from the inventory because of a missing permission.
+- To scan only the clouds behind one asset, select **Rescan** on its page. See [Asset details](/discover/asset-details).
+- Scan records are kept for 30 days.
+
+{/* SCREENSHOT: scan-list | crop | Discovery scans on the Integrations page, from the title to the 4th row: the schedule line with Change, Run scan, and four Succeeded scans (Anthropic, GCP, Microsoft, AWS) with Started, Duration, Sources read and Failed. Internal connection names blurred. */}
+<Frame caption="Discovery scans, on the Integrations page">
+  <img src="/images/discover/scan-list.png" alt="The Discovery scans section with the automatic schedule line, the Run scan button and four succeeded scans." />
+</Frame>
+
+## Set the scan schedule
+
+Go to **Settings** > **Scan schedule**, or select **Change** in the schedule line under **Discovery scans**. Each connection is scanned one interval after its last scan, whoever started it.
+
+- **Scan every** sets the interval, from 5 minutes to 1 day, or **Custom…** (1 to 10,080 minutes).
+- **Off: only when started** scans the connection only when someone selects **Run scan**.
+- **Default** uses the server's interval. Changes are recorded in the audit log.
+
+{/* SCREENSHOT: scan-schedule | crop | Settings > Scan schedule: the table of five connections, each every 5 min (Default) with Next scan and Last scan, and the form below with Connection and Scan every. Account IDs and internal names blurred. */}
+<Frame caption="Settings > Scan schedule">
+  <img src="/images/discover/scan-schedule.png" alt="The Scan schedule settings with each connection's interval and the form to change it." />
+</Frame>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Explore your AI inventory" icon="boxes" href="/discover/ai-inventory">
+    See what the scan found.
+  </Card>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Register the new assets nobody owns yet.
+  </Card>
+</CardGroup>

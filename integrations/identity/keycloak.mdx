@@ -1,0 +1,126 @@
+---
+title: "Keycloak"
+description: "Let people sign in to the OpenController console through a Keycloak realm, over OpenID Connect or SAML."
+icon: "log-in"
+---
+
+Keycloak signs people in to the console through a **realm**, with **OpenID Connect** or **SAML 2.0**. Realm roles and
+groups arrive once the realm's mappers send them, and map to roles in OpenController. For apps that call the LLM
+gateway as a person, see [Keycloak for gateway callers](/integrations/caller-identity/keycloak).
+
+Changing single sign-on needs the **Owner** role in OpenController, and a realm administrator. Below,
+`<console address>` is the address under **Settings** > **Authentication** > **Console address**.
+
+## Connect Keycloak
+
+<Tabs>
+  <Tab title="OpenID Connect (recommended)">
+    <Steps>
+      <Step title="Create the client in the realm">
+        In the Keycloak admin console, in your realm, go to **Clients** > **Create client**:
+
+        - Client type **OpenID Connect**, **Client authentication** off (a public client), **Standard flow** on.
+        - **PKCE**: S256.
+        - **Valid redirect URIs:** `<console address>/auth/callback`
+        - **Valid post logout redirect URIs:** `<console address>/signed-out`
+        - **Web origins:** `<console address>`
+
+        Note the **Client ID**.
+      </Step>
+      <Step title="Add the mappers">
+        In **Client scopes**, open the client's dedicated scope and add three mappers, each with **Add to access token**
+        on:
+
+        | Mapper type | Set |
+        |---|---|
+        | **Audience** | **Included Client Audience**: this client. Keycloak's access tokens otherwise carry the audience `account`, and are refused. |
+        | **User Realm Role** | **Token Claim Name** `roles`, **Multivalued** on. |
+        | **Group Membership** | **Token Claim Name** `groups`, **Full group path** off, so groups arrive as `admins`, not `/admins`. |
+
+        People need a verified email, or a username that is their email: an `email` marked unverified is ignored.
+      </Step>
+      <Step title="Connect Keycloak in OpenController">
+        Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Keycloak**; under **Signs in
+        with**, **OpenID Connect**. Fill in:
+
+        | Field | What to enter |
+        |---|---|
+        | **Keycloak URL** | `https://sso.example.com` (https). |
+        | **Realm** | The realm name, for example `main`. |
+        | **Client id** | The client ID. |
+        | **Audience** (optional) | The audience your Audience mapper adds. Empty means the client ID. |
+        | **Email domains** | The domains your people sign in with, for example `example.com`. Anyone from another domain is refused. |
+
+        Select **Connect Keycloak**.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="SAML 2.0">
+    SAML also needs a secrets manager: OpenController's signing key is kept there.
+
+    <Steps>
+      <Step title="Create the SAML client in the realm">
+        Go to **Clients** > **Create client**, client type **SAML**:
+
+        - **Client ID:** `<console address>/saml/metadata`
+        - **Assertion Consumer Service POST Binding URL:** `<console address>/saml/acs`
+        - **Name ID format:** `email`.
+        - **Keys:** OpenController signs its requests. Keep **Client signature required** on, and import the
+          certificate from `<console address>/saml/metadata`.
+        - For roles from groups, a **Group list** mapper with attribute name `groups` and **Full group path** off.
+          Realm roles arrive through the default role list mapper.
+      </Step>
+      <Step title="Connect Keycloak in OpenController">
+        Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Keycloak**; under **Signs in
+        with**, **SAML 2.0**. Fill in **Keycloak URL**, **Realm** and **Email domains**, then select **Connect
+        Keycloak**.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+The **Single sign-on** page shows **IdP Connected**. Open the console in a private window and sign in as a realm user.
+
+OpenID Connect sign-out also signs out of Keycloak. SAML sign-out ends only the console session.
+
+## Map realm roles and groups to roles
+
+Go to **Settings** > **Role mappings** (needs **Owner**). Under **Granted to these groups or roles**, enter realm role
+or group names. A person in several mapped groups gets the highest role. Set **Anyone signed in whom nothing maps gets**
+to a default role (not **Owner**), or **no access**. Select **Save**.
+
+<Warning>
+A realm role whose name is a role name (`viewer`, `operator`, `admin`, `owner`, a custom role, or the same with
+`opencontroller.` in front) grants that role with no mapping. Whoever can assign realm roles can make someone an
+**Owner**.
+</Warning>
+
+## Provisioning
+
+Keycloak has no SCIM client of its own. To provision, use a Keycloak SCIM extension, or the directory behind Keycloak,
+pointed at the **SCIM base URL (Tenant URL)** (`<console address>/scim/v2`) under **3. Provisioning (SCIM 2.0,
+optional)**. Once a SCIM token exists, only provisioned, active people can sign in, so set provisioning up first.
+
+## What it uses
+
+| What | Value |
+|---|---|
+| Issuer | `https://sso.example.com/realms/main` |
+| SAML metadata | `https://sso.example.com/realms/main/protocol/saml/descriptor` |
+| Scopes requested | `openid profile email offline_access` |
+| Claims read (OIDC access token) | Email from `preferred_username`, `email` (if verified) or `upn`; groups from `groups`; roles from `roles` |
+| Stored | Nothing of Keycloak's: the client is public, and tokens are never stored. For SAML, OpenController's own signing key, in your secrets manager. |
+
+If OpenController's API reaches Keycloak at another address than the browser does (for example inside a cluster),
+whoever runs OpenController sets `DISCOVERY_OIDC_DISCOVERY_URL`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+  <Card title="Keycloak for gateway callers" icon="key" href="/integrations/caller-identity/keycloak">
+    Name the person behind each LLM gateway call.
+  </Card>
+</CardGroup>

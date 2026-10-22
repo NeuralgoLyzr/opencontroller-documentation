@@ -1,0 +1,89 @@
+---
+title: "Set up single sign-on with Okta"
+description: "Let your people sign in to the console with their Okta account, get their role from their Okta groups, and test it end to end."
+sidebarTitle: "Okta SSO"
+tag: "Guide"
+icon: "key-round"
+---
+
+**What you need:**
+- **Owner** in OpenController, and an Okta administrator who can create applications and edit an authorization server.
+- The console's address, from **Settings** > **Authentication** > **Console address**. This guide uses `https://console.example.com`.
+- A local **Owner** account with an email and password, as a way in if sign-in through Okta fails.
+- A test user in Okta, for example `bob@example.com`, in one of the groups you will map.
+
+This guide uses OpenID Connect. For SAML, see [Okta](/integrations/identity/okta#saml).
+
+## Step 1: Create the app in Okta
+
+1. **Applications** > **Create App Integration** > **OIDC - OpenID Connect** > **Single-Page Application**.
+2. **Sign-in redirect URI**: `https://console.example.com/auth/callback`.
+3. **Sign-out redirect URI**: `https://console.example.com/signed-out`.
+4. **Assignments**: the groups that may use OpenController, for example `oc-admins`, `oc-operators` and `oc-viewers`.
+5. Save, and copy the **Client ID**.
+
+The app is public (Authorization Code with PKCE). OpenController stores no Okta secret.
+
+## Step 2: Send the email and groups in the access token
+
+In **Security** > **API** > **Authorization Servers**, open **default** (or your custom server):
+
+1. **Access Policies**: add a rule for the new app that allows Authorization Code and Refresh Token, and the scopes
+   `openid`, `profile`, `email` and `offline_access`.
+2. **Claims**: add `email`, included in the **Access Token**, value `user.email`.
+3. **Claims**: add `groups`, included in the **Access Token**, value type **Groups**, filter **Matches regex** `.*`. {/* TODO verify: Okta Admin Console labels in steps 1 to 3 (app type "OIDC - OpenID Connect", claim "Value type: Groups") against the current Okta UI. */}
+4. Note the server's **Audience**, for example `api://default`.
+
+<Warning>OpenController reads the email and groups from the **access token**, not the ID token. Okta's access token
+carries no email unless you add the claim: without it, every sign-in is refused as outside your domains. Without
+groups, nobody gets a role from a group.</Warning>
+
+## Step 3: Connect Okta in OpenController
+
+In **Settings** > **Single sign-on**, enter:
+
+| Field | Value |
+|---|---|
+| **Identity provider** · **Signs in with** | **Okta** · **OpenID Connect** |
+| **Okta org URL** | `https://your-org.okta.com` |
+| **Authorization server** | `default`, or your custom server's id |
+| **Client id** | The Client ID from step 1 |
+| **Audience** | The audience from step 2, for example `api://default` |
+| **Email domains** | `example.com` |
+
+Select **Connect Okta**. See [Connect your identity provider](/administer/sso#connect-your-identity-provider).
+
+## Step 4: Map Okta groups to roles
+
+In **Settings** > **Role mappings**, map **Admin** to `oc-admins`, **Operator** to `oc-operators` and **Viewer** to `oc-viewers`. Leave **Anyone signed in whom nothing maps gets** at **no access** to refuse everyone else. See [Map groups to roles](/administer/sso#map-groups-to-roles).
+
+<Tip>Map **Owner** only on purpose, to a small group. Owners can change single sign-on and role mappings.</Tip>
+
+## Step 5 (optional): Provision people with SCIM
+
+1. In **Settings** > **Single sign-on**, copy **SCIM base URL (Tenant URL)** and select **Generate token**. The token is shown once.
+2. In the Okta app, **Provisioning** > **Integration**: set the base URL, and **HTTP Header** authentication with the token.
+3. Turn on **Create Users**, **Update User Attributes** and **Deactivate Users**. Push the groups you mapped in step 4.
+
+Deactivating someone in Okta then ends their access on their next request. See [Provision people with SCIM](/administer/sso#provision-people-with-scim-optional).
+
+## Step 6: Test the sign-in
+
+1. In a private browser window, open `https://console.example.com` and select **Sign in with Okta** as your test user.
+   {/* SCREENSHOT: sso-okta-signin | crop | The sign-in card. With single sign-on on, a Sign in with button shows here too. */}
+   <img className="w-[360px] mx-auto rounded-xl border border-gray-200 dark:border-gray-700" src="/images/guides/sso-okta-signin.png" alt="The sign-in card with email and password, and an API credential field." />
+2. Check the user sees only what their group's role allows.
+3. In your own session, **Settings** > **Audit log** > **Identity & access**, with **Show** set to `sign_in`, lists the sign-in.
+
+<Info>Once single sign-on works, whoever runs your OpenController can turn email-and-password sign-in off (`DISCOVERY_PASSWORD_LOGIN=false`). Keep it on until you are sure you will not need the local **Owner** account.</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Members, roles and teams" icon="users" href="/administer/members-roles-teams#teams-group-people-and-the-assets-they-own">
+    Link Okta groups to teams and the assets they own.
+  </Card>
+  <Card title="Okta" icon="book" href="/integrations/identity/okta">
+    Every Okta setting, and SAML.
+  </Card>
+</CardGroup>

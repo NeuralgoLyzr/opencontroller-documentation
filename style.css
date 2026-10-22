@@ -1,4 +1,7 @@
-/* OpenController's look, as the console has it: Manrope for text, JetBrains
+/* Copied from opencontroller-documentation, with its layout rules taken out: only colours, type,
+   borders and icons change here, never widths, spacing or what is shown.
+
+   OpenController's look, as the console has it: Manrope for text, JetBrains
    Mono for code, warm neutrals, a 0.5rem radius, the blue only where it
    means something. docs.json sets the fonts, the primary and the page
    backgrounds; this file carries the rest: the type scale, the page shell,
@@ -61,7 +64,7 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 
 /* Callouts in the same colours, on the page's own paper, in place of Tailwind's pastels. */
 .callout { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-sidebar) !important; align-items: flex-start !important; }
-.callout > div:first-child { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; margin-top: -0.125rem !important; border-radius: calc(var(--oc-radius) - 2px); background: color-mix(in srgb, var(--oc-tone, var(--oc-primary)) var(--oc-tint), transparent); }
+.callout > div:first-child { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: calc(var(--oc-radius) - 2px); background: color-mix(in srgb, var(--oc-tone, var(--oc-primary)) var(--oc-tint), transparent); }
 .callout:has([class*="text-yellow"]), .callout:has([class*="text-amber"]) { --oc-tone: var(--oc-ochre); }
 .callout:has([class*="text-red"]), .callout:has([class*="text-rose"]) { --oc-tone: var(--oc-rust); }
 .callout:has([class*="text-green"]), .callout:has([class*="text-emerald"]) { --oc-tone: var(--oc-green); }
@@ -77,14 +80,6 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 .oc-diagram { display: block; width: 100%; height: auto; margin: 1.75rem auto; }
 .oc-diagram text { font-family: Manrope, ui-sans-serif, system-ui, sans-serif; }
 
-/* The reading column: wide, as Stripe and Cloudflare run it, with the sidebar at the console's width. */
-:root { --content-width: 54rem; }
-/* The reading column sits against the sidebar, not centred in the leftover space, so a wide
-   screen puts the hole on the right, past the table of contents, where it belongs. */
-@media (min-width: 1024px) {
-  #content-container { padding-left: 3rem; padding-right: 3rem; }
-  #content-container > .flex-row-reverse { justify-content: space-between; padding-left: 0; margin-left: 0; }
-}
 
 /* The type scale: one display size, a lead, then a measured body. */
 #content-container h1, .prose h1 {
@@ -99,26 +94,27 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
   line-height: 1.5;
   color: var(--oc-muted-foreground);
   text-wrap: pretty;
-  max-width: 62ch;
 }
 .prose { font-size: 1rem; line-height: 1.7; }
-.prose p { max-width: 72ch; text-wrap: pretty; }
-.prose > h2 { font-size: 1.5rem; letter-spacing: -0.022em; font-weight: 700; margin-top: 3rem; margin-bottom: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--oc-border); text-wrap: balance; }
-.prose h3 { font-size: 1.125rem; letter-spacing: -0.015em; font-weight: 600; margin-top: 2rem; }
+.prose p { text-wrap: pretty; }
+.prose > h2 { font-size: 1.5rem; letter-spacing: -0.022em; font-weight: 700; text-wrap: balance; }
+.prose h3 { font-size: 1.125rem; letter-spacing: -0.015em; font-weight: 600; }
 .prose strong { font-weight: 600; }
 .prose a:not(.card):not([class*="button"]) { color: var(--oc-primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: color-mix(in srgb, var(--oc-primary) 45%, transparent); }
 .prose a:not(.card):not([class*="button"]):hover { text-decoration-color: var(--oc-primary); }
 .prose code:not(pre code) { font-size: 0.85em; font-weight: 500; padding: 0.1em 0.35em; border-radius: 0.3rem; background: var(--oc-muted); border: 0; color: var(--oc-foreground); }
 
 /* Tables are the site's main instrument: quiet rules, a legible head, numerals that line up. */
-.prose table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
-.prose thead th { text-align: left; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--oc-muted-foreground); padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--oc-foreground); }
-.prose tbody td { padding: 0.65rem 0.75rem 0.65rem 0; border-bottom: 1px solid var(--oc-border); vertical-align: top; }
+.prose table { border-collapse: collapse; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.prose thead th { text-align: left; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--oc-muted-foreground); border-bottom: 1px solid var(--oc-foreground); }
+.prose tbody td { border-bottom: 1px solid var(--oc-border); vertical-align: top; }
 .prose tbody tr:last-child td { border-bottom-color: var(--oc-foreground); }
 .prose td:first-child strong { white-space: nowrap; }
 
-/* Code blocks in the console's dark, with the warm border, not Mintlify's blue-black. */
-.prose pre, [class*="codeblock"], .code-block { background: var(--oc-ink-code) !important; border: 1px solid var(--oc-border) !important; border-radius: var(--oc-radius) !important; box-shadow: none !important; }
+/* Code blocks in the console's dark, with the warm border, not Mintlify's blue-black. Targeted by Mintlify's
+   code-block marker: a class match on "codeblock" also caught accordions and the sidebar's scrollbar. */
+.prose pre, html:root [data-component-part="code-block-root"], .code-block { background: var(--oc-ink-code) !important; border: 1px solid var(--oc-border) !important; border-radius: var(--oc-radius) !important; box-shadow: none !important; }
+html:root [data-component-part="code-block-root"] .codeblock-dark, html:root [data-component-part="code-block-root"] .bg-codeblock { background: var(--oc-ink-code) !important; }
 
 /* Accordions on the sidebar tone; the theme paints them with the dark background in light mode. */
 .accordion, details.accordion { background: var(--oc-sidebar) !important; border: 1px solid var(--oc-border) !important; }
@@ -128,35 +124,28 @@ body { color: var(--oc-foreground); letter-spacing: -0.005em; font-feature-setti
 /* Cards, callouts, steps and images: the console's radius and border, no float. */
 .card, .callout, [class*="rounded-xl"], [class*="rounded-2xl"] { border-radius: var(--oc-radius) !important; }
 .card { border-color: var(--oc-border) !important; box-shadow: none !important; transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
-.card h2 { font-size: 1rem !important; line-height: 1.4; margin-top: 0.75rem !important; }
-.card > div { padding: 1.125rem 1.25rem !important; }
 .card:hover { border-color: var(--oc-primary) !important; transform: translateY(-1px); }
-.prose img { border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); padding: 0.75rem; }
+.prose img { border-color: var(--oc-border); }
 
 /* The shell: the console's side panel. 16rem wide on its sidebar tone; rows 2rem high with a
    16px mark at 70%, 13px medium; the page you are on sits on the accent surface in the panel's
    ink, not in blue; section titles at 11px in the muted ink. */
-#navbar, #sidebar { background-color: var(--oc-sidebar); }
-#navbar { border-bottom: 1px solid var(--oc-border); }
-#sidebar { border-right: 1px solid var(--oc-border); }
+#navbar { background-color: var(--oc-sidebar); border-bottom: 1px solid var(--oc-border); }
 #navigation-items li > a, #navigation-items li > button, #navigation-items li > div > a {
-  margin-left: 0 !important; width: 100% !important; min-height: 2rem; padding: 0 0.5rem !important;
-  border-left: 0 !important; border-radius: calc(var(--oc-radius) - 2px) !important;
+  border-radius: calc(var(--oc-radius) - 2px) !important;
   font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.005em; color: var(--oc-foreground);
-  text-shadow: none !important; align-items: center !important; column-gap: 0.625rem;
+  text-shadow: none !important;
   transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 #navigation-items li > a:hover { background: color-mix(in srgb, var(--oc-muted) 55%, transparent); }
 #navigation-items li > a.border-primary, #navigation-items li > a[aria-current="page"] { background: var(--oc-muted) !important; color: var(--oc-foreground) !important; }
 #navigation-items li > a svg, #navigation-items li > a img { width: 1rem; height: 1rem; opacity: 0.7; stroke-width: 1.75; flex: none; }
 #navigation-items li > a.border-primary svg, #navigation-items li > a.border-primary img { opacity: 1; }
-#navigation-items .sidebar-group-header { font-size: 0.6875rem !important; font-weight: 500 !important; letter-spacing: 0; color: color-mix(in srgb, var(--oc-muted-foreground) 85%, transparent) !important; margin: 1.25rem 0 0.375rem !important; padding-left: 0.5rem !important; }
+#navigation-items .sidebar-group-header { font-size: 0.6875rem !important; font-weight: 500 !important; letter-spacing: 0; color: color-mix(in srgb, var(--oc-muted-foreground) 85%, transparent) !important; }
 #navigation-items li > a.border-primary svg, #navigation-items li > a[aria-current="page"] svg { color: var(--oc-foreground) !important; background-color: var(--oc-foreground) !important; }
 #navigation-items li > a svg { color: var(--oc-foreground); background-color: var(--oc-foreground); }
 #table-of-contents-layout a { text-decoration: none; }
 
-/* Mintlify's own assistant is replaced by Ask the docs (assistant.js), so its entries are hidden. */
-#assistant-entry, #assistant-entry-mobile, .chat-assistant-floating-input { display: none !important; }
 
 /* The home page: a quickstart banner, a tabbed panel on the diagrams, and capability cards. */
 .oc-btn { display: inline-flex; align-items: center; height: 2.25rem; padding: 0 0.9rem; border-radius: var(--oc-radius); border: 1px solid var(--oc-border) !important; background: var(--oc-paper); color: var(--oc-foreground) !important; font-size: 0.875rem; font-weight: 600; text-decoration: none !important; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 120ms cubic-bezier(0.16, 1, 0.3, 1); }
@@ -280,10 +269,9 @@ code.oc-method { padding: 0.05em 0.4em !important; border: 0 !important; color: 
 .prose code.oc-path { white-space: nowrap; }
 
 /* The footer's page links as tiles, with the keys that move between them. */
-#content-container nav.grid { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--oc-border); position: relative; }
-#content-container nav.grid > a { padding: 0.875rem 1rem !important; border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
+#content-container nav.grid > a { border: 1px solid var(--oc-border); border-radius: var(--oc-radius); background: var(--oc-sidebar); transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms cubic-bezier(0.16, 1, 0.3, 1); }
 #content-container nav.grid > a:hover { border-color: var(--oc-tone, var(--oc-primary)); transform: translateY(-1px); }
-.oc-keys { grid-column: 1 / -1; margin: 0.25rem 0 0 !important; font-size: 0.75rem; color: var(--oc-muted-foreground); }
+.oc-keys { display: none !important; }
 .oc-keys span { margin: 0 0.35rem; opacity: 0.6; }
 .oc-keys kbd { display: inline-block; min-width: 1.25rem; padding: 0 0.3rem; border: 1px solid var(--oc-border); border-bottom-width: 2px; border-radius: 4px; background: var(--oc-paper); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; line-height: 1.5; text-align: center; color: var(--oc-foreground); }
 
@@ -467,12 +455,7 @@ td.oc-lit { box-shadow: none; }
   .oc-roles-grid tbody td { padding: 0.625rem 0.25rem !important; }
 }
 
-/* No footer: the GitHub link is gone from docs.json, and the host's credit line is hidden. */
-#footer a[href*="mintlify.com"], #footer:not(:has(a:not([href*="mintlify.com"]))) { display: none !important; }
 
-/* Wide pages other than the home page run wide for one table (the atlas, the permission table);
-   everything else on them keeps a reading measure. */
-html[data-page-mode="wide"]:not([data-current-path="/"]) .mdx-content > :not(.oc-atlas):not(.oc-roles) { max-width: 46rem; }
 
 /* On a phone each permission is a card: the permission and what it allows, then the four roles
    on one line, each named, with the least that holds it shaded. */
@@ -491,13 +474,32 @@ html[data-page-mode="wide"]:not([data-current-path="/"]) .mdx-content > :not(.oc
   .oc-roles-grid td svg { width: 0.875rem; height: 0.875rem; }
 }
 
-/* No label above the title: the sidebar already says where you are. */
-#content-area #header nav, #content-area #header [class*="eyebrow"] { display: none !important; }
 
-/* The sidebar on one pair of edges: the search box and the bottom bar take the rows' width, and
-   the search icon sits on the rows' icon line. */
-#sidebar-content div:has(> #search-bar-entry) { margin-left: -0.5rem; margin-right: -0.5rem; }
-#sidebar-content #search-bar-entry { height: 2.25rem !important; padding: 0 0.5rem !important; font-size: 0.8125rem; border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-paper) !important; box-shadow: none !important; color: var(--oc-muted-foreground); transition: border-color 140ms cubic-bezier(0.16, 1, 0.3, 1); }
+/* The search box in the sidebar, in the palette. */
+#sidebar-content #search-bar-entry { border-radius: var(--oc-radius) !important; border: 1px solid var(--oc-border) !important; background: var(--oc-paper) !important; box-shadow: none !important; color: var(--oc-muted-foreground); transition: border-color 140ms cubic-bezier(0.16, 1, 0.3, 1); }
 #sidebar-content #search-bar-entry:hover { border-color: var(--oc-border-strong) !important; }
 #sidebar-content #search-bar-entry kbd, #sidebar-content #search-bar-entry [class*="kbd"] { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.6875rem; color: var(--oc-muted-foreground); }
-.almond-nav-bottom-section { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+
+
+/* Full width: the page and the top bar run to the window's edges, with no outer gap on the left or
+   the right. Mintlify centres both in a max-w-8xl box with px-4 / lg:px-8 padding. */
+#navbar .max-w-8xl, div[class*="peer-[.is-not-custom]:mx-auto"] { max-width: none !important; }
+div[class*="peer-[.is-not-custom]:mx-auto"] { padding-left: 0 !important; padding-right: 0 !important; }
+
+/* One left edge, a near content column, a reading measure, and a hairline between sidebar and page.
+   From 1024px up, where Mintlify shows the sidebar and the tab row. */
+@media (min-width: 1024px) {
+  /* The logo row and the tab row start where the sidebar's rows start (24px), not 48px in. */
+  #navbar div[class*="lg:px-12"][class*="h-16"] { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+  #navbar div.px-12.h-12 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+  /* The sidebar's rows, 8px further from the window's edge, on the same line as the logo and tabs. */
+  #sidebar-content > [data-component-part="scroll-area-viewport"] { padding-left: 0.5rem !important; }
+  /* The page column begins 3rem after the sidebar, not about 5.7rem. */
+  #content-area { margin-left: 0 !important; padding-left: 3rem !important; }
+  /* A hairline between the sidebar and the page. */
+  #sidebar { border-right: 1px solid var(--oc-border); }
+}
+/* Running text keeps a reading measure; tables, the walkthrough and the atlas still take the width. */
+#content-area .mdx-content > p, #content-area .mdx-content > [data-as="p"], #content-area .mdx-content > ul,
+#content-area .mdx-content > ol, #content-area .mdx-content > blockquote, #content-area header p { max-width: 72ch; }
+#content-area .mdx-content > [data-as="p"] { display: block; }

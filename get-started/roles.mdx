@@ -1,0 +1,56 @@
+---
+title: "Roles and permissions"
+description: "What the Viewer, Operator, Admin and Owner roles can do, and how people get a role."
+sidebarTitle: "Roles"
+icon: "users-round"
+---
+
+Each role can do everything the one above it can, and more.
+
+## The four roles
+
+| Role | Can |
+|---|---|
+| **Viewer** | Read everything: inventory, findings, registry, scans, integrations, guardrails, traces and spend. Ask Ctrl. |
+| **Operator** | Also run scans, verify integrations, request registrations, try guardrails, and read prompts and answers in traces. |
+| **Admin** | Also manage integrations, approve registrations, make guardrails, see guardrail violations, and manage members, service accounts, virtual keys and modules. |
+| **Owner** | Also set up single sign-on, change who gets which role, and make other owners. |
+
+## Common tasks
+
+| Task | Least role |
+|---|---|
+| Read the inventory, findings and registry; ask Ctrl | **Viewer** |
+| Run a scan, verify an integration | **Operator** |
+| Request a registration, try a guardrail | **Operator** |
+| Connect an integration, approve a registration | **Admin** |
+| Make guardrails, see guardrail violations | **Admin** |
+| Manage virtual keys, members and service accounts | **Admin** |
+| Set up single sign-on and role mappings | **Owner** |
+
+## How you get a role
+
+You get the highest role given to you by any of these:
+
+- **Members**: an admin sets your role in **Settings** > **Members**.
+- **Role mappings**: with single sign-on, your identity provider's groups map to roles in **Settings** > **Role mappings**.
+- **The default role**: given to anyone signed in that nothing else covers.
+
+If you see **No access yet** after signing in, you have no role. Ask an administrator for one, then sign in again.
+
+<Note>A workspace always has at least one **Owner**. The first account is its owner, and the last owner cannot be removed.</Note>
+
+## Custom roles and the full list
+
+An **Owner** can make custom roles with exactly the permissions they need in **Settings** > **Roles**. To see every permission and the role that holds it, select **View permissions** on a role there.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Members, roles and teams" icon="users" href="/administer/members-roles-teams">
+    Add people and give them roles.
+  </Card>
+  <Card title="Single sign-on and role mappings" icon="lock" href="/administer/sso">
+    Give roles from your identity provider's groups.
+  </Card>
+</CardGroup>

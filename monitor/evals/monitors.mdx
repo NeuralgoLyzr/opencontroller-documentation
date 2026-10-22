@@ -1,0 +1,71 @@
+---
+title: "Watch production with monitors"
+description: "Run evaluators and detectors on a schedule over new traffic, compare each run with the ones before, and get an alert when something gets worse."
+sidebarTitle: "Monitors"
+icon: "radar"
+---
+
+<Note>
+**Before you start:** a trace store connection (see [Connect trace stores and models](/monitor/evals/get-started#connect-trace-stores-and-models)); for checks, at least one saved [evaluator](/monitor/evals/evaluators) (detectors need none); for alerts, a Slack or Microsoft Teams incoming webhook, or any webhook address; and the **Operator** role or above.
+</Note>
+
+Go to **Monitor** > **Evals** > **Monitors** and select **New monitor**. Turn off **Runs on its schedule** to save it **Paused**.
+
+## What it watches
+
+Pick one **Project or service**, so an agent's runs are compared with its own. Each run reads the records that arrived since the last one.
+
+## Detectors and checks
+
+**Detectors** look over every span of the window with no model: they are cheap, and catch what no evaluator was asked about. All are on to start.
+
+- **Errors**: failing traces, grouped by step and message, new ones called out.
+- **Latency**: the 95th percentile of how long traces take.
+- **Token bloat**: the tokens a trace spends, from prompts that grow to answers that run on.
+- **Cost**: what a trace costs, where spans record it.
+- **Loops and retries**: traces that make one call again and again, or retry one that fails.
+
+**Checks** are the evaluators each run judges a sample with. **Only records where** starts from the evaluator's own set-up. Records without a mapped variable are passed over, and counted. A **Threshold** is a line the mean must not cross: past it, beyond chance, the finding is critical. An evaluator whose higher score is **Neither** better nor worse is reported, never alerted on.
+
+{/* SCREENSHOT: evals-monitor | crop | The New monitor page from "Detectors" to "Schedule": five detectors on, one check card with Variables and a Threshold of 0.8, Schedule Daily at 09:00, Time zone Europe/London. */}
+<Frame caption="Detectors, a check and the schedule of a new monitor">
+  <img src="/images/evals/evals-monitor.png" alt="The monitor editor with the detectors on, one evaluator check with its variables and threshold, and a daily schedule." />
+</Frame>
+
+## Schedule and judging
+
+A new monitor runs **Daily** at 09:00, in your browser's time zone. It can always be run by hand as well. A **Cron expression** is minute, hour, day of month, month, day of week, for example `30 8 * * 1-5`.
+
+| **Judging** field | What it does | Range | Starts at |
+|---|---|---|---|
+| **Records per check** | A uniform sample of the window. | 10 to 1,000 | 100 |
+| **Look back, hours** | The longest window a run reads. | 1 to 720 | 24 |
+| **Baseline, runs** | Earlier runs a score is compared with. | 1 to 30 | 7 |
+| **Tolerance** | The least change in a mean that counts. | 0 to 1 | 0.05 |
+
+A change is reported when it is at least the tolerance and significant at 5%, each mean resting on at least ten scores. A regression stays reported until it recovers.
+
+## Alerts
+
+A run's findings go to the **Webhook**. Slack and Teams incoming webhooks show them as they are. Alerts carry findings and scores, never trace content. **Alert at** defaults to **Warnings and worse**. Use **Send a test alert** to check it arrives.
+
+## Read its report
+
+Select **Save monitor**, then **Run now** to run it at once.
+
+- Each finding is info, warning or critical. Findings the same traces show are folded into one incident, with the traces as evidence.
+- From the second run on, the figures at the top show each score's and detector's trend across the runs.
+- Deleting a monitor removes its schedule and run reports; the results it judged stay.
+
+{/* SCREENSHOT: evals-monitor-report | later | Not taken: no monitor has run on preview. */}
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run tasks and read scores" icon="list-checks" href="/monitor/evals/tasks-scores">
+    Read each judgment the monitor made.
+  </Card>
+  <Card title="Find failures (Issues)" icon="circle-alert" href="/monitor/issues">
+    The failures behind an Errors finding.
+  </Card>
+</CardGroup>

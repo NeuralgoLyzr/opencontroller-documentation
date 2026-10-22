@@ -1,0 +1,119 @@
+---
+title: "Keycloak"
+description: "Make every LLM gateway call carry the Keycloak user behind it, so guardrail violations name the person, not only the key."
+icon: "fingerprint"
+---
+
+A virtual key says which app called the LLM gateway (Rekori), not which person. With caller identity, the app also sends
+the signed-in user's Keycloak access token on each call. The gateway verifies it against the realm and records a claim
+from it as the caller. A key that requires sign-in refuses every call without a valid token, so a leaked key alone is
+not enough.
+
+The caller shows in [Guardrail Violations](/secure/who-trips/violations) **By caller**. The **Logs** page does not show
+it: its **Caller** column is the key and its team or customer.
+
+It needs the **LLM Gateway** module and the **Admin** role. For signing in to the console, see
+[Keycloak](/integrations/identity/keycloak).
+
+## Set up Keycloak for gateway callers
+
+<Steps>
+  <Step title="Choose the client">
+    Use the Keycloak client your app signs users in with, under **Clients**. To test from a script, turn on **Direct
+    access grants** on it. Keep the realm's access token lifespan short: a token works until it expires.
+  </Step>
+  <Step title="Add an audience to the access token">
+    In the client's dedicated scope (**Client scopes** > `<client>-dedicated`), select **Add mapper** > **By
+    configuration** > **Audience**:
+
+    - **Included Custom Audience:** a name for the gateway, for example `rekori` (or **Included Client Audience**: a
+      client ID).
+    - **Add to access token:** on.
+
+    Only clients with this mapper get tokens the gateway accepts, which is what keeps the realm's other clients out.
+  </Step>
+  <Step title="Add Keycloak as an identity provider in the gateway">
+    In OpenController, go to **LLM Gateway** > **Routing** > **Identity providers** > **New identity provider**:
+
+    | Field | What to enter |
+    |---|---|
+    | **Name** | `keycloak`. It cannot be changed later. |
+    | **Issuer** | `https://sso.example.com/realms/main`, as the token's `iss` writes it. A trailing slash is ignored. |
+    | **JWKS URL** | `https://sso.example.com/realms/main/protocol/openid-connect/certs`. Fill it in: when empty it is looked up from the issuer, and if that lookup fails, no identity provider loads, though the save reports success. If the gateway reaches Keycloak at another address (inside a cluster), use that address here and keep **Issuer** as the tokens write it. |
+    | **Audiences** | `rekori`, the audience your mapper adds. Never leave it empty: then audience is not checked, and any token from the realm works. |
+    | **Subject claim** | `preferred_username`, which every user has. `email` works too, but a user without one is recorded as no one: there is no fallback to `sub`. Empty uses `sub`, a UUID. |
+    | **Enabled** | On |
+
+    Leave the rest empty: **Algorithms** (RS, ES and EdDSA; never HS or `none`), **Clock leeway (seconds)** (30),
+    **Scopes claim**, **Roles claim**, **Teams claim**, and **Client ID** and **Scopes**, which are not used to verify
+    tokens. Select **Create**.
+  </Step>
+  <Step title="Require sign-in on the virtual key">
+    Go to **LLM Gateway** > **Virtual Keys**, open the key's actions menu (**…**) > **Edit** (or **New key**). Under
+    **Callers sign in with**, switch on **keycloak**, and select **Save** (or **Create**).
+
+    <Warning>
+    From then on, every call with this key needs a valid token from a provider switched on for it. Calls with the key
+    alone are refused. Update the app first, or test with a new key. A key with no provider switched on ignores tokens:
+    they are neither checked nor recorded.
+    </Warning>
+  </Step>
+  <Step title="Call the gateway with the key and the token">
+    To get a test token with direct access grants (a confidential client also sends `-d client_secret=<client secret>`):
+
+    ```bash
+    curl -s https://sso.example.com/realms/main/protocol/openid-connect/token \
+      -d grant_type=password -d client_id=<client id> \
+      -d username=alice -d password='<password>' -d scope=openid
+    ```
+
+    Send the answer's `access_token` as the bearer token, and the virtual key in `x-bf-vk`. Sending the key as the
+    bearer leaves no room for the token, and the call is refused.
+
+    ```bash
+    curl https://<gateway address>/v1/chat/completions \
+      -H "x-bf-vk: sk-bf-…abcd" \
+      -H "Authorization: Bearer $ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Hello"}]}'
+    ```
+
+    A call with the key and a valid token succeeds. Without the token it is refused with `401
+    identity_token_required`; with a bad one, `401 identity_token_invalid`.
+  </Step>
+</Steps>
+
+## What it checks
+
+| Check | Rule |
+|---|---|
+| Format | A signed JWT, at most 16 KiB. |
+| Signature | Against the realm's JWKS, by the token's `kid`. Algorithms: RS256/384/512, ES256/384/512, EdDSA (realms sign RS256 by default). |
+| Issuer | `iss` matches **Issuer** (trailing slash ignored, otherwise exact). |
+| Audience | One of **Audiences** is in `aud`. |
+| Time | `exp` required; `exp` and `nbf` checked with 30 seconds' leeway. |
+
+The token is never stored; the subject is, as the call's user. A client's service-account token (client credentials)
+is accepted like a user's if it carries the audience, and is recorded as `service-account-<client>`.
+
+<Warning>
+- **Passthrough routes forward the token.** On `/v1`, `Authorization` never goes upstream. On `/openai_passthrough`
+  and `/chatgpt_passthrough`, a JWT bearer is forwarded to OpenAI over https in place of the stored provider key. Use
+  `/v1` routes with caller identity.
+- **No replay protection.** A token works until it expires.
+- **Key rotation.** The JWKS is fetched again only when a token arrives with an unknown `kid`. A realm key disabled in
+  Keycloak stays trusted until then.
+- **The subject is personal data:** it is stored with each call and violation, and is a label on the gateway's metrics.
+- **Disabling the provider** makes every key that requires it refuse all calls.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See which users trip guardrails" icon="user-check" href="/secure/who-trips/guide-violations-per-user">
+    The end-to-end guide from key to per-user violations.
+  </Card>
+  <Card title="Make callers sign in" icon="fingerprint" href="/secure/who-trips/caller-sign-in">
+    Every field of a gateway identity provider.
+  </Card>
+</CardGroup>

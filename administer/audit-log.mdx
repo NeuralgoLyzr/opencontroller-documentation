@@ -1,0 +1,42 @@
+---
+title: "Audit log"
+description: "What the audit log records, how to filter it, and every kind of event it can hold."
+sidebarTitle: "Audit log"
+icon: "history"
+---
+
+**AI assets** records actions taken on agents and other assets from the console. **Identity & access** records sign-ins, and changes to people, service accounts, keys, roles, teams, single sign-on and settings. The log refreshes every 15 seconds.
+
+{/* SCREENSHOT: audit-identity | crop | Settings > Audit log, AI assets tab: recent changes with their result. Emails blurred. */}
+<Frame caption="Settings > Audit log">
+  <img src="/images/settings/audit-identity.png" alt="The Audit log with the AI assets and Identity & access tabs and recent changes." />
+</Frame>
+
+## What it records, and what it does not
+
+- Events about credentials (connections, keys, guardrail connections) name the fields that changed, never their values.
+- Guardrail and OPA policy events name the guardrail or policy, never the text tried on it or its Rego.
+- The text of prompts and answers is never recorded.
+- Changes to secrets are in **Settings** > **Secrets** > **Activity**. See [Secrets](/administer/secrets-auth#activity).
+
+{/* TODO verify: how long audit events are kept (no retention found in the source). */}
+
+**Identity & access** shows up to the latest 200 events.
+
+<Tip>To see one actor's events, or more than 200, call the API: `GET /v1/audit/events?actor=alice@example.com&limit=500`. It takes `kind`, `actor` and `limit` (up to 500).</Tip>
+
+## Who can use it
+
+- **Viewer** and **Operator** see only the **AI assets** list, without tabs.
+- **Admin** and **Owner** also see **Identity & access** (the `audit:read` permission). A custom role can hold `audit:read` too, for example an `auditor` role. See [Make a custom role](/administer/members-roles-teams#make-a-custom-role).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Members, roles and teams" icon="building" href="/administer/members-roles-teams">
+    Add members, change roles and set up teams.
+  </Card>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Connect your identity provider; its sign-ins show here.
+  </Card>
+</CardGroup>

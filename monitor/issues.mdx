@@ -1,0 +1,49 @@
+---
+title: "Find failures (Issues)"
+description: "A project's failures, grouped: each step that fails with one error is one issue, however many runs it broke."
+sidebarTitle: "Issues"
+icon: "circle-alert"
+---
+
+<Note>Needs the **Observability** module and a connected trace store. See [Modules](/administer/modules).</Note>
+
+An issue is one step failing with one error. **Failures** counts the failed spans and **Runs** the runs it broke. The list refreshes every 30 seconds.
+
+{/* SCREENSHOT: obs-issues | full | The support-bot project's Issues page, Last 7 days, "4 issues": an llm step "chat gpt-4o" failing with "rate limit exceeded, retry after # seconds", a tool step "lookup_order" failing with "order # not found". */}
+<Frame caption="A project's Issues page">
+  <img src="/images/observability/obs-issues.png" alt="The Issues page of a project, listing grouped failures with their counts and when they were first and last seen." />
+</Frame>
+
+## How failures are grouped
+
+- **Numbers in messages are masked** as `#`. The same error with a different order id or retry time is one issue, not many.
+- **Only the deepest failure counts.** A parent step that failed because a child step failed is not listed again.
+
+{/* SCREENSHOT: obs-issues-row | crop | One issue row, enlarged: llm badge, "chat gpt-4o", service "support-bot", red message, Failures 37, Runs 21, First seen 2 days ago, Last seen 5 minutes ago, Latest run link. */}
+<Frame caption="One issue">
+  <img src="/images/observability/obs-issues-row.png" alt="One issue row with the step, its error message, failure and run counts, and when it was first and last seen." />
+</Frame>
+
+## Open the failures
+
+Select a row to open the project's **Spans** filtered with `name = '<step>' and status = 'error'`. Edit the query to narrow it. **Latest run** opens that run in **Traces**, with every step around the failure. What was asked and answered shows only to Operators and above.
+
+Issues is a page of each project. For failures across every project, use **Top issues** on the Observability **Overview**.
+
+Issues alerts no one. To be alerted when failures grow, make an evals monitor with the **Errors** detector.
+
+## Who can use it
+
+- **Viewer** reads the issues and opens the failing spans and runs, without what was asked and answered. A member of the project's team reads them too.
+- **Operator**, **Admin** and **Owner** also read what was asked and answered.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Get an alert when errors, latency or scores get worse.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/monitor/observability">
+    Projects, traces, spans and sessions.
+  </Card>
+</CardGroup>

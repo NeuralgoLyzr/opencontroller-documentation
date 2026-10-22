@@ -1,0 +1,172 @@
+---
+title: "OpenTelemetry (OTLP)"
+description: "Send an agent's traces to OpenController over OTLP/HTTP, with any OpenTelemetry SDK, OpenInference or the GenAI conventions."
+sidebarTitle: "OpenTelemetry"
+icon: "activity"
+---
+
+OpenController takes traces over **OTLP/HTTP** at `<console URL>/otlp`, from the standard OpenTelemetry SDK: there is no
+OpenController library to install. Each trace goes to an Observability **project**, named in a header beside an API
+key. The traces feed [Observability](/monitor/observability), [Issues](/monitor/issues), [Cost](/monitor/cost) and
+[Evals](/monitor/evals/get-started).
+
+It needs the **Observability** module, and a trace collector set up for the deployment; without one, the intake answers
+`503` and the Setup page says so.
+
+OpenController reads spans in two vocabularies, and adds the other to every AI span, so the pages read them the same:
+
+| Conventions | What it is |
+|---|---|
+| **OpenInference** | Arize's instrumentors: the most frameworks, with prompts and answers on every span by default. |
+| **OpenTelemetry GenAI** | OpenTelemetry's own, in its GenAI semantic conventions: fewer frameworks, still in beta, with prompts and answers off until the environment turns them on. |
+
+## Permissions it uses
+
+| To | Needs |
+|---|---|
+| Make a project, open **Setup**, create a key | **Admin** |
+| Send traces | `observability:send`: **Operator** or higher, or a custom role with it. A **Viewer**'s key is refused. A person's own session can send too. |
+| Read prompts and answers in traces | `observability:content` (**Operator** or higher). A **Viewer** sees traces without what was said. |
+| Turn on the LLM gateway's traces for an agent | `gateway:route` |
+
+<Warning>
+A key is not tied to a project: any key that can send can name any project. Give each agent its own service account,
+since the `opencontroller.sender` stamp on its spans is what says which key sent them.
+</Warning>
+
+## Send an agent's traces
+
+<Steps>
+  <Step title="Make a project">
+    Go to **Observability** > **Projects** > **New project**. Enter a **Name**, for example `support-agent`. Optionally
+    add a **Description**, a **Team**, and the **Agent** it stands for in the inventory: its traces then count for that
+    agent, in cost and on its page. Select **Create**: the project's **Setup** page opens, with your values filled in.
+
+    {/* SCREENSHOT: otel-setup | reuse | Reuses /images/observability/obs-setup.png. */}
+    <Frame caption="The project's Setup page">
+      <img src="/images/observability/obs-setup.png" alt="The Setup page with the conventions, the agent's framework and the API key step." />
+    </Frame>
+  </Step>
+  <Step title="Choose how the agent is built">
+    Under **Choose how the agent is built**, pick the **Conventions**, then the framework:
+
+    - **Both:** OpenAI, Anthropic, LangChain, LlamaIndex, OpenAI Agents, Amazon Bedrock, Google GenAI, Vertex AI, DSPy,
+      smolagents, Agno.
+    - **OpenInference only:** CrewAI, LiteLLM, Mistral, Groq, Haystack, AutoGen, MCP.
+    - **Your own spans**, for any other language or framework. TypeScript snippets exist for OpenAI and LangChain.
+  </Step>
+  <Step title="Get an API key">
+    Under **Get an API key**, choose the service account (one with **Operator** or higher) and select **Create key**.
+    It looks like `cpk_<key id>_<secret>`, and is stored as a hash.
+
+    <Warning>"Copy the key now: it is shown this once." Store it where the agent reads its secrets.</Warning>
+  </Step>
+  <Step title="Set the environment">
+    Under **Set the environment**, copy the variables. OpenTelemetry SDKs read them:
+
+    ```bash
+    OTEL_EXPORTER_OTLP_ENDPOINT=<console URL>/otlp
+    OTEL_EXPORTER_OTLP_HEADERS=x-api-key=cpk_…,x-project=prj_…
+    OTEL_SERVICE_NAME=support-agent
+    ```
+
+    | Variable | What it sets |
+    |---|---|
+    | `OTEL_EXPORTER_OTLP_ENDPOINT` | Where traces go. The SDK adds `/v1/traces`. |
+    | `x-api-key` | The key. `Authorization: Bearer <key>` works too. |
+    | `x-project` | The project's ID (or name). An unknown project is refused (`404`). With none, spans join a project only through the trace they belong to. |
+    | `OTEL_SERVICE_NAME` | The service's name on the spans. |
+
+    With **OpenTelemetry GenAI**, two more keep prompts and answers on the spans:
+
+    ```bash
+    OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY
+    ```
+  </Step>
+  <Step title="Send its traces">
+    Under **Send its traces**, copy the install command and start-up code. For an OpenAI agent in Python, with
+    OpenInference:
+
+    ```bash
+    pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-openai openai
+    ```
+
+    ```python
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from openinference.instrumentation.openai import OpenAIInstrumentor
+
+    # Where to send, the API key and the project come from the environment above.
+    provider = TracerProvider(resource=Resource.create())
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
+
+    OpenAIInstrumentor().instrument(tracer_provider=provider)
+    ```
+
+    Run this at start-up, before the agent runs.
+  </Step>
+  <Step title="Listen for the first trace">
+    Under **Listen for the first trace**, run the agent. The page shows "Traces are arriving: N so far." and **View
+    traces** opens them. To try without code, **Send a test trace** sends one span as you.
+  </Step>
+</Steps>
+
+## Rules for senders
+
+- **OTLP over HTTP only**, protobuf or JSON, gzipped or not; no gRPC. Set an exporter that defaults to gRPC to
+  `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`.
+- **Limits:** a body of at most 16 MiB (32 MiB unzipped). When too much is in flight, the intake answers `503` with
+  `Retry-After`; SDKs retry. Other answers: `400` (bad body), `401` (no or bad key), `403` (no `observability:send`),
+  `404` (unknown project).
+- **Spans that are not AI** (HTTP requests, database queries, your own functions) show in the run beside the model calls,
+  without a model or cost. OpenInference and GenAI spans can be mixed in one run.
+- **Your own spans:** write a span for each step, and give each model call its model, tokens and messages in the
+  conventions you chose. The Setup page shows a model call traced by hand.
+- **OpenController stamps every span** with the project, the project's agent and the sender, over whatever the sender
+  wrote.
+
+## Data handling
+
+The intake stores nothing itself: it passes spans to the deployment's trace collector, which keeps them in ClickHouse
+inside your deployment, for 30 days by default. Prompts and answers are kept as sent; nothing is redacted. Keys are
+stored as hashes.
+
+## Claude Code
+
+Claude Code sends its own traces, with no code. On the Setup page, pick **Claude Teams / Enterprise** under **Choose how
+the agent is built**. The next step becomes **Add it to Claude's managed settings**: a settings file whose `env` block
+turns on Claude Code's telemetry and points its traces at `<console URL>/otlp/v1/traces` with the key and project
+(`<YOUR_API_KEY>` if you skipped creating one). It also turns on logging of prompts and tool details. Add it under
+claude.ai > **Organization settings** > **Claude Code** > **Managed settings**, or to `~/.claude/settings.json` for just
+you. See [Use guardrails in any app or Claude Code](/secure/guardrails/use-anywhere).
+
+<Warning>
+The settings file carries the API key in plain text to every machine it reaches. Use a key of its own, from a service
+account used for nothing else.
+</Warning>
+
+## Traces from the LLM gateway
+
+The LLM gateway (Rekori) can send its own spans for an agent's model calls. On the agent's page, in its **LLM gateway**
+panel (the agent must already be routed through the gateway), select **Observe**. This finds or makes the agent's
+project, makes a key for the gateway, and points the gateway's traces at `/otlp/v1/traces`. It needs `gateway:route`,
+and the deployment must have the gateway's traces address set.
+
+A gateway call is filed under the project of the agent whose gateway key made it. The gateway also joins the caller's
+trace (`traceparent`), so when you send the agent's own spans too, one run shows both, and the call is counted once.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Trace an agent and find its failures" icon="route" href="/monitor/guide-trace-an-agent">
+    The end-to-end guide, from first trace to grouped issues.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/monitor/observability">
+    Projects, traces, spans and sessions.
+  </Card>
+</CardGroup>

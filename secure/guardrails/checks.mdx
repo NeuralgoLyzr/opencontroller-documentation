@@ -1,0 +1,284 @@
+---
+title: "Guardrail checks"
+description: "Every check a guardrail can hold text to: what it does, what it reads, its settings and their defaults."
+sidebarTitle: "Checks reference"
+icon: "list-checks"
+---
+
+The checks are listed in the order the guardrail editor shows them.
+
+## All checks
+
+**Reads** says which side of the path a check acts on. A check that reads only prompts does nothing to answers. **On violations as** is the type a block or redaction by this check shows as on [Guardrail Violations](/secure/who-trips/violations).
+
+| Check | Group | Reads | What it does | On violations as |
+|---|---|---|---|---|
+| [Personal data](#personal-data) | Data protection | Prompts | Finds names, places, emails, phone and card numbers and more, and redacts or blocks them | Personal data |
+| [Secrets](#secrets) | Data protection | Prompts and answers | Finds API keys, tokens and passwords, and masks or blocks them | Secrets |
+| [Prompt injection](#prompt-injection-and-toxicity) | Threat protection | Prompts | Blocks text that tries to override the model's instructions or jailbreak it | Prompt injection |
+| [Toxicity](#prompt-injection-and-toxicity) | Content moderation | Prompts | Blocks insults, threats and abuse | Toxicity |
+| [Sexual content](#sexual-content-and-gibberish) | Content moderation | Prompts | Blocks sexual or explicit text | Sexual content |
+| [Gibberish](#sexual-content-and-gibberish) | Content moderation | Prompts | Blocks text that makes no sense | Gibberish |
+| [Banned topics](#banned-topics) | Content moderation | Prompts | Blocks text about any of the topics named | Topics |
+| [Allowed topics](#allowed-topics) | Content moderation | Prompts | Blocks text about none of the topics named | Topics |
+| [Keywords](#keywords) | Custom rules and format | Prompts and answers | Redacts or blocks words, phrases or patterns | Keywords |
+| [Valid SQL](#valid-sql-and-valid-openapi) | Custom rules and format | Prompts and answers | Blocks text that is not valid SQL | Format |
+| [Valid OpenAPI](#valid-sql-and-valid-openapi) | Custom rules and format | Prompts and answers | Blocks text that is not a valid OpenAPI document | Format |
+| [Custom policies (OPA)](#custom-policies-opa) | Custom policies (OPA) | Prompts and answers; also tool calls if set | Asks Rego policies you write for a decision on the text; one that denies blocks it, with its reasons | Policy |
+| [Tool call rules (Cedar)](#tool-call-rules-cedar) | Tool call rules (Cedar) | Tool calls | Decides each tool call a model asks for with Cedar rules you write, before it is made | Policy |
+| [AWS Bedrock guardrail](#aws-bedrock-guardrail) | Cloud provider guardrails | Prompts and answers | Runs a guardrail made in AWS Bedrock | Policy |
+| [Azure content safety](#azure-content-safety) | Cloud provider guardrails | Prompts and answers | Blocks hate, self-harm, sexual and violent text at a severity or more | Toxicity |
+| [Azure Prompt Shields](#azure-prompt-shields) | Cloud provider guardrails | Prompts | Blocks prompts Azure finds a jailbreak or prompt attack in | Prompt injection |
+| [Azure personal data](#azure-personal-data) | Cloud provider guardrails | Prompts | Finds personal data with Azure AI Language, and redacts or blocks each kind | Personal data |
+| [Google Model Armor](#google-model-armor) | Cloud provider guardrails | Prompts and answers | Screens text against a Model Armor template | Policy |
+
+Every check starts off. A guardrail with no check on lets everything through.
+
+## Blocks, redacts, masks and flags
+
+| Word | What happens to the text |
+|---|---|
+| **Block** | The whole text is stopped. It does not reach the model, or the answer is not shown. |
+| **Redact** | What the check found is replaced, and the rest of the text goes on. |
+| **Mask** | Secrets only: the secret is replaced with asterisks, one for each character, and the text goes on. |
+| **Flag** | OPA in audit mode only: the text goes on as it was, and the policy's reasons are noted. |
+
+## Sensitivity
+
+**Prompt injection**, **Toxicity**, **Sexual content** and **Gibberish** each use a model that scores the text from 0 to 1. The check fires when the score is at or above the threshold. A lower threshold is stricter. For Prompt injection and Toxicity, a threshold below 0.50 acts as 0.50.
+
+**Sensitivity** offers three levels, worked out from the check's default:
+
+| Level | Threshold | Prompt injection, Toxicity, Sexual content | Gibberish |
+|---|---|---|---|
+| **Strict** | default − 0.20 | 0.60 | 0.30 |
+| **Balanced** (Recommended) | default | 0.80 | 0.50 |
+| **Relaxed** | default + 0.10 | 0.90 | 0.60 |
+
+- **Strict**: "Catches more; may flag text that is fine".
+- **Balanced**: "The default for most agents".
+- **Relaxed**: "Only the clearest cases".
+
+Select **Set an exact threshold** to set any value from 0.05 to 1: the slider moves in steps of 0.05, and a typed number may have two decimals. Select **Use a level** to go back to a level.
+
+## Data protection
+
+### Personal data
+
+Finds personal data and redacts or blocks it. Names and places are found by a model; the rest by pattern.
+
+| Setting | Values | Default |
+|---|---|---|
+| **What to look for** | Each kind below, ticked or not. For each ticked kind, **Redact** (replace what is found, let the text through) or **Block** (stop the text). **Redact all**, **Block all** and **Clear** set every kind at once. | **Names**, **Emails**, **Phone numbers** and **Card numbers**, each set to **Redact** |
+
+| Kind | Covers |
+|---|---|
+| **Names** | People's full names |
+| **Places** | Cities, countries and addresses |
+| **Emails** | Any email address |
+| **Phone numbers** | Any phone number |
+| **Card numbers** | Credit and debit card numbers |
+| **US social security numbers** | Social security numbers |
+| **IP addresses** | IPv4 and IPv6 addresses |
+| **Web addresses** | Links and web addresses |
+| **Dates and times** | Dates, times and birthdays |
+
+<Warning>**Places** also catches countries and cities, as in "What is the capital of France?". Turn it on only if place names must not reach the model.</Warning>
+
+To catch your own words, such as a project codename, use [Keywords](#keywords). The card links there: **Add them under Keywords**.
+
+Reads prompts only.
+
+### Secrets
+
+Finds API keys, tokens and passwords.
+
+| Setting | Values | Default |
+|---|---|---|
+| **When a secret is found** | **Mask it**: replace it with asterisks, and let the text through. **Block the text**: stop the whole message. | **Mask it** |
+
+Reads prompts and answers.
+
+## Threat protection and content moderation
+
+### Prompt injection and Toxicity
+
+**Prompt injection** blocks text that tries to override the model's instructions or jailbreak it. **Toxicity** blocks insults, threats and abuse.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Sensitivity** | **Strict**, **Balanced**, **Relaxed**, or an exact threshold. See [Sensitivity](#sensitivity). | **Balanced** (0.80) |
+
+Both read prompts only. Both block; neither redacts.
+
+### Sexual content and Gibberish
+
+**Sexual content** blocks sexual or explicit text. **Gibberish** blocks text that makes no sense.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Sensitivity** | **Strict**, **Balanced**, **Relaxed**, or an exact threshold. See [Sensitivity](#sensitivity). | **Balanced**: 0.80 for Sexual content, 0.50 for Gibberish |
+| **What is scored** | **Each sentence** or **Whole text**. Today the engine scores both the same way: it splits a long text into parts and uses the highest score. | **Each sentence** |
+
+Both read prompts only.
+
+### Banned topics
+
+Blocks text about any of the topics you name.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Topics to block** | Up to 50 topics, each up to 100 characters. Press Enter or a comma to add one. For example `politics`, `medical advice`. | None |
+
+With no topics, the check blocks nothing, so the editor will not save it on with none. Reads prompts only.
+
+### Allowed topics
+
+Blocks text that is about none of the topics you name.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Topics it may talk about** | Up to 50 topics, each up to 100 characters. For example `billing`, `shipping`, `returns`. | None |
+
+<Warning>Everything that is not about these topics is blocked. List every topic the agent should handle.</Warning>
+
+With no topics, the check would let everything through, so the editor will not save it on with none. Reads prompts only.
+
+## Custom rules and format
+
+### Keywords
+
+Redacts or blocks your own words, phrases or patterns.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Words and patterns** | Up to 200 rows. Each row has the columns below. Select **Add a keyword** to add a row. | No rows |
+
+| Column | Values |
+|---|---|
+| **Keyword or pattern** | A word or phrase, or a regular expression. Up to 500 characters. |
+| **Match** | **Text**: the words as written, in any case, anywhere in the text. **Pattern**: an RE2 (Go) regular expression, matched in any case; lookarounds and backreferences are not supported. |
+| **When found** | **Redact**: replace the match and let the text through. **Block**: stop the text. |
+| **Replace with** | For **Redact** only: what the match becomes, up to 100 characters. `<REDACTED>` when empty. It takes the case of the matched text. |
+
+
+Empty rows are dropped when you save. Reads prompts and answers.
+
+### Valid SQL and Valid OpenAPI
+
+**Valid SQL** blocks text that is not valid SQL. **Valid OpenAPI** blocks text that is not a valid OpenAPI document. Use them for agents whose whole output must be one of these.
+
+Nothing to set. Both read prompts and answers.
+
+## Custom policies and tool call rules
+
+### Custom policies (OPA)
+
+Asks Rego policies you write for a decision on the text. They run on this cell's OPA server. A policy that denies the text blocks it, with its reasons. How to write one: [OPA policies and Cedar rules](/secure/guardrails/opa-cedar).
+
+| Setting | Values | Default |
+|---|---|---|
+| **Policies it runs** | Your organization's OPA policies, ticked or not. Up to 20. Any one that denies the text decides. Select **New policy** to write one. | None |
+| **When a policy denies the text** | **Block the text**: stop it, with the policy's reasons; also when OPA cannot answer. **Flag it**: let it through as it was, and note the policy's reasons. | **Block the text** |
+| **What it checks** | **Prompts and answers**: what is sent to the model, and what it says. **Also check tool calls**: and each tool call the model asks for, before it is made, and what the tool returned. | **Prompts and answers** |
+
+Policies belong to the organization. Every guardrail that ticks a policy runs the same one, so changing it changes them all.
+
+### Tool call rules (Cedar)
+
+Decides each tool call a model asks for, before it is made, with Cedar rules you write. How to write them: [OPA policies and Cedar rules](/secure/guardrails/opa-cedar).
+
+| Setting | Values | Default |
+|---|---|---|
+| **Rules** | Up to 20 rules, each with a name (up to 80 characters) and its Cedar. Tick a rule to use it. Start from **Allow only listed tools** or **Block a named tool**, or select **New rule**. | None |
+| **When Cedar cannot decide** | **Block the call**: an error in Cedar stops the tool call. **Let it through**: rules that do not parse still block. | **Block the call** |
+
+<Warning>Once this check is on, a tool call that no rule permits is blocked. A `forbid` overrides any `permit`. With no rules, every tool call is blocked, so the editor will not save it on with none.</Warning>
+
+Reads tool calls only. Rules belong to the guardrail and are saved with it.
+
+## Cloud provider guardrails
+
+Each of these runs a cloud's own guardrail, in your account, through one of your connections. The text goes to that cloud. Every one has a **Connection** setting: the account it runs in. Select **Add connection** next to it to make one. See [Connect cloud guardrail providers](/secure/guardrails/cloud-providers).
+
+While none of these is on, the path shows them as one station, **None on**.
+
+### AWS Bedrock guardrail
+
+Runs a guardrail made in AWS Bedrock: its content filters, denied topics, word filters and sensitive information.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Connection** | An AWS Bedrock Guardrails connection. | None: choose one |
+| **Guardrail** | A Bedrock guardrail in that account and region, as discovery found it. When discovery has found none, type its ID or ARN. | None: choose one |
+| **Version** | `DRAFT`, or a published version number. A numbered version stays as it was; the draft follows every edit in AWS. When the guardrail you chose has another version, **Use version *N*** sets the version discovery found. | `DRAFT` |
+
+Reads prompts and answers.
+
+### Azure content safety
+
+Blocks hate, self-harm, sexual and violent text that Azure AI Content Safety scores at a severity or more.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Connection** | An Azure AI Content Safety connection. | None: choose one |
+| **What it blocks** | **Hate**, **Self-harm**, **Sexual**, **Violence**. | All four |
+| **Severity** | 1 to 7. Blocks at this severity and above: lower blocks more. | 2 |
+
+Reads prompts and answers.
+
+### Azure Prompt Shields
+
+Blocks prompts that Azure finds a jailbreak or prompt attack in.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Connection** | An Azure AI Content Safety connection. | None: choose one |
+
+Reads prompts only.
+
+### Azure personal data
+
+Finds personal data with Azure AI Language, and redacts or blocks each kind.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Connection** | An Azure AI Content Safety connection. Its **Language endpoint** is used when it has one. | None: choose one |
+| **What to look for** | **Names**, **Emails**, **Phone numbers**, **Addresses**, **Card numbers**, **US social security numbers**, **US bank account numbers**, **IP addresses**. For each ticked kind, **Redact** or **Block**. | None ticked: every category Azure finds, redacted |
+| **Language** | The language of the text, as Azure names it, for example `en`. | `en` |
+
+Reads prompts only.
+
+### Google Model Armor
+
+Screens text against a Model Armor template: prompt injection, jailbreaks, harmful content, sensitive data and malicious URLs.
+
+| Setting | Values | Default |
+|---|---|---|
+| **Connection** | A Google Model Armor connection. | None: choose one |
+| **Template** | The Model Armor template's ID, in that project and location. For example `support-agents`. | None: type one |
+| **What it does** | **Block on a match**, or **Rewrite the text** (de-identify what matched). | **Block on a match** |
+| **When it fails** | **Enforce: block on a match**; **Enforce, and let text through on an error**; **Audit only: record, never block**. | **Enforce: block on a match** |
+
+Reads prompts and answers.
+
+## Who can use it
+
+**Viewer** can read a guardrail's checks. Changing them needs **Admin**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create a guardrail" icon="shield-plus" href="/secure/guardrails/create">
+    Turn these checks on in a guardrail.
+  </Card>
+  <Card title="Try a guardrail on text" icon="flask-conical" href="/secure/guardrails/try-it">
+    See which check fires on your text.
+  </Card>
+  <Card title="Check tool calls with OPA and Cedar" icon="scale" href="/secure/guardrails/opa-cedar">
+    Write your own policies and tool call rules.
+  </Card>
+  <Card title="Use cloud guardrails" icon="cloud" href="/secure/guardrails/cloud-providers">
+    Run AWS, Azure or Google guardrails from a guardrail.
+  </Card>
+</CardGroup>

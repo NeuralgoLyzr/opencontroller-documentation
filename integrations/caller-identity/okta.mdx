@@ -1,0 +1,112 @@
+---
+title: "Okta"
+description: "Make every LLM gateway call carry the Okta user behind it, so guardrail violations name the person, not only the key."
+icon: "fingerprint"
+---
+
+A virtual key says which app called the LLM gateway (Rekori), not which person. With caller identity, the app also sends
+the signed-in user's Okta access token on each call. The gateway verifies it and records its subject as the caller: with
+Okta's authorization servers, `sub` is the user's Okta login, usually their email. A key that requires sign-in refuses
+every call without a valid token, so a leaked key alone is not enough.
+
+The caller shows in [Guardrail Violations](/secure/who-trips/violations) **By caller**. The **Logs** page does not show
+it: its **Caller** column is the key and its team or customer.
+
+It needs the **LLM Gateway** module and the **Admin** role. For signing in to the console, see
+[Okta](/integrations/identity/okta).
+
+## Set up Okta for gateway callers
+
+<Steps>
+  <Step title="Choose the authorization server">
+    Use a custom authorization server (**Security** > **API** > **Authorization Servers**) with its own audience, for
+    example `api://rekori`, or the **default** one (issuer `https://your-org.okta.com/oauth2/default`, audience
+    `api://default`).
+
+    The default server issues tokens to every app in your org, so every one of them could call with the key; a custom
+    server's access policy decides which apps can. Never use the org authorization server (`https://your-org.okta.com`
+    with no `/oauth2/…`): its tokens are for Okta's own APIs.
+  </Step>
+  <Step title="Let the app get tokens">
+    On the authorization server, open **Access Policies** and make sure a policy and rule cover the Okta app your users
+    sign in to, and the grant it uses (for example **Authorization Code**). Keep the access token lifetime short: a token
+    works until it expires.
+  </Step>
+  <Step title="Add Okta as an identity provider in the gateway">
+    In OpenController, go to **LLM Gateway** > **Routing** > **Identity providers** > **New identity provider**:
+
+    | Field | What to enter |
+    |---|---|
+    | **Name** | `okta`. It cannot be changed later. |
+    | **Issuer** | `https://your-org.okta.com/oauth2/<server id>` (or `/oauth2/default`). A trailing slash is ignored. |
+    | **JWKS URL** | `<issuer>/v1/keys`. Fill it in: when empty it is looked up from the issuer, and if that lookup fails, no identity provider loads, though the save reports success. |
+    | **Audiences** | The server's audience, for example `api://rekori`. Separate several with commas. |
+    | **Subject claim** | Leave empty for `sub`, the user's login. |
+    | **Enabled** | On |
+
+    Leave the rest empty: **Algorithms** (RS, ES and EdDSA; never HS or `none`), **Clock leeway (seconds)** (30),
+    **Scopes claim** (Okta's `scp` is read when `scope` is missing), **Roles claim**, **Teams claim**, and **Client ID**
+    and **Scopes**, which are not used to verify tokens. Select **Create**.
+  </Step>
+  <Step title="Require sign-in on the virtual key">
+    Go to **LLM Gateway** > **Virtual Keys**, open the key's actions menu (**…**) > **Edit** (or **New key**). Under
+    **Callers sign in with**, switch on **okta**, and select **Save** (or **Create**).
+
+    <Warning>
+    From then on, every call with this key needs a valid token from a provider switched on for it. Calls with the key
+    alone are refused. Update the app first, or test with a new key. A key with no provider switched on ignores tokens:
+    they are neither checked nor recorded.
+    </Warning>
+  </Step>
+  <Step title="Call the gateway with the key and the token">
+    Send the virtual key in `x-bf-vk` and the user's **access token** (not the ID token) as the bearer token. Sending the
+    key as the bearer leaves no room for the token, and the call is refused.
+
+    ```bash
+    curl https://<gateway address>/v1/chat/completions \
+      -H "x-bf-vk: sk-bf-…abcd" \
+      -H "Authorization: Bearer $ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Hello"}]}'
+    ```
+
+    A call with the key and a valid token succeeds. Without the token it is refused with `401
+    identity_token_required`; with a bad one, `401 identity_token_invalid`.
+  </Step>
+</Steps>
+
+## What it checks
+
+| Check | Rule |
+|---|---|
+| Format | A signed JWT, at most 16 KiB. |
+| Signature | Against the server's JWKS, by the token's `kid`. Algorithms: RS256/384/512, ES256/384/512, EdDSA (Okta signs RS256). |
+| Issuer | `iss` matches **Issuer** (trailing slash ignored, otherwise exact). |
+| Audience | One of **Audiences** is in `aud`. With **Audiences** empty, audience is not checked. |
+| Time | `exp` required; `exp` and `nbf` checked with 30 seconds' leeway. |
+
+The token is never stored; the subject is, as the call's user.
+
+<Warning>
+- **Anyone with a valid token for the audience** can use the key: with the default server, any app in your org.
+- **Passthrough routes forward the token.** On `/v1`, `Authorization` never goes upstream. On `/openai_passthrough`
+  and `/chatgpt_passthrough`, a JWT bearer is forwarded to OpenAI over https in place of the stored provider key. Use
+  `/v1` routes with caller identity.
+- **No replay protection.** A token works until it expires.
+- **Key rotation.** The JWKS is fetched again only when a token arrives with an unknown `kid`. A signing key revoked in
+  Okta stays trusted until then.
+- **The subject is personal data:** the login is stored with each call and violation, and is a label on the gateway's
+  metrics.
+- **Disabling the provider** makes every key that requires it refuse all calls.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See which users trip guardrails" icon="user-check" href="/secure/who-trips/guide-violations-per-user">
+    The end-to-end guide from key to per-user violations.
+  </Card>
+  <Card title="Make callers sign in" icon="fingerprint" href="/secure/who-trips/caller-sign-in">
+    Every field of a gateway identity provider.
+  </Card>
+</CardGroup>

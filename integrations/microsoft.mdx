@@ -1,0 +1,176 @@
+---
+title: "Microsoft (Azure and 365)"
+description: "Connect a Microsoft tenant so OpenController finds Copilot Studio, Microsoft 365 Copilot, Agent 365 and Azure AI Foundry agents."
+sidebarTitle: "Microsoft"
+icon: "cloud"
+---
+
+OpenController signs in to a Microsoft tenant as an **Entra app registration** with a client ID and a client secret.
+One integration is one tenant. It uses up to two apps:
+
+- **The read app** (required): discovery, Verify and spend sign in as it. It needs nothing that changes anything.
+- **The control app** (optional): every change OpenController makes in the tenant is made as it. Without one, nothing
+  is changed in the tenant and discovery goes on.
+
+Each Microsoft surface is granted on its own. Grant only what you want discovered: the rest is reported as refused, and
+everything else still works. Granting Graph application permissions and the Entra role **AI Reader** needs a
+**Privileged Role Administrator** or **Global Administrator**; Azure roles need **Owner** or **User Access Administrator**
+on the subscriptions.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** Copilot Studio agents, Microsoft 365 Copilot Agent Builder agents,
+  the Agent 365 catalog, Entra agent identities, and Azure AI Foundry projects and agents with their models, tools and
+  content filters.
+- **[Shadow AI](/discover/shadow-ai) and [People](/discover/people-and-spend):** who each agent is shared with: owners
+  and co-authors of Copilot Studio agents, users of Foundry agents, and who an Agent 365 catalog agent is shared with.
+- **[Spend](/discover/people-and-spend):** Microsoft 365 licences and who uses them, and the daily cost of Azure AI services.
+- **Control (optional):** share and remove access to agents, quarantine, block and delete them, and route Foundry prompt
+  agents through the [LLM gateway](/secure/gateway-overview).
+- **[Cloud guardrails](/secure/guardrails/cloud-providers):** link an Azure AI Content Safety credential to this tenant.
+  It is a key of its own, not one of these apps.
+
+Discovery never reads conversations, transcripts or message content.
+
+## Connect a Microsoft tenant
+
+<Steps>
+  <Step title="Register the read app in Entra">
+    In the Microsoft Entra admin center, go to **App registrations** > **New registration**. Name it `opencontroller`,
+    single tenant, no redirect URI. Under **Certificates & secrets** > **New client secret**, copy the secret's
+    **value**, not its ID, and note the **Application (client) ID** and **Directory (tenant) ID**.
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Microsoft tenant**. Fill in **Name**, **Tenant ID** (the directory ID, or a
+    verified domain such as `your-tenant.onmicrosoft.com`), **Read app: application (client) ID** and **Read app: client
+    secret**. Leave **Control app** at **None: discovery only** for now, and select **Connect**.
+
+    The **Grant the read app access** dialog opens with the main grants and the Azure CLI command for **Reader**. The
+    full list is below.
+  </Step>
+  <Step title="Grant the read app its access">
+    Grant what you want discovered. Everything here is read-only.
+
+    | Surface | Grant | Where |
+    |---|---|---|
+    | **Azure subscriptions** | Azure role **Reader** on the subscriptions, or a management group above them | Subscription or management group > **Access control (IAM)** > **Add role assignment** |
+    | **Foundry agents** | Azure role **Foundry User** (formerly Azure AI User) on the Foundry resources, their subscription or the Tenant Root Group | Same place |
+    | **Copilot Studio inventory** | Entra directory role **AI Reader**. Power Platform admin roles do not grant this. | Entra ID > **Roles and administrators** > **AI Reader** > **Add assignments** |
+    | **Copilot Studio sharing** | The read app as an **application user** in each Power Platform environment. **System Administrator** works; a read-only role is enough if it reads Copilot, Copilot component, Process, Team and User. | Power Platform admin center > **Environments** > the environment > **Settings** > **Users + permissions** > **Application users** |
+    | **Agent 365 catalog** | Graph application permission **CopilotPackages.Read.All**, with admin consent. Needs an Agent 365 license. | Entra ID > **App registrations** > the app > **API permissions** |
+    | **Agent identities** | Graph application permission **AgentIdentity.Read.All**, with admin consent | Same |
+
+    For people and spend, also see [Permissions it uses](#permissions-it-uses).
+
+    ```bash
+    az role assignment create --assignee <read app client ID> --role Reader --scope /subscriptions/<subscription-id>
+    ```
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**. The **Access** badge reads **Verified**, or how many checks were refused. The checks
+    are **Sign in**, **Azure subscriptions**, **Copilot Studio inventory**, **Copilot Studio sharing**, **Agent 365
+    catalog** and **Agent identities**. Foundry has no check of its own: a missing **Foundry User** shows as a failed scan
+    of that project.
+
+    New grants take a few minutes to reach new tokens, and Azure role assignments up to 10 minutes to reach Foundry. The
+    **Sign in** check shows what the current token carries, so you can tell "not granted" from "not arrived yet". **Write
+    access** is for information: it lists Graph permissions the read app holds that could change something. It needs
+    none of them.
+  </Step>
+</Steps>
+
+## Turn on control (optional)
+
+Register a second app, `opencontroller-control`, the same way, with its own secret. Then set **Control app** to
+**A app of its own (recommended)** and enter **Control app: application (client) ID** and **Control app: client
+secret**, or select **Turn on** next to **Control: off** on a connected tenant's row. Verify then also runs **Control
+sign in** and **Control: Copilot Studio sharing**. The control fields show only while control of Microsoft is on for
+your deployment.
+
+Changes are made only when a person confirms them in the console, and each is in the [Audit log](/administer/audit-log).
+
+### Administrator sign-in
+
+Microsoft takes some changes only from a signed-in administrator, never from an app:
+
+| Change | Who signs in | Delegated permission |
+|---|---|---|
+| Quarantine a Copilot Studio agent; delete an Agent Builder agent | A Global, AI or Power Platform administrator | **Power Platform API** > **CopilotStudio.AdminActions.Invoke** |
+| Block an Agent 365 catalog agent, or share one | An AI or Global administrator, with an Agent 365 license | **Microsoft Graph** > **CopilotPackages.ReadWrite.All** |
+
+The administrator signs in through the control app from the agent's page, or from the tenant's row on
+**Integrations** (one sign-in per API). Add a redirect URI to the control app: **Authentication** > **Add a platform** >
+**Web**, `<console address>/setup/microsoft/admin-callback`; the Block, Delete and Share dialogs show the exact address
+to copy. Consent is granted ahead of time, or by a Global administrator at the first sign-in. The token is kept in
+memory for about an hour and never stored; a sign-in must come back within 10 minutes, and a restart signs everyone out.
+
+Only the organization's and partners' catalog agents can be shared. Agent Builder agents and Microsoft's own agents can
+only be blocked.
+
+<Tip>
+If **Power Platform API** is not in the list of APIs, register it in the tenant once:
+`az ad sp create --id 8578e004-a5c6-46e7-913e-12f58912df43`.
+</Tip>
+
+## Permissions it uses
+
+Every read permission is optional except signing in: what is not granted is refused on its own. Graph permissions are
+application permissions with admin consent.
+
+### Read app
+
+| Permission | What it reads |
+|---|---|
+| Azure **Reader** on the subscriptions or a management group | Subscriptions; Foundry accounts and projects; who may use a Foundry project; agent-to-agent connections |
+| Azure **Foundry User** on the Foundry resources | Foundry agents (the data plane) |
+| Azure **Cost Management Reader** on each subscription | Azure AI costs, for Spend. A subscription without it is skipped and named. |
+| Entra role **AI Reader** | Copilot Studio inventory |
+| Dataverse **application user** in each environment | Copilot Studio agents, their components and flows, teams and users, and who each agent is shared with |
+| Graph **CopilotPackages.Read.All** | The Agent 365 catalog. Needs an Agent 365 license. |
+| Graph **AgentIdentity.Read.All** | Entra agent identities |
+| Graph **User.Read.All** | Owners and people agents are shared with, and the licence holders for Spend |
+| Graph **GroupMember.Read.All** | Groups agents are shared with, and their member counts |
+| Graph **LicenseAssignment.Read.All** (or **Organization.Read.All**) | Licences, for Spend |
+| Graph **Reports.Read.All** | Who uses their licence: the Microsoft 365 active-user and Copilot usage reports. The tenant's reports must show names (Microsoft 365 admin center > **Settings** > **Org settings** > **Reports**); without it, licences are read and use is unknown. |
+
+### Control app (optional)
+
+| To | Grant |
+|---|---|
+| Share and remove Copilot Studio access, turn off org-wide sharing, publish, delete agents and their flows | The control app as an **application user** with **System Administrator** in each Power Platform environment. Co-authors also need **Environment Maker**. |
+| Quarantine Copilot Studio agents; delete Agent Builder agents | The same application user in the agent's environment, plus the administrator sign-in above |
+| Find people and groups to share with | Graph **User.Read.All** and **GroupMember.Read.All** |
+| Disable and enable Foundry hosted agents; delete Foundry agents | **Foundry User** on the Foundry resource |
+| Share Foundry agents | **Role Based Access Control Administrator** on the Foundry project, conditioned to assign only **Foundry Agent Consumer** |
+| Route Foundry prompt agents through the LLM gateway | `Microsoft.CognitiveServices/accounts/projects/connections/read`, `/write` and `/delete`, and **Foundry User** |
+| Delete a Foundry agent's Bot Service too (**Delete with cascade**) | `Microsoft.BotService/botServices/read` and `/delete` (or Contributor) on the bot's resource group, and **Reader** |
+
+### Azure AI Content Safety
+
+A separate guardrail credential, not one of these apps: an **Endpoint** and **Key** from the resource's **Keys and
+Endpoint**, and optionally an Azure AI Language **Language endpoint** and **Language key** for personal data. The keys
+are kept in your secrets manager and never shown again.
+
+### Where the apps connect
+
+Only Microsoft's own endpoints: `login.microsoftonline.com`, `management.azure.com`, `graph.microsoft.com`,
+`globaldisco.crm.dynamics.com` (to find environments), `api.powerplatform.com` (quarantine and delete), and the
+tenant's Dataverse and Foundry endpoints. Each app's secret is kept in your secrets manager, never returned and never
+logged.
+
+## Remove the integration
+
+Removing it deletes the stored client secrets and stops scans; what was discovered stays until later scans retire it.
+A linked guardrail credential is kept, for guardrails only. The app registrations stay in the tenant: delete them in
+Entra to revoke everything.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Find agents in use that nobody registered.
+  </Card>
+  <Card title="See people and spend" icon="dollar-sign" href="/discover/people-and-spend">
+    See licences, idle seats and Azure AI costs.
+  </Card>
+</CardGroup>

@@ -1,0 +1,104 @@
+---
+title: "Members, roles and teams"
+description: "Rename the organization, add and manage members, choose what each role can do, and set up teams."
+sidebarTitle: "Members and roles"
+icon: "users"
+---
+
+**Settings** shows only the sections your role can use.
+
+{/* SCREENSHOT: org-settings-nav | crop | The Settings side navigation for an Admin, General selected: Organization (General, Members, Roles, Teams), Discovery (Scan schedule), Security, Modules. Crop to the navigation column. */}
+<Frame caption="The Settings side navigation">
+  <img src="/images/settings/org-settings-nav.png" alt="The Settings side navigation with the Organization, Discovery, Security and Modules groups." />
+</Frame>
+
+## General: rename the organization
+
+**General** is the organization itself. Every asset, integration and grant belongs to it. **Organization ID** is read only: it is the tenant key on every record, set where OpenController is deployed.
+
+## Members: add, change and remove people
+
+**Members** lists the people who sign in with an email and password. People who sign in through single sign-on are not listed: they get their role from your identity provider. See [Single sign-on](/administer/sso).
+
+There is no self sign-up and no email invite. An admin adds each person with an **Initial password** of at least 8 characters, and gives it to them over a channel you trust. They can change it after they sign in.
+
+<Warning>The password is shown once. After you select **Done**, you cannot see it again. To replace it, use **Reset password**.</Warning>
+
+{/* SCREENSHOT: org-member-actions | crop | Settings > Members: the table and Add user. Names and emails blurred. */}
+<Frame caption="Settings > Members">
+  <img src="/images/settings/org-member-actions.png" alt="The Members table with each person's role, status and last sign-in, and the Add user button." />
+</Frame>
+
+From a row's **⋯** menu:
+- **Role**: the change applies at once.
+- **Reset password**: their current password and sessions stop working at once.
+- **Disable**: they can no longer sign in, and their sessions end. Use it instead of **Remove** to stop someone for a while.
+- **Remove**: their sessions end. What they did stays in the [audit log](/administer/audit-log).
+
+Rules that always apply:
+- Nobody can change their own role, disable themselves or remove themselves.
+- Only an **Owner** can change an **Owner** or make someone an **Owner**.
+- There is always at least one active **Owner**. The last one cannot be removed, disabled or given a lower role.
+
+## Roles: see and make roles
+
+A role is a set of permissions, one for each thing OpenController does. The API checks a permission on every request. Who gets which role is set in **Members** and [Role mappings](/administer/sso#map-groups-to-roles).
+
+{/* SCREENSHOT: org-roles | crop | Settings > Roles: the four System roles (Owner, Admin, Operator, Viewer) and one Custom role "auditor", with the Type and Permissions columns visible. Crop to the section header and table. */}
+<Frame caption="The Roles table">
+  <img src="/images/settings/org-roles.png" alt="The Roles table with four System roles and one Custom role, each with its permission count." />
+</Frame>
+
+Each built-in role holds everything the role below it holds, and more:
+
+| Role | What it adds |
+|---|---|
+| **Viewer** | Read everything, ask Ctrl |
+| **Operator** | Also scan, verify and change agent sharing |
+| **Admin** | Also manage integrations and users |
+| **Owner** | Also the organization itself: single sign-on, access rules, owners |
+
+See [Roles and permissions](/get-started/roles) for the full list.
+
+### Make a custom role
+
+A custom role holds exactly the permissions you give it. You can map it from identity provider groups, give it to a member, or give it to a service account. Only an **Owner** can select **Add role**.
+
+- **Name**: 2 to 32 lowercase letters, digits and dashes, and not a built-in role's name.
+- Every role can always see and change itself.
+- When you remove a custom role, people who held it, or were mapped to it, keep only the default role, if one is set.
+
+<Info>If a person matches a built-in role and a custom role, the built-in role wins. Among custom roles, the one with the most permissions wins.</Info>
+
+## Teams: group people and the assets they own
+
+A team links your identity provider's groups to the assets the team owns. Everyone in a linked group is in the team, with the role you give that group. A role in a team adds to a person's role in the organization. It never takes anything away.
+
+- **Groups**: each linked group gets **Viewer**, **Operator** or **Admin** in the team. A person in several groups gets the highest role. Microsoft Entra ID sends groups by id, so pick them from the provisioned list or type the id.
+- **Also people added by hand**: adds local accounts, or someone not yet in a group.
+- **Assets**: the accounts or environments the team owns. You can also give a single asset to a team from its own page.
+- **LLM gateway team** (optional): the id of the gateway's team whose virtual keys and budget belong to this team.
+
+{/* SCREENSHOT: org-team-dialog | crop | Settings > Teams with the New team button. */}
+<Frame caption="Settings > Teams">
+  <img src="/images/settings/org-team-dialog.png" alt="The Teams section with the New team button." />
+</Frame>
+
+When you delete a team, its members lose what the team gave them, and what it owned is owned by no team, unless another team's rules cover it.
+
+## Who can use it
+
+- Every role reads **General**. Only an **Admin** or **Owner** can change it.
+- **Admin** manages members and teams.
+- **Owner** also adds and changes roles, and changes or makes **Owners**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Let people sign in with their work account and get roles from their groups.
+  </Card>
+  <Card title="Roles and permissions" icon="user-cog" href="/get-started/roles">
+    What each role can do, permission by permission.
+  </Card>
+</CardGroup>

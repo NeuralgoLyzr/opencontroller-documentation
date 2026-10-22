@@ -1,63 +1,66 @@
 ---
-title: "Approvals"
-description: "Approvals is the queue of registration requests waiting for an administrator, and the record of what was decided before."
+title: "Review and approve requests"
+description: "Decide the registration requests that wait under Approvals, so each asset is registered or stays shadow."
+sidebarTitle: "Approvals"
 icon: "stamp"
 ---
 
-import { ApiLink } from '/snippets/api-link.mdx'
+Approving a request registers the asset: it moves from **Shadow AI** to the **Registry**, with its owner and purpose on record. Rejecting it leaves the asset shadow.
 
-Every request to register an asset lands here. Approving one registers the asset; rejecting it leaves the asset shadow. The **Decided** tab keeps rejected, revoked and withdrawn registrations, with who decided and why.
+<Note>
+Before you start:
+- Your deployment runs the registry (the Register and control block). If not, the page says **Approvals is not part of this organization's opencontroller**.
+- Deciding needs the **Admin** role (`registry:decide`). Anyone with **Viewer** can read the queue.
+- Someone has requested a registration, from [Shadow AI](/discover/shadow-ai), the asset's details, or [Register external agent](/govern/registry#register-an-external-agent).
+</Note>
 
-## The page
-
-**Pending** shows the queue, with the number waiting; **Decided** the history. **Search** matches name, owner or purpose.
-
-| Column | Pending | Decided |
-|---|---|---|
-| Checkbox | Selects for a bulk decision | |
-| **Asset** | Name | Name |
-| **Kind** | Kind badge | Kind badge |
-| **Owner** | The accountable owner | The accountable owner |
-| **Checks** | The security policies the asset breaks, of those set to warn or block (see [Policies](/govern/policies)) | The same |
-| **Requested** / **Decided** | Who asked, and when | Who last acted, and when |
-| **Outcome** | | **Rejected**, **Revoked** or **Withdrawn** |
-
-Clicking a row opens the registration: its state, source, a link to the asset in the inventory, the actions, **Owner** (marked "from the platform" when the platform named them), **Purpose**, **Requested**, **Policy** version and the **History** of every step with its note.
-
-## Deciding one request
+## Decide a request
 
 <Steps>
-  <Step title="Open the request">
-    Click its row.
+  <Step title="Open Approvals">
+    Go to **Govern** > **Approvals**.
   </Step>
-  <Step title="Approve, Reject or Withdraw">
-    **Approve** takes an optional **Note**. **Reject** requires an answer to **Why is it rejected?**. **Withdraw** is offered to the requester and to administrators and takes no note.
+  <Step title="Find the request">
+    The **Pending** tab lists each request with its **Asset**, **Kind**, **Owner**, and who requested it and when. Type in **Search** to find a request by name, owner or purpose.
+
+    {/* TODO verify: the Pending table header reads Asset, Kind, Owner, Checks, Requested, but the requester and time show under Checks and the Requested column is empty. Check the console before capturing approvals-list. */}
+
+    {/* SCREENSHOT: approvals-list | crop | Approvals on the Pending tab. Owners and requesters blurred. */}
+    <Frame caption="Approvals, Pending">
+      <img src="/images/govern/approvals-list.png" alt="The Approvals page on the Pending tab, with the requests waiting and the Approve selected and Reject selected buttons." />
+    </Frame>
   </Step>
-  <Step title="Confirm">
-    The decision is recorded in the registration's history with your name and the time.
+  <Step title="Read the request">
+    Select the row. A side panel shows the **Owner** (marked **from the platform** when the platform names them), the **Purpose**, who **Requested** it and when, the **Policy** version, and the **History**. Select the link named after its kind (for example, **Agent in the inventory**) to open the asset.
+  </Step>
+  <Step title="Approve or reject">
+    - Select **Approve**. In **Approve registration**, add a **Note** if you want, then select **Approve**.
+    - Or select **Reject**. In **Reject registration**, type **Why is it rejected?** (required), then select **Reject**.
   </Step>
 </Steps>
 
-Under the default policy an administrator cannot approve a request they made themselves: the **Approve** button says "You requested it: another administrator approves it". Turn **Separation of duties** off on the [Policies](/govern/policies) page to allow it.
+<Warning>If **Separation of duties** is on in [Policies](/govern/policies), you cannot approve a request you made yourself. **Approve** is greyed out and says **You requested it: another administrator approves it**. It is on by default.</Warning>
 
-## Deciding several at once
+## Withdraw a request
 
-Select rows and click **Approve selected** or **Reject selected**. The dialog takes one **Note** (**Why are they rejected?** for a rejection, required; required for an approval when a request failed a check, to record why the exception is accepted) and decides each request as if alone: a request you made yourself is refused under separation of duties, and the toast names up to three refusals with the reason.
+The person who requested a registration, or an Admin, can withdraw it while it waits. Open the request and select **Withdraw**, then **Withdraw** again in **Withdraw request**. The asset stays shadow.
 
-## What happens to the asset
+## Check it worked
 
-| Decision | Effect |
-|---|---|
-| Approve | The asset is **Registered**: it appears on the Registry page, its Registration card shows who approved it and when, and it colors green on the map. Where the control module blocks agents, a registered agent can be blocked. |
-| Reject | The asset stays **Shadow**. The Registration card says the last request was rejected and offers **Register** again. |
-| Withdraw | The asset is **Shadow** again. |
+- A message says *asset name* **registered**, or *asset name* **rejected; it stays shadow**.
+- An approved asset is listed on [Registry](/govern/registry), and its **Registration** card says **Registered**.
+- A rejected, revoked or withdrawn request moves to the **Decided** tab. The **Outcome** column shows **Rejected**, **Revoked** or **Withdrawn**. Open it to read who decided and why.
 
-<Note>
-A block from the Access card on a shadow agent can register it as pending in the same step, with the operator as owner and the block's reason as purpose. That request then waits here like any other.
-</Note>
+## Next steps
 
-## Notifications
-
-OpenController does not send notifications when a request is made or decided. The queue, and the **Pending** count on this page and on the Overview, are how administrators see what waits.
-
-<ApiLink />
+<CardGroup cols={2}>
+  <Card title="Registry" icon="book-marked" href="/govern/registry">
+    See the approved assets.
+  </Card>
+  <Card title="Set registry policies" icon="scale" href="/govern/policies">
+    Turn separation of duties on or off.
+  </Card>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Request more registrations.
+  </Card>
+</CardGroup>

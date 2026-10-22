@@ -1,0 +1,31 @@
+---
+title: "Read the gateway logs"
+description: "See every call that went through the LLM gateway: who made it, to which model, how long it took and what it cost."
+sidebarTitle: "Gateway logs"
+icon: "scroll-text"
+---
+
+<Note>Needs the **LLM Gateway** module. See [Modules](/administer/modules).</Note>
+
+{/* SCREENSHOT: logs-hero | crop | LLM Gateway > Logs, last 24 hours. */}
+<Frame caption="LLM Gateway > Logs">
+  <img src="/images/llm-gateway/logs-hero.png" alt="The gateway Logs page with its window, status and search filters." />
+</Frame>
+
+- **Model** shows **via** and the rule's name when a [routing rule](/secure/routing-and-mcp#routing-rules) sent the call.
+- **Caller** names the virtual key and its team or customer, not a person. To see who made a call, the key needs **Callers sign in with**. See [Virtual keys](/secure/virtual-keys).
+- To see why a call failed, set **Status** to **Failed** and hover the **Failed** badge.
+- Prompts and answers stay in the gateway: OpenController lists only the calls. **Search prompts and answers** shows only when the gateway supports it.
+
+Every role, from **Viewer** up, can read the logs.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Give apps virtual keys" icon="key" href="/secure/virtual-keys">
+    Control what each key may call and spend.
+  </Card>
+  <Card title="See guardrail violations" icon="shield" href="/secure/who-trips/violations">
+    See which calls content rules blocked or redacted.
+  </Card>
+</CardGroup>

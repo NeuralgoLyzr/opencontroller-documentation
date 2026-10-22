@@ -1,0 +1,103 @@
+---
+title: "Anthropic"
+description: "Connect a Claude Platform organization so OpenController finds the Claude models and API keys in use, and reads the API bill and Claude Code use."
+icon: "bot"
+---
+
+OpenController reads a **Claude Platform organization** (the Claude API, managed in the Claude Console) with an
+**Admin API key**. One integration is one organization. It only reads: it never creates, changes or revokes anything,
+and never calls a model. Individual accounts have no Admin API.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** each Claude model called in the last 30 days, with its tokens, service
+  tiers, the workspaces it was called from and how many API keys called it; each active API key, with its workspace,
+  who created it, its status, expiry, key hint and 30-day tokens; and which key called which model.
+- **[Spend](/discover/people-and-spend):** what each workspace was billed each day, by line item (tokens, web search,
+  code execution, session usage), and each person's Claude Code use.
+
+To call Claude models through the [LLM gateway](/secure/gateway-overview), add Anthropic as a gateway provider instead
+([Providers and routing](/secure/routing-and-mcp)).
+
+## Connect an Anthropic organization
+
+<Steps>
+  <Step title="Create an Admin API key">
+    In the [Claude Console](https://console.anthropic.com), as an **organization admin** (only admins can create one),
+    go to **Settings** > **Admin keys** > **Create admin key**, and name it `opencontroller`. Copy the key: it starts
+    with `sk-ant-admin`, and the Console shows it once. Then copy the organization ID (a GUID) from **Settings** >
+    **Organization**.
+
+    A workspace API key (`sk-ant-api…`) is refused: the form and the API accept only `sk-ant-admin…`.
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Anthropic organization**. Fill in **Name**, **Organization ID** and **Admin
+    API key**, and select **Connect**. The key goes to your secrets manager and cannot be read back.
+
+    The **What opencontroller reads in …** dialog lists what the key reads. It needs no grants of its own. Select
+    **Done**.
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**. The **Access** badge reads **Verified** when every check passes.
+
+    | Check | Passes when |
+    |---|---|
+    | **Sign in** | The key is accepted and belongs to the organization you named. Shows its name and ID. |
+    | **Members**, **Workspaces**, **API keys** | Each is listed; the check shows how many (active keys only). |
+    | **Usage and cost** | Yesterday's usage and cost reports can be read. |
+    | **Claude Code analytics** | Yesterday's Claude Code report can be read. |
+
+    Scans run every 5 minutes by default, and read the last 30 days of usage; a model nobody called for 30 days is
+    retired. Spend is read after a scan, at most every 6 hours, for the last 35 days.
+  </Step>
+</Steps>
+
+## Permissions it uses
+
+An Admin API key reads the whole organization; there is no narrower one. OpenController calls only these endpoints, all
+`GET`, on `https://api.anthropic.com`:
+
+| Endpoint | What for |
+|---|---|
+| `/v1/organizations/me` | Sign in: proves the key, and refuses it if it belongs to another organization. |
+| `/v1/organizations/users` | Members' emails, to name who created each API key. |
+| `/v1/organizations/workspaces` | Workspace names (archived ones left out). |
+| `/v1/organizations/api_keys` | Active API keys for the inventory; keys of every status for Claude Code, to put use through a key down to whoever created it. |
+| `/v1/organizations/usage_report/messages` | Tokens by day, model, workspace and API key: the models in use. |
+| `/v1/organizations/cost_report` | The bill by day, workspace and line item. |
+| `/v1/organizations/usage_report/claude_code` | Claude Code use by person or API key, one day per request. |
+
+<Warning>
+An Admin API key can also change the organization: invite and remove members, create workspaces, change API keys.
+OpenController only reads with it. Treat it as an administrator credential.
+</Warning>
+
+OpenController never calls a model, reads prompts or responses, or sees an API key's secret (the API returns only a
+partial hint).
+
+**Spend rows.** Cost report rows are **billed**, in US dollars. Claude Code rows are **attributed**: they say whose the
+use was, at its estimated cost, and never add to a total, because that cost is already in the API bill or covered by a
+subscription. Use through an API key goes to the member who created the key; when two members' keys share a name, it
+goes to no one.
+
+## Change the key
+
+When the connection cannot sign in, the **Integrations** page shows **Update the key**. Create a new Admin API key in
+the Claude Console, paste it there, then delete the old one in the Console. The new key is verified at once.
+
+## Remove the integration
+
+On **Integrations**, select the bin icon on the row, then confirm. The stored key is deleted and scans stop; what was
+discovered stays until later scans retire it. The key itself still works: delete it under **Settings** > **Admin keys**
+in the Claude Console.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See people and spend" icon="dollar-sign" href="/discover/people-and-spend">
+    See the Claude API bill and Claude Code use by person.
+  </Card>
+  <Card title="Explore your AI inventory" icon="boxes" href="/discover/ai-inventory">
+    See which models and API keys are in use.
+  </Card>
+</CardGroup>

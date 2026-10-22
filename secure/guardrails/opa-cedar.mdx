@@ -1,0 +1,174 @@
+---
+title: "Check tool calls with OPA and Cedar"
+description: "Hold text to Rego policies you write, and decide which tools a model may call with Cedar rules."
+sidebarTitle: "OPA and Cedar"
+icon: "file-code"
+---
+
+<Note>
+  Before you start:
+  - The **Guardrails** module is on. See [Modules](/administer/modules).
+  - You have the **Admin** role.
+  - You have a guardrail open in the editor. See [Make and edit a guardrail](/secure/guardrails/create).
+</Note>
+
+The two do different jobs:
+
+| | Custom policies (OPA) | Tool call rules (Cedar) |
+|---|---|---|
+| **Language** | Rego | Cedar |
+| **Reads** | Prompts and answers; also tool calls and tool results, if you set it | Tool calls only, before they are made |
+| **Belongs to** | The organization. Every guardrail that ticks a policy runs the same one. | The guardrail. Rules are saved with it. |
+| **Runs on** | This cell's OPA server | The guardrail engine |
+| **Try it** | Yes | No: Try it sends text, not tool calls |
+
+## Add an OPA policy
+
+<Steps>
+  <Step title="Open Custom policies (OPA)">
+    In the guardrail editor, open the **Custom policies (OPA)** step. Turn on **Custom policies (OPA)**.
+  </Step>
+  <Step title="Write a new policy">
+    Under **Policies it runs**, select **New policy**. The **New OPA policy** dialog opens.
+
+    - **Name**: up to 80 characters, for example `No refunds`.
+    - **What it is for** (optional): up to 500 characters, for example "Refunds go to a person".
+    - **Rego**: the policy. It starts from an example you can change.
+
+    The policy is asked about each prompt and each answer:
+
+    - The prompt is `input.request.prompt`. The answer is `input.request.response`.
+    - It answers `allow`. When `allow` is false, it says why in `reasons`, `deny_reason` or `desc`.
+    - Its `package` is replaced by one of its own, so the name you give it does not matter.
+    - It may not call `http.send` or reach the network.
+
+    The example policy blocks any prompt that mentions refunds:
+
+    ```rego
+    package refunds
+
+    import rego.v1
+
+    # Asked about each prompt (input.request.prompt) and each answer
+    # (input.request.response). allow decides; reasons say why it is false.
+    default allow := true
+
+    allow := false if contains(lower(object.get(input.request, "prompt", "")), "refund")
+
+    reasons contains "Refunds are handled by a person" if not allow
+    ```
+  </Step>
+  <Step title="Validate and save it">
+    Select **Validate**. When the Rego compiles, you see **Compiles** under the box. When it does not, the compiler's message shows in red.
+
+    Select **Save policy**. The policy is ticked in **Policies it runs**, and the check is on.
+  </Step>
+  <Step title="Choose what a denial does">
+    Under **When a policy denies the text**, choose:
+
+    - **Block the text**: stop it, with the policy's reasons. This also blocks when OPA cannot answer.
+    - **Flag it**: let it through as it was, and note the policy's reasons.
+  </Step>
+  <Step title="Choose what it checks">
+    Under **What it checks**, choose:
+
+    - **Prompts and answers**: what is sent to the model, and what it says.
+    - **Also check tool calls**: also each tool call the model asks for, before it is made, and what the tool returned.
+
+    A policy written for prompts may not expect a tool call. Write it for both before you choose **Also check tool calls**.
+  </Step>
+  <Step title="Save the guardrail">
+    Select **Save changes**, or **Create guardrail** for a new one.
+  </Step>
+</Steps>
+
+To use a policy you already wrote, tick it in **Policies it runs**. A guardrail can run up to 20 policies. Any one that denies the text decides.
+
+To change a policy, select **Edit** next to it, change it, and select **Save changes**. Every guardrail that runs it changes too.
+
+To delete a policy, select **Edit**, then **Delete**. While any guardrail runs it, it cannot be deleted. Untick it in those guardrails first. A policy deleted while ticked shows as "A policy that was deleted"; select **Take out**.
+
+## Add Cedar rules for tool calls
+
+<Steps>
+  <Step title="Open Tool call rules (Cedar)">
+    In the guardrail editor, open the **Tool call rules (Cedar)** step. Turn on **Tool call rules (Cedar)**.
+
+    <Warning>Once this check is on, a tool call that no rule permits is blocked. A `forbid` overrides any `permit`. Add the rules before you save.</Warning>
+  </Step>
+  <Step title="Add a rule">
+    Under **Rules**, select one of these:
+
+    - **Allow only listed tools**: permits only the tools you name.
+    - **Block a named tool**: permits every tool but one.
+    - **New rule**: an empty rule.
+
+    The **New Cedar rule** dialog opens. Give the rule a **Name** (up to 80 characters), and change its **Cedar**:
+
+    - The action is `Action::"execute_tool"`.
+    - `resource.tool_name` is the tool.
+    - `context.tool_args` holds its arguments. Use `has` before you read one.
+
+    Select **Add rule**.
+
+    **Allow only listed tools** starts as:
+
+    ```cedar
+    permit(principal, action == Action::"execute_tool", resource)
+    when { ["search", "calculator"].contains(resource.tool_name) };
+    ```
+
+    **Block a named tool** starts as:
+
+    ```cedar
+    permit(principal, action == Action::"execute_tool", resource);
+
+    forbid(principal, action == Action::"execute_tool", resource)
+    when { resource.tool_name == "shell" };
+    ```
+
+    Blocking one tool takes two statements: a `permit` for the rest, and a `forbid` for that tool.
+  </Step>
+  <Step title="Choose what happens when Cedar cannot decide">
+    Under **When Cedar cannot decide**, choose:
+
+    - **Block the call**: safer. An error in Cedar stops the tool call.
+    - **Let it through**: the call goes on. Rules that do not parse still block.
+  </Step>
+  <Step title="Save the guardrail">
+    Select **Save changes**, or **Create guardrail**. Each rule is parsed when you save. A rule that does not parse is refused, with Cedar's message under it.
+  </Step>
+</Steps>
+
+A guardrail can hold up to 20 rules. Untick a rule to keep it but not use it. To change a rule, select **Edit**, change it, and select **Done**. To remove one, select **Edit**, then **Take out**.
+
+## Where tool call rules run
+
+Cedar rules, and OPA set to **Also check tool calls**, run when a model asks for a tool:
+
+- **In an app**, at the `pre_tool` hook of `POST /v2/guardrails/inference`. See [Use a guardrail anywhere](/secure/guardrails/use-anywhere).
+- **In Claude Code**, on each `PreToolUse` event. A blocked call does not run.
+- **In the LLM gateway**, when a model's answer asks for a tool. The gateway blocks that answer; it does not run the tool, which the app does. Streamed answers are not checked.
+
+## Check it worked
+
+- The path at the top of the editor shows a **Tool calls** group after the model when Cedar is on, or OPA checks tool calls.
+- The guardrail's sentence says, for example, "Blocks what 1 OPA policy denies." or "Decides tool calls with 2 Cedar rules."
+- For OPA, try the guardrail with a text your policy denies. The path shows "Denied by" and the policy's reasons. See [Try a guardrail](/secure/guardrails/try-it).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Guardrail checks" icon="list-checks" href="/secure/guardrails/checks">
+    The OPA and Cedar settings, with the other checks.
+  </Card>
+  <Card title="Use guardrails in any app or Claude Code" icon="plug" href="/secure/guardrails/use-anywhere">
+    Check tool calls from an app or Claude Code.
+  </Card>
+  <Card title="Try a guardrail on text" icon="flask-conical" href="/secure/guardrails/try-it">
+    See what your OPA policy decides.
+  </Card>
+  <Card title="Use guardrails in any app or Claude Code" icon="terminal" href="/secure/guardrails/use-anywhere">
+    Hold Claude Code's prompts and tool calls to a guardrail.
+  </Card>
+</CardGroup>

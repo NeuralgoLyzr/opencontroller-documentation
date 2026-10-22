@@ -1,0 +1,71 @@
+---
+title: "See people and spend"
+description: "What your organization spends on AI (cloud bills, licences, model calls and their sources) and who it is spent on: people, idle and unpriced licences, departments."
+sidebarTitle: "People and spend"
+icon: "circle-dollar-sign"
+---
+
+Two pages show what your organization spends on AI:
+
+- **Spend**, in the sidebar after **Overview**: the money, where it goes and which sources it is read from.
+- **Discover** > **People**: who it is spent on. Everyone in your connected tenants who holds an AI licence or has usage billed to them, such as Claude Code.
+
+## What the organization spends
+
+{/* SCREENSHOT: spend-hero | full | The Spend page with Period set to 30 days: the figures on top, "Bills, day by day", and the top of "Where the bills go" and "Licences". Account IDs blurred. */}
+<Frame caption="The Spend page, 30 days">
+  <img src="/images/home/spend-hero.png" alt="The Spend page with the spend figures and the daily bills chart for the last 30 days." />
+</Frame>
+
+- **Total AI spend** is bills plus licences. Model calls stay out of it: a call through Bedrock or Azure is already in that cloud's bill.
+- Bills settle a day or two late, so the latest days run low.
+- **Unusual days** lists days a service cost at least three times its daily average over the week before, and $10 more. It shows only when there is one.
+- In **Top agents and models**, an agent that costs money and is not registered is the one to look at. **not in inventory** means a bill names it but discovery has not found it. Azure and Databricks bills do not name agents yet.
+- **Licences:** licence APIs carry no prices, so an Admin sets each seat's monthly price with **Set prices**. **People** uses the same prices.
+
+### Sources
+
+**Sources** shows whether each source of spend is read. A source that lacks a permission says **Needs a permission** and names it, instead of showing nothing spent. Grant it, then select **Refresh**.
+
+Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. GitHub Copilot, Snowflake and Salesforce Agentforce are not read yet.
+
+{/* SCREENSHOT: spend-sources | crop | The Sources panel, stitched: Claude Code, Claude API bill and Azure AI costs Read, Databricks Failed, Google Cloud Not set up. The AWS rows (account ID in the error) left out; connection IDs blurred. */}
+<Frame caption="The Sources panel">
+  <img src="/images/home/spend-sources.png" alt="The Sources panel with sources that are read, one that failed and one not set up." />
+</Frame>
+
+## Who it is spent on
+
+**People** lists people the costliest first, over the last 30 days, 50 at a time.
+
+{/* SCREENSHOT: people-hero | full | The People page: the figures on top, then the Everyone panel with the search box, the Show chips (All, Idle, Unpriced) and the first rows. Names and emails blurred. */}
+<Frame caption="The People page">
+  <img src="/images/discover/people-hero.png" alt="The People page with the licence figures and the list of people with their licences and costs." />
+</Frame>
+
+- **Idle** people have not used their licences for 30 days. **Last active** says **Unknown** when the source cannot tell; for Microsoft 365, that needs permission to read usage reports (see **Sources**). {/* TODO verify: which Microsoft permission gives People its activity data (usage reports). */}
+- **Unpriced** people hold a licence with no price yet. Set it on **Spend** > **Licences** > **Set prices**.
+- **Departments** (under **View**) totals by the department the directory gives each person; people without one show under **None set**.
+- **No one read yet** means Microsoft 365 or Anthropic is not connected under [Integrations](/discover/connect-accounts), or Spend has not read it yet.
+
+## Who can use it
+
+Who holds which licence is personal data, so the person-by-person views (**People**, **Top spenders**, **Spend by department**) need `spend:people`, an Admin's by default.
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read **Spend**, except the person-by-person panels. |
+| **Operator** | Also select **Refresh**. |
+| **Admin** | Also set prices, and see **People**, **Top spenders** and **Spend by department**. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    The AI in use that nobody has registered.
+  </Card>
+  <Card title="Track cost" icon="chart-line" href="/monitor/cost">
+    The cost of traced model calls.
+  </Card>
+</CardGroup>

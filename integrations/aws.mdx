@@ -1,0 +1,188 @@
+---
+title: "AWS"
+description: "Connect an AWS account so OpenController finds its Bedrock and AgentCore agents and reads what AWS bills for AI."
+icon: "cloud"
+---
+
+OpenController reads an AWS account by assuming a read-only IAM role in it. It stores no AWS keys: the role trusts
+OpenController's own AWS identity, and only when it presents the role's external ID. One integration is one AWS account.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** Amazon Bedrock AgentCore harnesses, runtimes, gateways, memories,
+  browsers, code interpreters and policy engines; classic Bedrock agents with their action groups and knowledge bases;
+  Bedrock guardrails; AWS Agent Registry records; the models, tools, identities and images agents use.
+- **[Shadow AI](/discover/shadow-ai):** who may call each runtime or gateway, and whether it is open to everyone.
+- **[Spend](/discover/people-and-spend):** the daily cost of Bedrock services from Cost Explorer, and an estimate per
+  AgentCore runtime from CloudWatch.
+- **Control (optional):** share, remove, and block AgentCore runtimes and gateways from an agent's page.
+- **[Cloud guardrails](/secure/guardrails/cloud-providers):** once you add a guardrail credential for the account, run
+  its Bedrock Guardrails inside an OpenController guardrail. That credential is a role of its own,
+  `opencontroller-guardrails`, added from **Guardrails** › **Add** on the account's row.
+
+Discovery only reads. It never invokes an agent, reads a conversation or memory, or reads a secret value.
+
+## Connect an AWS account
+
+<Steps>
+  <Step title="Open the connect form">
+    Go to **Integrations** > **Connect** > **AWS account**. Part **1. Create the role in the account** shows two values
+    made for you: **Trusts** (OpenController's AWS identity, the only principal the role lets in) and **External ID**
+    (unique to your organization, so no one else can make OpenController assume your role).
+  </Step>
+  <Step title="Create the read-only role">
+    Every tab (**Console**, **AWS CLI**, **GitHub Actions**, **GitLab**, **Organization**, **Terraform**) deploys the
+    same CloudFormation template with the two values filled in. **Organization** is a StackSet for every account in
+    your AWS Organization; connect each account afterwards with the same external ID.
+
+    In the AWS console: select **Download the template** (`discover-role.yaml`), then in **CloudFormation** >
+    **Create stack**, upload it, name the stack `opencontroller-discover`, paste **Trusts** into `DiscoverPrincipalArn`
+    and the external ID into `ExternalId`, tick the IAM acknowledgement and create it.
+
+    With the AWS CLI, the **AWS CLI** tab gives you this command with your values in it:
+
+    ```bash
+    curl -fsSL https://<your OpenController>/setup/aws/discover-role.yaml -o discover-role.yaml
+    aws cloudformation deploy \
+      --stack-name opencontroller-discover \
+      --template-file discover-role.yaml \
+      --capabilities CAPABILITY_NAMED_IAM \
+      --parameter-overrides \
+        DiscoverPrincipalArn=<Trusts, from the form> \
+        ExternalId=<External ID, from the form>
+    ```
+
+    Add `AccessLevel=Scoped` to grant only the calls discovery makes. See [Permissions it uses](#permissions-it-uses).
+  </Step>
+  <Step title="Connect it">
+    In part **2. Connect it**, give a **Name** and the 12-digit **AWS account ID** (or the role's ARN, if you renamed
+    the role). **Regions** is optional: empty reads every AgentCore region the account has enabled. Leave
+    **Control role** at **None: discovery only** for now, and select **Connect**.
+
+    OpenController checks the role at once. The row's **Access** column then shows **Verified**. Scans run every
+    5 minutes by default; agents appear in [AI Inventory](/discover/ai-inventory) after the first one.
+  </Step>
+</Steps>
+
+## Turn on control (optional)
+
+Control changes who may call an AgentCore runtime or gateway. Changes are never made as the read role, but as a second
+role in the same account, the **control role**, with an external ID of its own. Control of AWS is on unless your
+OpenController deployment turned it off: if you don't see **Control: off** under the account's name, ask whoever runs
+your OpenController.
+
+1. Set **Control role** to **A role of its own (recommended)** on the connect form, or select **Turn on** next to
+   **Control: off** on an account's row.
+2. Create the `opencontroller-control` stack the same way, with the control role's own **Trusts** in
+   `ControlPrincipalArn` and its **External ID**.
+3. Enter the role's ARN in **Control role ARN**, for example `arn:aws:iam::123456789012:role/opencontroller-control`,
+   and select **Connect** (or **Store and verify**). Verify also runs **Control: assume role**.
+
+<Warning>
+**The read role, copied** fails **Control: assume role**: its trust policy does not allow `sts:SetSourceIdentity`,
+and it can only read. Use a role of its own.
+</Warning>
+
+What control does to a runtime or gateway's resource policy:
+
+| Action | What it does |
+|---|---|
+| **Share** | Adds an Allow for an IAM role, user or account. |
+| **Remove** | Takes the principal out of every Allow, and adds a Deny for it. |
+| **End sharing with everyone** | Removes `*` from every Allow that lets anyone, or anyone in the account or organization, call it. |
+| **Block** | Adds a Deny of `bedrock-agentcore:Invoke*` from everyone. New calls stop. |
+| **Unblock** | Removes that Deny, and nothing else. |
+
+Every change is in the [Audit log](/administer/audit-log) and in the account's CloudTrail, which names the person
+behind it. Statements OpenController writes have Sids that start with `Opencontroller`; it leaves every other statement
+as it is.
+
+## Permissions it uses
+
+OpenController uses up to three IAM roles in the account, each made from its own CloudFormation template. Each trusts
+only the principal shown in its **Trusts** value, and only with its own external ID: knowing one role's external ID
+does not let anyone assume another. No role can read a secret value.
+
+### Read role: `opencontroller-discover`
+
+**Trust policy.** `sts:AssumeRole` for the **Trusts** principal, only when `sts:ExternalId` matches; and
+`sts:TagSession`, so a principal whose session carries tags (such as EKS Pod Identity) can pass them on. Tagging alone
+gives no access.
+
+**What it may read.** The template's `AccessLevel` parameter sets how wide. Switch by updating the stack; the role ARN
+does not change.
+
+| `AccessLevel` | Grants |
+|---|---|
+| `ReadOnly` (default) | AWS's managed `ReadOnlyAccess` (every service's reads, kept up to date by AWS), plus every action in the table below. `ReadOnlyAccess` includes some data reads, such as S3 objects and AgentCore memory records. |
+| `Scoped` | Only the actions in the table below. |
+
+| Service | Actions |
+|---|---|
+| Bedrock AgentCore | `ListHarnesses`, `GetHarness`, `ListHarnessVersions`, `ListAgentRuntimes`, `GetAgentRuntime`, `ListGateways`, `GetGateway`, `ListGatewayTargets`, `GetGatewayTarget`, `ListGatewayRules`, `GetGatewayRule`, `GetResourcePolicy` (who may call a runtime or gateway), `ListMemories`, `ListBrowsers`, `ListCodeInterpreters`, `ListOauth2CredentialProviders`, `ListApiKeyCredentialProviders`, `ListWorkloadIdentities`, `ListPolicyEngines`, `ListRegistries`, `GetRegistry`, `ListRegistryRecords`, `GetRegistryRecord` |
+| AWS Agent Registry (`agent-registry:`) | `ListRegistries`, `GetRegistry`, `ListRegistryRecords`, `GetRegistryRecord` |
+| Bedrock (`bedrock:`) | `ListGuardrails`; classic agents: `ListAgents`, `GetAgent`, `ListAgentAliases`, `ListAgentActionGroups`, `GetAgentActionGroup`, `ListAgentKnowledgeBases`, `ListAgentCollaborators`; knowledge bases: `ListKnowledgeBases`, `GetKnowledgeBase`, `ListDataSources`, `GetDataSource`. The configuration only: never `InvokeAgent`, `Retrieve` or `GetAgentMemory`. |
+| Account | `account:ListRegions`, so scans skip the opt-in regions that are not enabled. |
+| Spend | `ce:GetCostAndUsage`, `ce:GetDimensionValues` (Bedrock's bill, from Cost Explorer), `cloudwatch:ListMetrics`, `cloudwatch:GetMetricData` (each AgentCore runtime's vCPU and memory hours). |
+
+**Always denied**, at both levels. An explicit deny wins over any allow, `ReadOnlyAccess` included:
+
+| Action | Why |
+|---|---|
+| `secretsmanager:GetSecretValue`, `secretsmanager:BatchGetSecretValue` | Secret values are never read. |
+| `bedrock-agentcore:GetWorkloadAccessToken`, `GetWorkloadAccessTokenForJWT`, `GetWorkloadAccessTokenForUserId`, `GetResourceOauth2Token`, `GetResourceApiKey` | Discovery records which credential providers exist, never a token minted from them. |
+| `cognito-idp:DescribeUserPoolClient` | Its answer includes the app client's secret, and `ReadOnlyAccess` allows it. |
+
+Cost Explorer answers for every account only in the organization's management account; through a member account, spend
+shows that account's own cost. Cost Explorer charges $0.01 per page of results, and OpenController reads it once a day.
+
+### Control role: `opencontroller-control` (optional)
+
+**Trust policy.** `sts:AssumeRole` for the **Trusts** principal with the control role's own external ID; plus
+`sts:TagSession` and `sts:SetSourceIdentity`. OpenController sets the session's source identity to the person behind
+each change, so CloudTrail records who made it.
+
+| Allowed | On | Why |
+|---|---|---|
+| `bedrock-agentcore:GetAgentRuntime`, `ListAgentRuntimeEndpoints`, `GetGateway`, `GetResourcePolicy` | `*` | Read how the resource signs callers in, a runtime's endpoints, and its policy, before a change. |
+| `bedrock-agentcore:PutResourcePolicy`, `DeleteResourcePolicy` | This account's runtimes (`runtime/*`) and gateways (`gateway/*`) only | Change who may call them, and block them. |
+
+**Always denied:** `bedrock-agentcore:UpdateAgentRuntime`, `UpdateAgentRuntimeEndpoint`, `UpdateGateway`,
+`UpdateHarness`, `bedrock:UpdateAgent` and `iam:PassRole` (control changes access, never what an agent is), and the
+same secret and token reads as the read role. OpenController writes Allow statements only for principals someone
+names, never `*`, and never grants `InvokeAgentRuntimeCommandShell`.
+
+### Guardrails role: `opencontroller-guardrails` (optional)
+
+Used only for [cloud guardrails](/secure/guardrails/cloud-providers). It trusts the guardrail engine's principal, with
+an external ID of its own, and `sts:TagSession`. It allows only `bedrock:ListGuardrails`, `bedrock:GetGuardrail` and
+`bedrock:ApplyGuardrail`: it never makes, changes or deletes a guardrail.
+
+### Every role
+
+- **Role name:** the template's `RoleName` parameter. Keep the default, so every account's role ARN has the same shape.
+- **Session length:** `MaxSessionDuration`, 3,600 seconds by default (up to 43,200), on the read and control roles.
+- **Tag:** each role is tagged `managed-by` with its own name; the read role also carries `access-level`.
+
+## When OpenController's AWS identity changes
+
+If OpenController moves, for example to another cluster, the role no longer trusts it: the **Access** column shows
+**Trust update needed**, and scans of that account fail. Select **Trust update needed**, deploy the stack again with
+the new principal it shows (the external ID stays the same), then select **Verify**.
+
+## Remove the integration
+
+Removing it stops scans of the account; what was discovered stays until later scans retire it. The roles in AWS are not
+deleted: delete the `opencontroller-discover` stack, and `opencontroller-control` and `opencontroller-guardrails` if
+you made them, in CloudFormation.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run and schedule scans" icon="radar" href="/discover/scans">
+    Scan the account now, or set how often.
+  </Card>
+  <Card title="Use cloud guardrails" icon="shield" href="/secure/guardrails/cloud-providers">
+    Run Bedrock Guardrails inside an OpenController guardrail.
+  </Card>
+</CardGroup>

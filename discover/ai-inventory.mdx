@@ -1,0 +1,57 @@
+---
+title: "Explore your AI inventory"
+description: "Every AI agent and everything it uses, as discovered across your clouds, and where each stands in the registry."
+sidebarTitle: "AI inventory"
+icon: "boxes"
+---
+
+It opens on **Agents**; select **All assets** to see every kind.
+
+{/* SCREENSHOT: inventory-hero | crop | AI Inventory on "All assets": the title, the Agents / All assets switch, the filter bar, and 13 rows with Name, Kind, Source and Type. Cropped before Account (tenant and project IDs). */}
+<img className="w-[560px] mx-auto rounded-xl border border-gray-200 dark:border-gray-700" src="/images/discover/inventory-hero.png" alt="The AI Inventory page on All assets, with the filter bar and agents from Agent Builder, Copilot Studio, Azure AI Foundry, Agent 365, Genie and Google, by name, kind, source and type." />
+
+## Filter the list
+
+The same filter bar is on **Shadow AI** and **Registry**.
+
+- **Search** matches the name or the ARN.
+- **More filters** adds **Exposure** (**Public**, **Organization**, **Private**), **Authentication** (**None** means anyone can call it), **Account** and **Region**.
+- **Include removed** also shows assets no longer discovered, faded, with the status **Removed**.
+- Filters are kept in the page address, so you can bookmark a filtered view or send it to someone.
+
+## The Registry column
+
+| Registry | Meaning |
+|---|---|
+| **Registered** | Approved, with an owner and a purpose. See [Registry](/govern/registry). |
+| **Awaiting approval** | Someone requested its registration. |
+| **Shadow** | Its kind must be registered, and nobody has. See [Find shadow AI](/discover/shadow-ai). |
+| **Not governed** | Its kind does not need registering. |
+
+The column shows only when your deployment runs the registry.
+
+## Open an asset
+
+Select a row to open it in a side panel: its details, graph, registration, who can reach it and who owns it. See [Asset details](/discover/asset-details). Cmd-click (Ctrl-click) its name to open it on its own page.
+
+An asset you deleted in your cloud stays listed until the next scan marks it removed.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read, filter and open any asset. |
+| **Operator** | Also rescan an asset and change an agent's sharing. |
+| **Admin** | Also name an asset's team, owner and sponsor. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Asset details" icon="list" href="/discover/asset-details">
+    Every tab and card in an asset's side panel.
+  </Card>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Register what nobody has registered yet.
+  </Card>
+</CardGroup>

@@ -1,0 +1,62 @@
+---
+title: "Build datasets and test prompts"
+description: "Make a test set of examples, write and version a prompt, and run experiments that grade every answer against the last run."
+sidebarTitle: "Datasets and prompts"
+icon: "table"
+---
+
+<Note>You need a model connection for prompts and model judges, and a trace store connection to capture rows from traces or grade your agent's latest answers (see [Connect trace stores and models](/monitor/evals/get-started#connect-trace-stores-and-models)). You also need at least one saved [evaluator](/monitor/evals/evaluators), and the **Operator** role or above.</Note>
+
+A dataset is a test set in **Monitor** > **Evals** > **Datasets**. Each row is one example: what was asked, what the agent had to go on, what it answered and, if you like, the grade you would give it. An experiment answers and grades every row, and can compare the result with an earlier run.
+
+## Add rows
+
+Select **Add rows** on a dataset, then one of:
+
+- **Import a CSV or JSON file**: paste a table from a spreadsheet, or choose a `.csv`, `.tsv`, `.json` or `.jsonl` file. The first row names the columns. A column named `expected` is each row's expected answer.
+
+  ```csv
+  input,context,output,expected_label
+  "When does the plan renew?","Plans renew on the 1st.","On the 1st of each month.",grounded
+  ```
+
+- **Capture from traces**: a uniform sample of 1 to 1,000 records from the last 24 hours, 7 days or 30 days becomes rows. Each item is **One step**, a **Whole run** or a **Conversation**. A record already in the dataset is not added again, and **One item per question** captures a question asked many times once. **Seed expected answers from the recorded answers** fills them in for you to review and correct.
+- **Write a row**: fill in **Expected answer (optional)** for graders that compare with one.
+
+{/* SCREENSHOT: evals-dataset | crop | The "support-bot golden set" dataset page, 48 rows: header buttons, the Rows / Experiments switch, and the first rows. */}
+<Frame caption="A dataset's rows">
+  <img src="/images/evals/evals-dataset.png" alt="A dataset page with its header buttons and the first rows of questions, context, answers and labels." />
+</Frame>
+
+## Write and version a prompt
+
+A prompt, in **Evals** > **Prompts**, is what you tell a model, with blanks such as `{input}` and `{context}`. Each blank is filled from the row's column of the same name, or one you choose. **Longest answer, in tokens** under **Advanced** starts at 1,024.
+
+**Try it** runs the prompt as written, saved or not, on the first 5 rows of a dataset or on words typed in. Nothing is kept.
+
+{/* SCREENSHOT: evals-prompt | later | Not taken: preview has no prompts. */}
+
+The first save is v1, and each later change is saved as a new version (**Save as v2**, and so on). Write what changed, so the version history reads as a story.
+
+## Run an experiment
+
+Select **Run experiment** on a dataset, or **Use in an experiment** on a prompt. The answers come from:
+
+- **Saved answers**: the answers already in the dataset.
+- **A prompt**: a model writes a fresh answer for each row, from the version you choose (**Latest** to start).
+- **Your agent's latest answers**: what your agent answered the same question lately, read from a trace store.
+
+Each evaluator you switch on grades every row. With saved answers, **Your labels** picks the column with your grades, to show how often the grader agrees with you. **Advanced: pass rules** sets a rule per evaluator, such as **Pass if score is at least** 0.8. The scorecards appear when every row is graded.
+
+When you choose **Compare with** an earlier run, a score badge shows how many rows got worse (▾) or better (▴) than that run. To test the next version, select **Compare a new version** on a finished experiment: it keeps the same answer source and compares with this run.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
+    Test a grader on the dataset's rows.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Keep watching once the new version ships.
+  </Card>
+</CardGroup>

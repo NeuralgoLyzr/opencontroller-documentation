@@ -12,9 +12,8 @@
   window.__ocUi = true;
 
   var TONES = [
-    ["/discover", "discover"], ["/govern/respond", "control"], ["/govern/control-actions", "control"],
-    ["/govern", "govern"], ["/runtime", "runtime"], ["/posture", "posture"], ["/monitor", "observe"],
-    ["/improve", "observe"], ["/connect", "runtime"], ["/assistant", "runtime"],
+    ["/discover", "discover"], ["/govern", "govern"], ["/secure", "runtime"], ["/posture", "posture"],
+    ["/monitor", "observe"], ["/integrations", "runtime"], ["/get-started/ask-ctrl", "runtime"],
   ];
   var METHODS = /^(GET|POST|PUT|PATCH|DELETE)\b/;
 

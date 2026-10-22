@@ -1,0 +1,93 @@
+---
+title: "Trace an agent and find its failures"
+description: "Make an Observability project for an agent, send it the agent's OpenTelemetry traces, and find what fails in Issues."
+sidebarTitle: "Trace an agent"
+tag: "Guide"
+icon: "waypoints"
+---
+
+<Note>
+**What you need**
+
+- **Admin** makes the project and its API key. **Viewer** reads traces, and **Operator** also reads what was asked and answered inside them.
+- The **Observability** module on, with a trace store connected in **Settings** > **Observability**. See [Modules](/administer/modules).
+- An agent whose code you can change, in Python or TypeScript, on a framework such as OpenAI's SDK, Anthropic's, LangChain or LlamaIndex. Claude Code needs no code: see [Check Claude Code with guardrails](/secure/guardrails/use-anywhere).
+- A service account with the **Operator** role, or a custom role holding `observability:send`. See [Service accounts and keys](/administer/service-accounts).
+</Note>
+
+A **project** holds one agent's traces, or one app's. The agent sends them with the OpenTelemetry SDK and an open-source instrumentor: there is no OpenController library to install. Each trace is one run of the agent.
+
+## Step 1: Make a project
+
+In **Monitor** > **Observability** > **Projects**, select **New project**.
+
+- **Agent** (optional) links the project to an agent in AI Inventory. Its traces then count for that agent, in cost and on its page.
+- **Team** (optional): its members read the project's traces, even with no role in the organization.
+
+Select **Create**. The project's **Setup** page opens.
+
+## Step 2: Follow Setup
+
+1. Choose the conventions (**OpenInference**, which covers the most frameworks, or **OpenTelemetry GenAI**), then the framework.
+2. Choose the service account and select **Create key**. Copy the key now: it is shown once.
+3. Copy the variables into the agent's environment:
+
+   ```bash
+   OTEL_EXPORTER_OTLP_ENDPOINT=https://console.example.com/otlp
+   OTEL_EXPORTER_OTLP_HEADERS=x-api-key=<the service account's key>,x-project=prj_f61db6e6bb29
+   OTEL_SERVICE_NAME=support-bot
+   ```
+
+4. Install the packages Setup lists, and add its start-up code before the agent runs. For an agent on OpenAI's Python SDK:
+
+   ```python
+   from opentelemetry import trace
+   from opentelemetry.sdk.resources import Resource
+   from opentelemetry.sdk.trace import TracerProvider
+   from opentelemetry.sdk.trace.export import BatchSpanProcessor
+   from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+   from openinference.instrumentation.openai import OpenAIInstrumentor
+
+   # Where to send, the API key and the project come from the environment above.
+   provider = TracerProvider(resource=Resource.create())
+   provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+   trace.set_tracer_provider(provider)
+
+   OpenAIInstrumentor().instrument(tracer_provider=provider)
+   ```
+
+5. Run the agent. The page says **Traces are arriving** when the first one lands. To check the way there without any code, select **Send a test trace**.
+
+<Warning>
+The intake takes OTLP over HTTP only, as protobuf or JSON. An exporter set to gRPC, as some helper packages are by default, sends nothing: switch it to HTTP.
+</Warning>
+
+For every framework and both conventions, see [Send traces](/monitor/send-traces). If the agent calls its models through the LLM gateway, the gateway's spans join the agent's own run, so one trace shows both.
+
+## Step 3: Read a run
+
+Select **Traces** in the project's menu. Each row is one run; open one to see every step in order and where the time went. **Sessions** groups runs into conversations. What was asked and answered is shown to **Operators** and above.
+
+## Step 4: Find what fails
+
+Select **Issues**. Each step that fails with one error is one issue, however many runs it broke. Only the deepest failure counts: the steps around it failed because it did.
+
+{/* SCREENSHOT: trace-an-agent-issues | reuse | Reuses /images/observability/obs-issues.png. */}
+<Frame caption="A project's failures, grouped in Issues">
+  <img src="/images/observability/obs-issues.png" alt="The Issues page of a project, listing failing steps with their error, failure count, runs affected and when they were seen." />
+</Frame>
+
+## Step 5: See what it cost
+
+Select **Cost**: what the project's model calls cost, and what failed calls wasted. See [Cost](/monitor/cost).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Score answers with an evaluator" icon="scale" href="/monitor/evals/guide-first-evaluator">
+    Have a model judge the agent's answers in these traces.
+  </Card>
+  <Card title="Send traces" icon="activity" href="/monitor/send-traces">
+    Every framework, both conventions, and spans by hand.
+  </Card>
+</CardGroup>

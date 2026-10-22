@@ -1,0 +1,52 @@
+---
+title: "Ask Ctrl"
+description: "Ctrl is the console's assistant: ask it about your agents, clouds, scans, findings and traces in plain language."
+sidebarTitle: "Ask Ctrl"
+icon: "message-circle-question-mark"
+---
+
+Ctrl looks things up live, shows each lookup as it goes, and can open the page that shows the answer.
+
+{/* SCREENSHOT: ask-hero | full | The Overview page with the Ctrl panel docked on the right. The panel's title is the question "Which agents can reach the internet directly?", it shows two lookup steps (▸ lines) and an answer listing the agents with a PUBLIC network mode. */}
+<Frame caption="Ctrl, docked beside the Overview">
+  <img src="/images/get-started/ask-hero.png" alt="The Overview page with the Ctrl panel open on the right, showing the question Which agents can reach the internet directly, its lookup steps and an answer listing eight agents." />
+</Frame>
+
+## Open Ctrl
+
+Select **Ask Ctrl** in the sidebar, or press **⌘J** (**Ctrl+J** on Windows and Linux) from any page. Ctrl stays open on the right as you move between pages.
+
+## Ask a question
+
+Type in the box at the bottom and press **Enter**. With an empty conversation, Ctrl suggests questions that fit the page you are on. For example:
+
+- "Summarize my findings"
+- "Which shadow agents are the riskiest?"
+- "Why did the last scan fail?"
+- In **Observability**: "Why did this run fail?" or "Where did the cost go?"
+
+## Run what Ctrl proposes
+
+Ctrl can propose a **scan** or a **verification** of an integration. It shows as a card with **Dismiss** and **Run**, and nothing happens until you select **Run** (**Operator** role or above).
+
+{/* SCREENSHOT: ask-action | crop | The Ctrl panel after asking "Scan AWS": the lookup steps (connections, proposed: Scan AWS), the answer, and the Scan AWS card after Run, reading Scan started. Crop to the panel. */}
+<img className="w-[420px] mx-auto rounded-xl border border-gray-200 dark:border-gray-700" src="/images/get-started/ask-action.png" alt="The Ctrl panel after asking Scan AWS: the answer names the AWS connection it will scan, and the Scan AWS card below reads Scan started." />
+
+After **Run**, the card reads **Scan started.** and the scan appears under Integrations.
+
+## Good to know
+
+- **It answers from what you may see.** A **Viewer** gets answers without the prompts and answers inside traces; an **Operator** and above get them too.
+- **Conversations stay in this browser tab.** Select **New conversation** to start again.
+- **"The assistant is off."** means no model key is set. An **Admin** adds the Anthropic API key in **Settings** > **Secrets**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Review findings" icon="triangle-alert" href="/posture/findings">
+    Read the findings Ctrl summarizes.
+  </Card>
+  <Card title="Trace an agent and find its failures" icon="chart-line" href="/monitor/guide-trace-an-agent">
+    Send traces, then ask Ctrl why a run failed.
+  </Card>
+</CardGroup>

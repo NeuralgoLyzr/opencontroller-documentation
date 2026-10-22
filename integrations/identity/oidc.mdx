@@ -1,0 +1,87 @@
+---
+title: "Any OpenID Connect provider"
+description: "Let people sign in to the OpenController console through any OpenID Connect provider, such as Ping, OneLogin, Auth0, JumpCloud or Duo."
+sidebarTitle: "OIDC"
+icon: "log-in"
+---
+
+Any provider that publishes a discovery document (`<issuer>/.well-known/openid-configuration`) works, if its **access
+tokens** meet the requirements below. The console signs in with Authorization Code and PKCE, and sends the access token
+to OpenController, which checks its signature against the issuer's published keys, its issuer, expiry and audience.
+
+Changing single sign-on needs the **Owner** role. Below, `<console address>` is the address under **Settings** >
+**Authentication** > **Console address**.
+
+## What the access token must carry
+
+| Requirement | Why |
+|---|---|
+| A **signed JWT**, not an opaque token | OpenController verifies it itself; an opaque or encrypted token is refused. |
+| `aud` naming OpenController's audience | Checked against **Audience** (or the client ID). |
+| The person's email in `preferred_username`, `email` or `upn` | Checked against your email domains. An `email` with `email_verified` false is ignored. |
+| `groups` and, if you use them, `roles` | Mapped to roles. |
+
+The console asks for exactly `openid profile email offline_access`: the **Single sign-on** form cannot add an API scope
+or an `audience` parameter. The provider must issue a JWT for your API without one, for example through a default
+audience (in Auth0, the tenant's **Default Audience**). Otherwise, whoever runs OpenController sets the scopes in its
+configuration (`DISCOVERY_OIDC_SCOPES`).
+
+## Connect the provider
+
+<Steps>
+  <Step title="Create a public client at the provider">
+    Create an application for the console:
+
+    - A **public** client (Authorization Code with PKCE, and Refresh Token), with no client secret.
+    - Redirect URI `<console address>/auth/callback`, and sign-out redirect `<console address>/signed-out`.
+    - An API (or resource) for OpenController, so access tokens carry an audience for it, and the claims above on the
+      access token.
+
+    Note the client ID, the audience and the **issuer**, exactly as the provider writes it in tokens (Auth0's ends in
+    `/`).
+  </Step>
+  <Step title="Connect it in OpenController">
+    Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **OpenID Connect**. Fill in:
+
+    | Field | What to enter |
+    |---|---|
+    | **Issuer** | `https://idp.example.com` (https), exactly as its tokens name it, with or without the trailing `/`. |
+    | **Client id** | The public client's ID. |
+    | **Audience** (optional) | What the provider puts in access tokens for this API. Empty means the client ID. |
+    | **Email domains** | The domains your people sign in with, for example `example.com`. Anyone from another domain is refused. |
+
+    Select **Connect OpenID Connect**. The page shows **IdP Connected**, and **Redirect URI at the provider**: check
+    the provider has exactly this address. Then sign in from a private window.
+  </Step>
+</Steps>
+
+## Map groups and roles
+
+Go to **Settings** > **Role mappings** (needs **Owner**). Under **Granted to these groups or roles**, enter the
+`groups` or `roles` values. A person in several mapped groups gets the highest role. Set **Anyone signed in whom nothing
+maps gets** to a default role (not **Owner**), or **no access**. Select **Save**.
+
+<Warning>
+A `roles` value that is a role name (`viewer`, `operator`, `admin`, `owner`, a custom role, or the same with
+`opencontroller.` in front) grants that role with no mapping. Whoever controls that claim at the provider can make
+someone an **Owner**.
+</Warning>
+
+## Provision people with SCIM (optional)
+
+For providers that push SCIM 2.0: copy the **SCIM base URL (Tenant URL)** (`<console address>/scim/v2`) under **3.
+Provisioning (SCIM 2.0, optional)**, select **Generate token**, and give both to the provider. Only the token's hash is
+kept. Once a token exists, only provisioned, active people can sign in, so provision before you generate it.
+
+No client secret and no token is stored.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+  <Card title="Any SAML 2.0 provider" icon="file-lock" href="/integrations/identity/saml">
+    Use SAML instead.
+  </Card>
+</CardGroup>

@@ -1,0 +1,54 @@
+---
+title: "LLM Gateway overview"
+description: "The LLM Gateway section of the console: how a call is secured, the overview totals, providers and MCP servers, keys closest to budget, and the connection."
+sidebarTitle: "Gateway overview"
+icon: "brain-circuit"
+---
+
+<Note>Needs the **LLM Gateway** module. See [Set up the LLM gateway](/secure/set-up-gateway).</Note>
+
+The LLM gateway (Rekori) sits in front of the models your agents call. Every call goes through it, so you can control which models an agent may reach, cap what it spends, and check prompts and answers.
+
+{/* SCREENSHOT: gw-overview | crop | LLM Gateway > Overview, last 24 hours. */}
+<Frame caption="LLM Gateway > Overview">
+  <img src="/images/llm-gateway/gw-overview.png" alt="The gateway Overview with calls, spend, providers, MCP servers and the keys closest to their budget." />
+</Frame>
+
+## How a call is secured
+
+| Part | What it does |
+|---|---|
+| **LLM gateway** | Sits in front of the model providers. Apps call it instead of the provider, and it holds the providers' keys. |
+| **Virtual key** | Identifies the app. It says which providers and models the app may call, how much it may spend, and how fast. |
+| **Guardrail** | A set of checks for prompts and answers: personal data, secrets, prompt injection, unsafe content. A content rule in the gateway runs it on calls, to block or redact. |
+| **Identity provider** | Names the user. When a virtual key requires it, each caller also sends a token from your identity provider, such as Okta or Entra ID. |
+| **Violation** | A block or redaction a content rule made. **Guardrail Violations** shows who tripped them, and how often. |
+
+## The overview
+
+- **Spend** shows only when the gateway reports cost over time.
+- **Closest to budget** lists up to five keys that have spent the largest share of their budget. The bar turns amber at 70% and red at 90%.
+- OpenController lists calls (who, which model, how long, what cost). The prompts and answers stay in the gateway.
+
+## Connection
+
+Until an Admin connects the gateway, every gateway page shows **No LLM gateway connected**. To connect or change it, select **Connection** at the foot of the gateway menu, which opens **Settings** > **LLM Gateway**. See [Set up the LLM gateway](/secure/set-up-gateway).
+
+The gateway's credential stays on the server, in the secrets manager; the browser never holds it. Every change you make through these pages is checked against your role and recorded with your name.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read the overview, virtual keys (values masked), teams, customers and logs. |
+| **Operator** | Also change teams, customers, routing and content rules. |
+| **Admin** | Also manage virtual keys, providers and MCP servers, and set the **Connection**. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Give apps virtual keys" icon="key" href="/secure/virtual-keys">
+    Give an agent its own key, with access, a budget and a rate limit.
+  </Card>
+</CardGroup>

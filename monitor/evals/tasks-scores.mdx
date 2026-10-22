@@ -1,0 +1,60 @@
+---
+title: "Run tasks and read scores"
+description: "Run an evaluator over a trace store as a task, follow it as it judges, and read every score it gave."
+sidebarTitle: "Tasks and scores"
+icon: "gauge"
+---
+
+<Note>
+**Before you start:** a saved evaluator that reads a trace store's project (see [Make an evaluator](/monitor/evals/evaluators)), and the **Operator** role or above.
+</Note>
+
+## Start a task
+
+A task is made from an evaluator. Open it in **Evals** > **Evaluators**, set **Task configuration**, then select **Create and run** (or **Save and run**).
+
+- **Name**: left empty, it is `<evaluator> on <trace store>`.
+- **Sampling rate (%)**: the share of matching records the judge reads. Each one judged costs a model call.
+- **Run continuously** judges each new record as it arrives. **One-time backfill** also judges the records already recorded, once, **From** a time back (and **To** a time, when not continuous). Turn on either, or both.
+- **Token budget** (under **Advanced**): the task stops once judging has spent this many tokens. Empty means **No limit**.
+
+{/* SCREENSHOT: evals-tasks-list | crop | The Tasks table: one task running (Continuously · 20%), one backfill done (Backfill · 100%), one stopped, with counts and the Stop, Start and Delete buttons. */}
+<Frame caption="Tasks and their status">
+  <img src="/images/evals/evals-tasks-list.png" alt="The Tasks table with running, done and stopped tasks and their counts." />
+</Frame>
+
+Deleting a task keeps its results.
+
+## Follow a task
+
+A running task's page refreshes every few seconds, and results appear as each batch finishes. **Errors** also counts records passed over for lacking a mapped field.
+
+{/* SCREENSHOT: evals-task | crop | A running task's page: the four figures, the facts, the Verdicts bar with relevant and irrelevant filters, and the first rows of Results with their reasoning. */}
+<Frame caption="A task's figures, verdicts and results">
+  <img src="/images/evals/evals-task.png" alt="A task's page with its counts, the verdicts bar and the first results with the judge's reasoning." />
+</Frame>
+
+## Read every score
+
+**Evals** > **Scores** lists every judgment your tasks and monitors made, newest first. Its filters are kept in the page's address: copy it to share the same view.
+
+{/* SCREENSHOT: evals-scores | crop | Scores filtered to "support-bot answer relevance" and the label irrelevant, with the Score panel open on the right. */}
+<Frame caption="Scores, filtered, with one score open">
+  <img src="/images/evals/evals-scores.png" alt="The Scores grid filtered to one evaluator and label, with one score open beside it." />
+</Frame>
+
+## Who can use it
+
+- **Viewer** reads tasks and scores.
+- **Operator** also starts and stops tasks.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Compare each run with the ones before, and get alerts.
+  </Card>
+  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
+    Adjust the judge behind a task.
+  </Card>
+</CardGroup>

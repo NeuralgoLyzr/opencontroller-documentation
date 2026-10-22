@@ -1,0 +1,80 @@
+---
+title: "Single sign-on and role mappings"
+description: "Connect your identity provider over OpenID Connect or SAML 2.0, so people sign in with their work account, and map their groups to roles."
+sidebarTitle: "Single sign-on"
+icon: "log-in"
+---
+
+<Note>Keep one local **Owner** account with an email and password. If sign-in through the provider fails, you can still get in.</Note>
+
+Each identity provider has a setup guide for its own side:
+
+| Identity provider | Signs in with | Guide |
+|---|---|---|
+| Okta | OpenID Connect or SAML 2.0 | [Okta](/integrations/identity/okta) |
+| Microsoft Entra ID | OpenID Connect or SAML 2.0 | [Microsoft Entra ID](/integrations/identity/entra) |
+| Google Workspace | OpenID Connect or SAML 2.0 | [Google Workspace](/integrations/identity/google) |
+| Keycloak | OpenID Connect or SAML 2.0 | [Keycloak](/integrations/identity/keycloak) |
+| OpenID Connect (any provider) | OpenID Connect | [Any OpenID Connect provider](/integrations/identity/oidc) |
+| SAML 2.0 (any provider) | SAML 2.0 | [Any SAML 2.0 provider](/integrations/identity/saml) |
+
+## Connect your identity provider
+
+For OpenID Connect, create a public, single-page application at your provider (Authorization Code with PKCE) with the redirect URI `https://console.example.com/auth/callback`. There is no client secret. The console's address is under **Settings** > **Authentication** > **Console address**.
+
+- **Audience** (optional): what the provider puts in access tokens for the API. Empty means the client id.
+- **Email domains**: anyone the provider signs in with another domain is refused.
+
+{/* SCREENSHOT: sso-connect-form | crop | Settings > Single sign-on before connecting: provider choices, Email domains, Connect identity provider. */}
+<Frame caption="Settings > Single sign-on, not connected">
+  <img src="/images/settings/sso-connect-form.png" alt="The Single sign-on section with the identity provider choices and the email domains field." />
+</Frame>
+
+When you select **Connect** *provider*, the provider is read at once and sign-in works right away.
+
+### With SAML 2.0
+
+OpenController acts as the service provider. After you connect, copy the values the page shows into your provider. Send the email address as the NameID, and the user's groups as a `groups` claim. Then paste the **Identity provider metadata URL** (Entra ID: *App Federation Metadata Url*; Okta: *Metadata URL*) and select **Save metadata**.
+
+For a named provider such as Okta, OpenController can work out the metadata URL from the fields you gave, so it may already be filled. {/* TODO verify: after connecting Okta (or Entra, Google, Keycloak) over SAML, box 2 shows the derived metadata URL and the badge is IdP connected without Save metadata. */} The **SAML 2.0** provider choice works with any identity provider, given its metadata URL.
+
+### Provision people with SCIM (optional)
+
+With SCIM, your identity provider decides who exists and which groups they are in. Only provisioned, active people can then sign in through single sign-on. Deactivating someone at the provider ends their access on their next request.
+
+Paste **SCIM base URL (Tenant URL)**, for example `https://console.example.com/scim/v2`, and the token from **Generate token** into your provider's provisioning settings.
+
+<Warning>The SCIM token is shown once. Only its hash is kept. **Replace token** makes a new one, and the old token stops working.</Warning>
+
+## Map groups to roles
+
+**Role mappings** decide each person's role from the groups and roles your identity provider sends. The highest match wins. Name groups by id or by display name. Custom roles can be mapped too.
+
+{/* SCREENSHOT: sso-role-mappings | crop | Settings > Role mappings: Owner row empty, Admin "oc-admins", Operator "oc-operators, platform-eng", Viewer "oc-viewers"; below, "Anyone signed in whom nothing maps gets" set to no access; Save and Discard buttons visible. Crop to the section. */}
+<Frame caption="Role mappings">
+  <img src="/images/settings/sso-role-mappings.png" alt="The SSO role mappings table with groups typed for each role, and the default role below it." />
+</Frame>
+
+- **Anyone signed in whom nothing maps gets**: set it to **no access** to refuse people outside the mapped groups. It can never be **Owner**.
+- A role value that is itself a role name, such as `admin` or `opencontroller.admin`, grants that role without being listed.
+
+## Change or disconnect
+
+- **Change provider** keeps the email domains, the SAML signing key and the SCIM token. People signed in through the old provider are signed out on their next request, so do this as a local administrator.
+- **Disconnect** turns single sign-on off and forgets the provider and the SCIM token. Members with a password, and service accounts, are not affected.
+
+## Who can use it
+
+- **Admin** reads the single sign-on settings and role mappings.
+- **Owner** connects, changes and disconnects single sign-on, and changes role mappings.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set up single sign-on with Okta" icon="route" href="/administer/guide-sso-okta">
+    The full walkthrough, from the Okta app to the first sign-in.
+  </Card>
+  <Card title="Members, roles and teams" icon="users" href="/administer/members-roles-teams#teams-group-people-and-the-assets-they-own">
+    Link your identity provider's groups to teams and the assets they own.
+  </Card>
+</CardGroup>

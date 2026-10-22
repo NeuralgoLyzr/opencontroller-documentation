@@ -1,0 +1,74 @@
+---
+title: "Score answers with evaluators"
+description: "Save a judge that scores your agents' steps, runs or conversations, test it on real records, and run it."
+sidebarTitle: "Evaluators"
+icon: "scan-text"
+---
+
+<Note>
+**Before you start:** the **Evals** module with the evals service connected; a model connection for a judge that uses a model; a trace store connection or a dataset for the records to judge (see [Connect trace stores and models](/monitor/evals/get-started#connect-trace-stores-and-models)); and the **Operator** role or above.
+</Note>
+
+<Steps>
+  <Step title="Pick a template, or start from scratch">
+    Go to **Monitor** > **Evals** > **Evaluators** and select **New evaluator**. A template is a ready judge to adjust. **Reference** templates check against a golden dataset's expected answer. **Code checks** use no model and cost nothing.
+
+    {/* SCREENSHOT: evals-evaluators-catalog | crop | The New evaluator sheet: template groups on the left; search, Custom eval cards and Response quality cards on the right. */}
+    <Frame caption="Choose a template or start from scratch">
+      <img src="/images/evals/evals-evaluators-catalog.png" alt="The New evaluator sheet with template groups on the left and template cards on the right." />
+    </Frame>
+
+    Under **Custom eval**, start a blank judge of one kind:
+
+    - **LLM-as-a-judge**: a model reads each record and picks one of your labels, each scored.
+    - **Multi-question judge**: several typed questions about one record, answered in a single call.
+    - **Code evaluator**: your own JavaScript scores each record. No model, no cost, the same answer every time. It shows only when code evaluators are switched on in the evals service.
+  </Step>
+  <Step title="Set up the judge">
+    - **Evaluator type**: changing it on a new draft starts over as the other kind; a saved evaluator keeps its kind.
+    - **Name**: results show under this name on spans and dataset rows.
+    - **Template**: the judge's prompt. Write `{input}`, `{output}` or any `{variable}` for what each record supplies.
+    - **A higher score is** **Better**, **Worse** or **Neither**: it decides how quality, regressions and thresholds read the scores.
+    - **Strict answers**: the model must answer with exactly one of your labels, through function calling. Turn it off for a model that cannot call tools.
+
+    A code evaluator reads each variable as `vars.name` and returns a score, `true` or `false`, a label, or `{ score, label, explanation }`. It runs alone, with no network or files, for at most 2 seconds a record.
+
+    {/* SCREENSHOT: evals-evaluator | crop | The answer_relevance evaluator: judge, model, template and the configuration steps. */}
+    <Frame caption="An evaluator">
+      <img src="/images/evals/evals-evaluator.png" alt="An LLM-as-a-judge evaluator with its judge, model, template and configuration steps." />
+    </Frame>
+  </Step>
+  <Step title="Choose what it reads">
+    Under **Configuration**, pick a data source: **Project** to grade your agents' live traces, or **Dataset** to grade a dataset's rows.
+
+    - The filter is a query, for example `"name" = 'chat gpt-4o' AND "status" != 'Error'`. Leave it empty for all records.
+    - Under **Map variables to data**, `{input}` and `{output}` start on the user's message and the reply where a record has them. A record with an empty mapped field is passed over, not judged: select **Only judge spans that have it** to filter those out.
+    - For a dataset, **Compare with your labels** is the column with the grade you would give each row.
+  </Step>
+  <Step title="Test it">
+    **Test on spans** (or traces, or sessions) grades up to ten matching records and keeps nothing. For a dataset, **Test on 20 rows** also says how often the grader agrees with your labels, and where it does not.
+  </Step>
+  <Step title="Save it, or save it and run it">
+    **Create evaluator** saves it. **Create and run** also starts a task on the records you chose; under **Advanced**, a **Token budget** stops the task once judging has spent that many tokens. See [Run tasks and read scores](/monitor/evals/tasks-scores). With a dataset as the source, select **Create and run experiment** instead.
+  </Step>
+</Steps>
+
+## Saved evaluators
+
+{/* SCREENSHOT: evals-evaluators-list | crop | The Evaluators table with three rows: "support-bot answer relevance", "billing-agent hallucination" and "Valid JSON" (Code evaluator, Model None). */}
+<Frame caption="Saved evaluators">
+  <img src="/images/evals/evals-evaluators-list.png" alt="The Evaluators table listing three saved evaluators with their kind, model and scores over seven days." />
+</Frame>
+
+When the template an evaluator came from has changed since, **Update from template** takes the template's judge again and keeps the name, model and set-up.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run tasks and read scores" icon="list-checks" href="/monitor/evals/tasks-scores">
+    Follow a task and read every verdict.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Run evaluators on a schedule and get alerts.
+  </Card>
+</CardGroup>

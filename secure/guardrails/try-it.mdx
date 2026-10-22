@@ -1,0 +1,85 @@
+---
+title: "Try a guardrail on text"
+description: "Run a prompt or an answer through a guardrail and see what each check does, before you use it."
+sidebarTitle: "Test guardrails"
+icon: "flask-conical"
+---
+
+<Note>
+  Before you start:
+  - The **Guardrails** module is on. See [Modules](/administer/modules).
+  - You have the **Operator** role or above. A **Viewer** sees the Try it panel, with the note "Trying a guardrail needs the operator role."
+  - You have a guardrail, or you are making one. See [Make and edit a guardrail](/secure/guardrails/create).
+</Note>
+
+Try it runs on the settings as they are on screen, saved or not. Change a check, and the try runs again. The text you type is not stored.
+
+<Steps>
+  <Step title="Open Try it">
+    Go to **Runtime** > **Guardrails** and select **Try it** on the guardrail's row. The guardrail opens with **Try it** on the right.
+
+    Try it is also on the right of the editor while you make or change a guardrail.
+  </Step>
+  <Step title="Choose Prompt or Answer">
+    At the top of the panel, choose how the text is checked:
+
+    - **Prompt**: text sent to a model. Every check that reads prompts runs.
+    - **Answer**: a model's answer. Only the checks that also read answers run. The others are dimmed on the path.
+  </Step>
+  <Step title="Type the text, or pick a sample">
+    Type in the box, up to 8,192 characters. Or select a sample under **Samples**. Samples show for the checks that are on: **Injection**, **Personal data**, **Secret**, **Toxic** and **Off topic**.
+
+    The try runs a moment after you stop typing ("Runs as you type and change settings"). To run it again, select **Run**, or press Ctrl+Enter (⌘+Enter on a Mac).
+  </Step>
+  <Step title="Read the result">
+    The panel shows one of three results, with the side it checked ("as a prompt" or "as an answer"):
+
+    | Result | What it means |
+    |---|---|
+    | **Blocked** | A check stopped the text. The reason is under it. |
+    | **Passed with changes** | The text goes on, changed. **What goes on** shows it, with each replaced or masked part marked. |
+    | **Passed** | Nothing blocked or changed the text. A check that only flags it, such as OPA in audit mode, shows amber on the path. |
+  </Step>
+  <Step title="See what each check did">
+    After a try, each station on **The path text takes** shows what its check did. Hover a station to read it, or select it to open the check.
+
+    | Station | Meaning |
+    |---|---|
+    | Green ring and tick | **passed** |
+    | Amber ring | **changed the text** (redacted or masked), **flagged the text, and let it through** (OPA in audit mode), or **could not run** |
+    | Red | **stopped the text**. The line breaks after it. |
+    | Dashed | **not reached: the text was stopped first** |
+
+    The checks on one side run side by side, so they light together. When OPA denies the text, the reason shows under the line with the policy's name, for example "Denied by No refunds (Refunds are handled by a person)".
+  </Step>
+</Steps>
+
+## Check it worked
+
+- A result shows: **Blocked**, **Passed with changes** or **Passed**.
+- The stations on the path are marked, and the line under the path says "The text was stopped" or "The text went through", on the prompt or answer side.
+- Change a setting, for example **Sensitivity**, and the result follows.
+
+## What Try it does not test
+
+- **Tool call rules (Cedar).** Try it sends text, which never reaches a tool call. These rules run when a model asks for a tool. Their station stands after the model and never lights.
+- **The LLM gateway's content rule.** Try it runs the guardrail itself. Whether a content rule blocks or redacts is the rule's own setting. See [In the LLM gateway](/secure/guardrails/list#in-the-llm-gateway).
+
+To try a saved guardrail from code, call `POST /v1/guardrails/{id}/test` with `text` and `stage` (`prompt` or `answer`). To try settings that are not saved, call `POST /v1/guardrails/test` with `checks`, `text` and `stage`. Both need the **Operator** role.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Guardrail checks" icon="list-checks" href="/secure/guardrails/checks">
+    Tune a check that fires too often, or not enough.
+  </Card>
+  <Card title="Use guardrails in any app or Claude Code" icon="plug" href="/secure/guardrails/use-anywhere">
+    Put the guardrail in front of an app or Claude Code.
+  </Card>
+  <Card title="Check tool calls with OPA and Cedar" icon="scale" href="/secure/guardrails/opa-cedar">
+    Write policies, and rules for tool calls.
+  </Card>
+  <Card title="Guardrails" icon="shield-check" href="/secure/guardrails/list">
+    The path, the list, and the LLM gateway.
+  </Card>
+</CardGroup>

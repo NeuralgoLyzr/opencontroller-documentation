@@ -1,0 +1,239 @@
+---
+title: "Google Cloud"
+description: "Connect a Google Cloud project, folder or organization so OpenController finds its Agent Platform and CX Agent Studio agents."
+icon: "cloud"
+---
+
+OpenController reads Google Cloud as a **read-only service account** in your organization. One integration is one
+project, or every project under a folder or organization. By default it signs in through **Workload Identity
+Federation**, so no secret is stored: your federation provider trusts OpenController's own AWS identity.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** agents in Gemini Enterprise Agent Platform (formerly Vertex AI): Agent
+  Runtime agents, declarative ADK agents and Managed Agents; CX Agent Studio apps with their agent trees; Agent Registry
+  agents, MCP servers and endpoints; and what agents use: models, tools, MCP servers, secret names, memory, gateways and
+  guardrails.
+- **[Shadow AI](/discover/shadow-ai):** who may call each agent (its IAM policy), and agents shared with a whole domain or
+  exposed on a public channel.
+- **[Spend](/discover/people-and-spend):** the daily cost of each AI service, from your Cloud Billing export to BigQuery.
+- **Control (optional):** share Agent Runtime agents, end organization-wide access, turn off a CX Agent Studio app's
+  public web access, and publish.
+- **[Cloud guardrails](/secure/guardrails/cloud-providers):** link a Google Model Armor credential to this connection,
+  from the **Guardrails:** line on its row. It signs in with a service account key of its own.
+
+Discovery never runs an agent, and never reads sessions, conversation events, memories or secret values. An API that is
+not enabled in a project (`aiplatform`, `agentregistry`, `ces`, `cloudasset`) reads as nothing to discover, not as a
+failure.
+
+## Choose how OpenController signs in
+
+| Method | What you give OpenController | Stored secret | Use it when |
+|---|---|---|---|
+| **Workload Identity Federation (recommended)** | The provider's resource name with the service account's email, or the credential configuration Google writes | None | OpenController runs with an AWS identity (the hosted service, or your own deployment on AWS). |
+| **Service account key (not recommended)** | A JSON key file of the service account | The key, in your secrets manager | A proof of concept, or an organization that cannot set up federation. |
+| **This opencontroller's own Google credentials** | Only the service account's email | None | Local development, or OpenController running on Google Cloud. |
+
+Every method acts as the same read-only service account. The steps below use federation.
+
+## Connect Google Cloud
+
+<Steps>
+  <Step title="Create the role and the service account">
+    Run these as an administrator, in the project that will hold the service account (here `ai-security`). For one
+    project, use `--project` and `gcloud projects add-iam-policy-binding` instead of the organization; for a folder, create
+    the role in its organization and bind it with `gcloud resource-manager folders add-iam-policy-binding`.
+
+    ```bash
+    ORG=123456789012                    # the organization (or use a folder or project)
+    PROJECT=ai-security                 # where the service account lives
+    SA=opencontroller-discovery@$PROJECT.iam.gserviceaccount.com
+
+    gcloud iam roles create opencontrollerDiscovery --organization $ORG \
+      --title "opencontroller discovery" --stage GA --permissions \
+    resourcemanager.projects.get,cloudasset.assets.searchAllResources,\
+    aiplatform.reasoningEngines.list,aiplatform.reasoningEngines.get,aiplatform.reasoningEngines.getIamPolicy,\
+    aiplatform.sandboxEnvironments.list,aiplatform.sandboxEnvironments.get,aiplatform.locations.list,aiplatform.locations.get,\
+    aiplatform.agents.list,aiplatform.agents.get,\
+    agentregistry.agents.list,agentregistry.agents.get,agentregistry.mcpServers.list,agentregistry.mcpServers.get,\
+    agentregistry.endpoints.list,agentregistry.endpoints.get,agentregistry.bindings.list,agentregistry.bindings.get,\
+    agentregistry.locations.list,agentregistry.locations.get,\
+    ces.apps.list,ces.apps.get,ces.agents.list,ces.agents.get,ces.tools.list,ces.tools.get,ces.toolsets.list,ces.toolsets.get,\
+    ces.guardrails.list,ces.guardrails.get,ces.deployments.list,ces.deployments.get,ces.locations.list,ces.locations.get
+
+    gcloud iam service-accounts create opencontroller-discovery --project $PROJECT --display-name "opencontroller discovery"
+    gcloud organizations add-iam-policy-binding $ORG --member "serviceAccount:$SA" \
+      --role "organizations/$ORG/roles/opencontrollerDiscovery" --condition=None
+    ```
+
+    For spend, grant the BigQuery roles on the billing export only. See [Permissions it uses](#permissions-it-uses).
+  </Step>
+  <Step title="Let OpenController act as the service account">
+    You need OpenController's AWS account and role. Go to **Integrations** > **Connect** > **AWS account** and read
+    **Trusts**: `arn:aws:iam::<AWS account>:role/<AWS role>`, then close the dialog; opening it stores nothing. Use only
+    the role's name after the last `/`. This option shows while AWS discovery is on.
+
+    Then create the pool and provider, and let the federated identity act as the service account:
+
+    ```bash
+    AWS_ACCOUNT=111122223333            # from Trusts
+    AWS_ROLE=<AWS role>                 # from Trusts, the name after the last /
+    NUMBER=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+
+    gcloud iam workload-identity-pools create opencontroller --project $PROJECT --location global
+    gcloud iam workload-identity-pools providers create-aws opencontroller-aws --project $PROJECT --location global \
+      --workload-identity-pool opencontroller --account-id $AWS_ACCOUNT \
+      --attribute-mapping "google.subject=assertion.arn.extract('assumed-role/{role_and_session}'),attribute.aws_role=assertion.arn.contains('assumed-role') ? assertion.arn.extract('{account_arn}assumed-role/') + 'assumed-role/' + assertion.arn.extract('assumed-role/{role_name}/') : assertion.arn" \
+      --attribute-condition "attribute.aws_role == 'arn:aws:sts::$AWS_ACCOUNT:assumed-role/$AWS_ROLE'"
+    gcloud iam service-accounts add-iam-policy-binding $SA --project $PROJECT --role roles/iam.workloadIdentityUser \
+      --member "principalSet://iam.googleapis.com/projects/$NUMBER/locations/global/workloadIdentityPools/opencontroller/attribute.aws_role/arn:aws:sts::$AWS_ACCOUNT:assumed-role/$AWS_ROLE"
+    ```
+
+    The provider maps `google.subject` to the role and session, not the whole ARN: with EKS Pod Identity, the session
+    name makes the whole ARN longer than the 127 bytes Google allows.
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Google Cloud project or organization**. Give a **Name**, the **Scope**
+    (`organizations/123456789012`, `folders/<number>` or `projects/<id>`), and under **How opencontroller signs in**
+    choose **Workload Identity Federation (recommended)**. In **Credential configuration or provider**, enter the
+    provider's resource name,
+    `projects/<number>/locations/global/workloadIdentityPools/opencontroller/providers/opencontroller-aws`, and the
+    **Service account (with a provider name)**.
+
+    **Locations (optional)** limits the regions Agent Runtime is read in. Empty reads every region it serves; for a folder
+    or organization, the regions Cloud Asset Inventory finds agents in.
+
+    Select **Connect**. The **Let opencontroller read** dialog opens with the role, service account and trust commands
+    filled in for this connection.
+
+    <Tabs>
+      <Tab title="With a key instead">
+        Choose **Service account key (not recommended)** and paste a key made with
+        `gcloud iam service-accounts keys create opencontroller-key.json --iam-account $SA --project $PROJECT`. Many
+        organizations block key creation with the `iam.disableServiceAccountKeyCreation` policy, which Google enforces by
+        default in new organizations. The key is kept in your secrets manager and never shown again.
+      </Tab>
+      <Tab title="With OpenController's own Google credentials">
+        Choose **This opencontroller's own Google credentials** and enter the **Service account** email. OpenController's
+        own Google identity needs `roles/iam.serviceAccountTokenCreator` on that service account.
+      </Tab>
+    </Tabs>
+
+    A credential configuration whose source is a file or a program, or that is not for AWS or names no service account,
+    is refused. From a valid one, OpenController keeps only the provider and the service account.
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**. OpenController acts as the service account, lists the projects in scope, and tries
+    each surface on the **first project** only, so a scan can still be refused in another project where the role is not
+    granted; that project's resource family fails alone. The **Access** badge reads **Verified**, the number refused,
+    **Unreachable** (sign-in or scope failed) or **Not verified**. Scans run every 5 minutes by default.
+  </Step>
+</Steps>
+
+## Turn on control (optional)
+
+Control uses a second service account, the **control service account**, so the discovery account stays read-only.
+Disabling it stops every change and leaves discovery running. Control is on by default: if the row shows no
+**Control: off** / **Turn on**, your OpenController operator has turned off control of Google Cloud (`control.gcp`)
+for this deployment.
+
+1. The **Let opencontroller read** dialog (the **Setup** icon on the row) has a **Control (optional)** part with the
+   commands: the control role `opencontrollerControl`, the agent user role `opencontrollerAgentUser`, and the control
+   account holding the control role on the scope.
+2. Let OpenController act as the control account, the same way as the read account.
+3. On the row, select **Turn on** next to **Control: off**, choose **A service account of its own (recommended)**, fill in
+   the account and how it signs in, then select **Store and verify**. Verify then also runs **Control**.
+
+For a folder scope, also enter `organizations/<ORG>/roles/opencontrollerAgentUser` under the agent user role in the
+**Setup** dialog and select **Save role**; without it, sharing an agent to use it is refused.
+
+| Agent | Action | What it does in Google Cloud |
+|---|---|---|
+| Agent Runtime | **Share**, can use | Binds `opencontrollerAgentUser` on the agent's own IAM policy. |
+| Agent Runtime | **Share**, can edit | Binds `roles/aiplatform.user` on the agent. |
+| Agent Runtime | **Remove** | Takes every role the principal holds on the agent. Roles held on the project stay. |
+| Agent Runtime | **End organization-wide access** | Removes `domain:` members (whole Google Workspace domains) from the agent's policy. |
+| CX Agent Studio app | **Turn off public web access** | Sets `enablePublicAccess` to false on every web widget deployment. |
+| CX Agent Studio app | **Publish** | Makes the draft a new version, and points pinned deployments at it. |
+
+<Note>
+Google Cloud has no switch that stops an agent, and access held through the project stays: anyone with a project role
+that includes `aiplatform.reasoningEngines.query` can call every agent in the project.
+</Note>
+
+## Permissions it uses
+
+Every role here is a custom role with only the permissions listed. Predefined viewer roles are not used:
+`roles/aiplatform.viewer` can also run agents and read conversations.
+
+### Discovery role: `opencontrollerDiscovery`
+
+Bound to the discovery service account on the scope. Read-only.
+
+| Surface | Permissions |
+|---|---|
+| Scope | `resourcemanager.projects.get`; `cloudasset.assets.searchAllResources`, which finds where agents run so a large estate is not read region by region |
+| Agent Runtime | `aiplatform.reasoningEngines.list`, `.get`, `.getIamPolicy`; `aiplatform.sandboxEnvironments.list`, `.get`; `aiplatform.locations.list`, `.get` |
+| Managed Agents | `aiplatform.agents.list`, `.get` |
+| Agent Registry | `list` and `get` on `agentregistry.agents`, `.mcpServers`, `.endpoints`, `.bindings`, `.locations` |
+| CX Agent Studio | `list` and `get` on `ces.apps`, `.agents`, `.tools`, `.toolsets`, `.guardrails`, `.deployments`, `.locations` |
+
+### Spend (optional)
+
+`bigquery.jobs.create` on the billing export's project and `bigquery.tables.getData` on its dataset, for example as
+`roles/bigquery.jobUser` and `roles/bigquery.dataViewer` granted there only. Finding the export also uses
+`cloudasset.assets.searchAllResources`, already in the discovery role.
+
+Turn on the export in **Billing** > **Billing export** > **BigQuery export**, with **Detailed usage cost** (or
+**Standard usage cost**) into a dataset under the connection's scope. OpenController finds the export itself. Reading it
+is a BigQuery query billed to you, so it runs once a day.
+
+### Control role: `opencontrollerControl` (optional)
+
+Bound to the control service account on the scope.
+
+| Permission | Why |
+|---|---|
+| `aiplatform.reasoningEngines.getIamPolicy`, `aiplatform.reasoningEngines.setIamPolicy` | Read and change who may call an Agent Runtime agent. |
+| `resourcemanager.projects.getIamPolicy` | Lets **Remove** report project roles that still grant access. |
+| `ces.deployments.list`, `ces.deployments.update` | Turn off a CX Agent Studio app's public web access. |
+| `ces.appVersions.create` | Publish a CX Agent Studio app. |
+
+### Agent user role: `opencontrollerAgentUser` (optional)
+
+Holds only `aiplatform.reasoningEngines.query`. **Share** (can use) binds it on an agent.
+
+### Signing in
+
+| Method | Role the service account needs |
+|---|---|
+| Workload Identity Federation | `roles/iam.workloadIdentityUser`, granted to the federated identity (`principalSet://…/attribute.aws_role/…`) |
+| This opencontroller's own Google credentials | `roles/iam.serviceAccountTokenCreator`, granted to OpenController's own identity |
+| A key | None beyond the key |
+
+The control service account signs in the same way, by its own method.
+
+### Model Armor
+
+A separate guardrail credential, not this integration's service account: a **Project ID**, a **Location** (default
+`us-central1`) and a **Service account key** whose account holds **Model Armor User** (and **Model Armor Viewer**, to
+list templates). See [Cloud guardrails](/secure/guardrails/cloud-providers).
+
+## Remove the integration
+
+Removing it stops scans; what was discovered stays until later scans retire it. Then remove the access in Google Cloud:
+the `roles/iam.workloadIdentityUser` binding, the `opencontroller` pool, the role binding on the scope, any keys, the
+service account and the `opencontrollerDiscovery` role. With control, also remove the control account's binding, the
+control account and `opencontrollerControl`. Deleting `opencontrollerAgentUser` ends every share made through it, so
+delete it last.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run and schedule scans" icon="refresh-cw" href="/discover/scans">
+    Run a scan now, or change how often scans run.
+  </Card>
+  <Card title="Use cloud guardrails" icon="shield" href="/secure/guardrails/cloud-providers">
+    Run Model Armor inside an OpenController guardrail.
+  </Card>
+</CardGroup>

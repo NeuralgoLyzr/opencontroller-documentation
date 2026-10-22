@@ -1,17 +1,11 @@
 ---
-title: "OpenController"
-description: "Every AI agent in every cloud, in one inventory, with the authority to govern, stop and watch them."
-mode: "wide"
+title: "What is OpenController"
+description: "OpenController finds every AI agent, model, tool and key across your clouds and SaaS tenants, and governs them: who owns each agent, what it may call, and what it did."
+sidebarTitle: "Introduction"
 icon: "book-open"
 ---
 
 import { Diagram } from '/snippets/diagrams.mdx'
-
-<div className="oc-actions">
-  <a className="oc-btn oc-btn-primary" href="/get-started/quickstart">Get started</a>
-  <a className="oc-btn" href="/connect/overview">Connect a cloud</a>
-  <span>Connect one cloud with a read credential and see your AI inventory in minutes. Nothing moves.</span>
-</div>
 
 <div className="oc-panel">
   <div className="oc-panel-head">
@@ -21,7 +15,7 @@ import { Diagram } from '/snippets/diagrams.mdx'
   <Tabs>
     <Tab title="Discover">
       <Diagram name="system" alt="The clouds OpenController reads, the workloads it fronts, and what it gives you" />
-      Discovery reads each connected cloud with a read credential and lists every agent and everything each agent uses: models, tools, MCP servers, identities, memories, sharing. It never invokes an agent, reads a conversation or fetches a secret. [AI Inventory](/discover/inventory) and [Shadow AI](/discover/shadow-ai).
+      Discovery reads each connected cloud with a read credential and lists every agent and everything each agent uses: models, tools, MCP servers, identities, memories, sharing. It never invokes an agent, reads a conversation or fetches a secret. [AI inventory](/discover/ai-inventory) and [Shadow AI](/discover/shadow-ai).
     </Tab>
     <Tab title="Govern">
       <Diagram name="states" alt="An asset moves from shadow to awaiting approval to registered, and back" />
@@ -29,11 +23,11 @@ import { Diagram } from '/snippets/diagrams.mdx'
     </Tab>
     <Tab title="Control">
       <Diagram name="credentials" alt="A read credential for discovery, a separate control credential for changes" />
-      With a control credential you grant per platform, block or quarantine an agent, end organization-wide sharing, remove a person's access, or delete it, on the platform it runs on. Every action is audited. [Control actions](/govern/control-actions).
+      With a control credential, granted per platform, you share an agent, remove someone's access, end organization-wide sharing, block it or delete it, on the platform it runs on. Every change is audited. [Access and sharing](/discover/asset-details#access-and-sharing).
     </Tab>
     <Tab title="Run">
       <Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
-      Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block, redact or mask personal data, secrets, prompt injection and off-topic use. [LLM gateway](/runtime/llm-gateway) and [Guardrails](/runtime/guardrails).
+      Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block or redact personal data, secrets, prompt injection and off-topic use. [LLM gateway](/secure/gateway-overview) and [Guardrails](/secure/guardrails/list).
     </Tab>
     <Tab title="Observe">
       <Diagram name="traces" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
@@ -41,34 +35,60 @@ import { Diagram } from '/snippets/diagrams.mdx'
     </Tab>
     <Tab title="Evaluate">
       <Diagram name="evals" alt="The evals service reads records, asks a judge model, and writes scores that pages and monitors read" />
-      Evaluators judge the traces with a model and record scores, and monitors say when an agent gets worse. [Evals](/monitor/evals).
+      Evaluators judge the traces with a model and record scores, and monitors say when an agent gets worse. [Evals](/monitor/evals/get-started).
     </Tab>
   </Tabs>
 </div>
 
-## How it treats your environment
+You work in **the console**, the OpenController web app. Each organization has its own workspace, at its own address.
 
-<div className="oc-strip">
-  <div className="tone-discover">
-    <div className="oc-t">Read-only by default</div>
-    <p>Discovery lists and describes. It never invokes an agent, reads a conversation or fetches a secret value.</p>
-  </div>
-  <div className="tone-control">
-    <div className="oc-t">Control is opt-in, per platform</div>
-    <p>Blocking, sharing and deleting need a second credential you grant when you are ready, and every action is audited.</p>
-  </div>
-  <div className="tone-runtime">
-    <div className="oc-t">Deployed in your environment</div>
-    <p>One installation per organization, with its secrets in your secrets manager. Traces and logs stay in your trace store.</p>
-  </div>
-</div>
+## Who it is for
+
+| You are | You use OpenController to |
+|---|---|
+| A security or platform admin | Connect clouds, find all AI in use, set policies, guardrails, single sign-on and roles. |
+| An AI or platform engineer | Put agents behind the LLM gateway, give them keys and budgets, try guardrails, send traces. |
+| A reviewer or auditor | Read the inventory, findings, approvals and the audit log. |
+| A developer | Call the same features through the API. |
+
+What you can see and change depends on your role: **Viewer**, **Operator**, **Admin** or **Owner**. See [Roles and permissions](/get-started/roles).
 
 ## Start here
 
-<ul className="oc-links">
-  <li><a href="/get-started/what-is-shadow-ai">What is shadow AI</a><span>The problem, the risks by asset kind, and why it will not wait.</span></li>
-  <li><a href="/get-started/how-it-works">How it works</a><span>Discover, govern, control, observe, evaluate: one agent, in order.</span></li>
-  <li><a href="/govern/respond">Responding to discoveries</a><span>A framework for what discovery finds: triage, investigate, decide.</span></li>
-  <li><a href="/posture/security-policies#policies-by-framework">Policies by framework</a><span>Which controls in OWASP, MITRE ATLAS, NIST, ISO 42001 and the EU AI Act the posture answers.</span></li>
-  <li><a href="/get-started/rollout">A rollout plan</a><span>What to do in the first week, the first month and the first quarter.</span></li>
-</ul>
+<Card title="Quickstart: from sign-in to your first findings" icon="rocket" href="/get-started/quickstart" horizontal>
+  Sign in, connect your first integration, run a scan and see your first findings.
+</Card>
+
+## The main areas
+
+<CardGroup cols={2}>
+  <Card title="Discover AI" icon="search" href="/discover/connect-accounts">
+    Connect AWS, Microsoft, Google Cloud, Databricks, Anthropic and Snowflake, and scan them. See every AI asset in **AI Inventory**, the people who use AI, and **Shadow AI**.
+  </Card>
+  <Card title="Govern agents" icon="clipboard-check" href="/govern/registry">
+    Register agents with an owner and a purpose, approve them in **Approvals**, and keep them in the **Registry**.
+  </Card>
+  <Card title="Secure AI traffic" icon="shield-half" href="/secure/gateway-overview">
+    Send model calls through the **LLM Gateway** with virtual keys, budgets and **Guardrails** that block or redact, and see who trips them.
+  </Card>
+  <Card title="Posture and compliance" icon="triangle-alert" href="/posture/findings">
+    See **Findings**: what is exposed, misconfigured or ungoverned, mapped to security frameworks.
+  </Card>
+  <Card title="Monitor and improve" icon="chart-line" href="/monitor/observability">
+    Read your agents' traces and cost in **Observability**, score their answers with **Evals**, and fine-tune models.
+  </Card>
+  <Card title="Members, roles and teams" icon="settings" href="/administer/members-roles-teams">
+    Members, roles and teams, single sign-on, service accounts, modules and the audit log.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Roles and permissions" icon="user-cog" href="/get-started/roles">
+    What each role can do, and how people get one.
+  </Card>
+  <Card title="Service accounts and API keys" icon="bot" href="/administer/service-accounts">
+    Call OpenController from scripts and pipelines.
+  </Card>
+</CardGroup>

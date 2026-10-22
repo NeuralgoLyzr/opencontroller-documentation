@@ -1,8 +1,0 @@
-# The prose inside the OpenAPI document: the title, and every description.
-engine: dasel
-scopes:
-  - name: title
-    expr: info.title
-  - name: description
-    expr: search(has("description")).map(description)
-    type: md

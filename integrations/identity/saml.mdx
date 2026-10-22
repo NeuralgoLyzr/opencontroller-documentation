@@ -1,0 +1,89 @@
+---
+title: "Any SAML 2.0 provider"
+description: "Let people sign in to the OpenController console through any SAML 2.0 provider, such as ADFS, Ping, OneLogin or Shibboleth."
+sidebarTitle: "SAML"
+icon: "log-in"
+---
+
+Any provider that publishes federation metadata works. OpenController is the **service provider**: it sends signed
+authentication requests and accepts signed assertions at `<console address>/saml/acs`.
+
+Changing single sign-on needs the **Owner** role. SAML also needs a secrets manager (OpenController's signing key is
+kept there) and a console on https. Below, `<console address>` is the address under **Settings** > **Authentication** >
+**Console address**.
+
+## Connect the provider
+
+<Steps>
+  <Step title="Make the service provider">
+    Go to **Settings** > **Single sign-on**. Leave **Identity provider** unselected, enter your **Email domains** (for
+    example `example.com`; anyone from another domain is refused), and select **Connect identity provider**.
+
+    The badge reads **Awaiting IdP Metadata**, and **1. In your identity provider, create a SAML application with these
+    values** shows:
+
+    | Value | Is |
+    |---|---|
+    | **Reply URL (Assertion Consumer Service)** | `<console address>/saml/acs` |
+    | **Identifier (Entity ID)** | `<console address>/saml/metadata` |
+    | **Service provider metadata URL** | `<console address>/saml/metadata` |
+    | **Sign-on URL** | Where people start signing in. |
+  </Step>
+  <Step title="Add OpenController at the provider">
+    Add a service provider (relying party) from the **Service provider metadata URL**, which carries OpenController's
+    signing certificate, or enter the ACS URL and entity ID by hand. Send:
+
+    - The email address as the NameID, or as an `email`, `mail`, `emailAddress`, `upn` or Microsoft `emailaddress`
+      attribute.
+    - Groups as `groups` or `memberOf`, and roles as `role`, `roles` or `Role`.
+  </Step>
+  <Step title="Give OpenController the provider's metadata">
+    Under **2. Give opencontroller your identity provider's metadata**, enter the **Identity provider metadata URL**
+    (https), and select **Save metadata**. It is read when you save: the provider's signing certificate comes from it.
+    The badge changes to **IdP Connected**, and sign-in works at once. Try it from a private window.
+  </Step>
+</Steps>
+
+If the provider is already set up with these values, do it in one step: under **Identity provider**, select **SAML
+2.0**, enter its **Metadata URL** and **Email domains**, and select **Connect SAML 2.0**.
+
+## Map groups and roles
+
+Go to **Settings** > **Role mappings** (needs **Owner**). Under **Granted to these groups or roles**, enter group or
+role attribute values. A person in several mapped groups gets the highest role. Set **Anyone signed in whom nothing maps
+gets** to a default role (not **Owner**), or **no access**. Select **Save**.
+
+<Warning>
+A role attribute whose value is a role name (`viewer`, `operator`, `admin`, `owner`, a custom role, or the same with
+`opencontroller.` in front) grants that role with no mapping. Whoever controls that attribute at the provider can make
+someone an **Owner**.
+</Warning>
+
+## Provision people with SCIM (optional)
+
+For providers that push SCIM 2.0: copy the **SCIM base URL (Tenant URL)** (`<console address>/scim/v2`) under **3.
+Provisioning (SCIM 2.0, optional)**, select **Generate token**, and give both to the provider. Only the token's hash is
+kept. Once a token exists, only provisioned, active people can sign in, so provision before you generate it.
+
+## What it uses
+
+| What | Value |
+|---|---|
+| Signing key | OpenController's own (RSA), in your secrets manager. |
+| Provider's certificate | Read from its metadata, over https only (plain http only while the console itself runs on http). |
+| Stored | Assertions are checked and never stored. The session is a signed cookie, lasting 7 days by default. |
+
+Signing out (`/saml/logout`) ends only the console session, not the provider's, and records the cookie's digest so a
+copy of it stops working too. Whoever runs OpenController can change how long a session lasts
+(`DISCOVERY_SESSION_MAX`), or end one unused for a while (`DISCOVERY_SAML_SESSION_IDLE`, off by default).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+  <Card title="Any OpenID Connect provider" icon="key-round" href="/integrations/identity/oidc">
+    Use OpenID Connect instead.
+  </Card>
+</CardGroup>

@@ -1,0 +1,80 @@
+---
+title: "Score answers with an evaluator"
+description: "Connect a trace store and a judge model, build an LLM-as-a-judge evaluator, test it on real spans, and run it as a task that scores your agent's answers."
+sidebarTitle: "First evaluator"
+tag: "Guide"
+icon: "play"
+---
+
+<Note>
+**What you need**
+
+- **Admin** connects the trace store and the model. **Operator** makes and runs the evaluator.
+- The **Evals** module on, with its service connected in **Settings** > **Evals**. See [Modules](/administer/modules).
+- An agent's traces in a trace store, for example from [Trace an agent and find its failures](/monitor/guide-trace-an-agent).
+- A judge model: Anthropic's API, or any OpenAI-compatible API, such as the LLM gateway.
+</Note>
+
+An **evaluator** is a saved judge: for each record it reads, a model answers your prompt with one of your labels, and each label has a score. A **task** runs the evaluator over a trace store, once over a window or continuously as new traces arrive. Every judgment lands in **Scores**.
+
+## Step 1: Connect a trace store and a model
+
+In **Monitor** > **Evals**, select **Connections** at the foot of the menu, then add:
+
+- A **Trace store**: **ClickHouse** (where OpenController keeps traces) or Arize. **Address** is the store's HTTP interface, port 8123 for ClickHouse. Give a user that can only read.
+- A **Model**: **Address** is the API's address, up to `/v1`.
+
+Secrets are sealed in the evals service and never shown again.
+
+<Tip>
+Judge through the LLM gateway, so the judge's spend has a key and a budget of its own: choose an OpenAI-compatible kind, set **Address** to `https://gateway.example.com/v1`, and give a [virtual key](/secure/virtual-keys) as **API key**. {/* TODO verify: the model kind's exact name for OpenAI-compatible APIs in the Kind list */}
+</Tip>
+
+## Step 2: Start a new evaluator
+
+Select **Evaluators** > **New evaluator**, then a template, or **LLM-as-a-judge** under **Custom eval**. A blank LLM-as-a-judge already checks whether the answer answers the question, with two labels: `pass` (score 1) and `fail` (score 0).
+
+## Step 3: Write the judge
+
+Under **Judge**, choose what it **Reads**: **One step** (a span), **Whole run** (a trace) or **Conversation** (a session). Pick the model from step 1, and set **Temperature** to `0` for the same answer each time. In **Template**, use `{input}` and `{output}` for what each record supplies.
+
+Keep **Ask for its reasoning** on: each score then comes with the judge's explanation.
+
+<Info>
+A judge with no source of truth cannot tell a right fact from a wrong one. To judge correctness, give it a reference: the agent's context, or an expected answer from a dataset.
+</Info>
+
+## Step 4: Choose what it reads
+
+Under **Configuration**:
+
+1. **Pick a data source**: the trace store and the project. {/* TODO verify: what a "project" is in a ClickHouse trace store here (the service name the spans carry, e.g. support-bot, or the Observability project) */}
+2. **Filter spans** to the ones the judge reads, for example `"status" != 'Error'`. **Matching spans** samples the **Last 7 days** by default.
+3. **Map variables to data**: point `{input}` and `{output}` at the fields holding the user's message and the agent's answer.
+4. Under **Task configuration**, set the **Sampling rate (%)**: each span judged costs a model call. **Run continuously** judges each new span as it arrives. **One-time backfill** also judges spans already recorded, from a time you choose.
+5. Optionally, **Advanced** > **Token budget** stops the task once judging has spent this many tokens.
+
+## Step 5: Test, then run
+
+1. Select **Test on spans**. The judge scores a few matching spans without keeping anything. If it is wrong, adjust the template.
+2. Select **Create and run**. The evaluator is saved and its task starts.
+
+## Step 6: Read the scores
+
+**Scores** lists every judgment, newest first. **Tasks** shows each task's progress, and **Overview** shows each evaluator's mean score, worst first.
+
+{/* SCREENSHOT: first-evaluator-scores | reuse | Reuses /images/evals/evals-scores.png. */}
+<Frame caption="Scores from the new evaluator">
+  <img src="/images/evals/evals-scores.png" alt="The Scores page filtered to one evaluator, showing pass and fail labels with the judge's explanation for each span." />
+</Frame>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
+    Templates, judge types, labels and questions.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Run evaluators on a schedule, and hear what got worse.
+  </Card>
+</CardGroup>

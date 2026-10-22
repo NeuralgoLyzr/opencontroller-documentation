@@ -1,0 +1,135 @@
+---
+title: "Microsoft Entra ID"
+description: "Let people sign in to the OpenController console with their Microsoft Entra ID account, over OpenID Connect or SAML, and provision them with SCIM."
+sidebarTitle: "Entra ID"
+icon: "log-in"
+---
+
+Entra ID signs people in to the console with **OpenID Connect**, through the tenant's v2.0 endpoint, or with **SAML
+2.0**, through an Enterprise application. It can also provision people with **SCIM 2.0**. Group **object IDs** arrive in
+`groups` and **app roles** in `roles`. To discover agents in the tenant, see [Microsoft (Azure and 365)](/integrations/microsoft).
+
+Changing single sign-on needs the **Owner** role in OpenController, and a Global Administrator or Application
+Administrator in Entra. Below, `<console address>` is the address under **Settings** > **Authentication** > **Console
+address**.
+
+## Connect Entra ID
+
+<Tabs>
+  <Tab title="SAML 2.0">
+    SAML also needs a secrets manager: OpenController's signing key is kept there.
+
+    <Steps>
+      <Step title="Create the Enterprise application">
+        Go to **Enterprise applications** > **New application** > **Create your own application** (non-gallery) >
+        **SAML**. In **Basic SAML Configuration**, set:
+
+        - **Identifier (Entity ID):** `<console address>/saml/metadata`
+        - **Reply URL (Assertion Consumer Service URL):** `<console address>/saml/acs`
+
+        Keep the email (or a UPN in your email domain) as the name identifier. Add a **group claim**, or assign **app
+        roles** under **Users and groups**. Note the **Application ID**.
+      </Step>
+      <Step title="Connect Entra ID in OpenController">
+        Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Microsoft Entra ID**; under **Signs
+        in with**, **SAML 2.0**. Fill in **Tenant id** (a GUID), **Enterprise application id** (so the metadata is the
+        application's) and **Email domains**, then select **Connect Microsoft Entra ID**.
+
+        Check that the values under **1. In your identity provider, create a SAML application with these values** match
+        the application.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="OpenID Connect">
+    <Warning>
+    The **Single sign-on** form cannot set the scope Entra needs yet: it always asks for `openid profile email
+    offline_access`, and Entra then issues a token for Microsoft Graph, which OpenController refuses. Until the form
+    takes scopes, use SAML, or have whoever runs OpenController set OpenID Connect in its configuration (step 3).
+    </Warning>
+
+    <Steps>
+      <Step title="Register the app in Entra">
+        1. Go to **App registrations** > **New registration**. Add a redirect URI of type **Single-page application**:
+           `<console address>/auth/callback`. Note the **Application (client) ID**. The app needs no client secret.
+        2. Go to **Expose an API**. Set the **Application ID URI** to `api://<client id>` and add the scope
+           `access_as_user`.
+        3. In the **Manifest**, set `"requestedAccessTokenVersion": 2`, so tokens come from the v2.0 issuer.
+        4. Choose how roles arrive:
+           - **Token configuration** > **Add groups claim**: security groups, as group ID, on the **access token**
+             (not only the ID token). Or
+           - **App roles**: create `viewer`, `operator` and `admin`, and assign them under **Enterprise applications** >
+             the app > **Users and groups**.
+      </Step>
+      <Step title="Connect Entra ID">
+        Set by whoever runs OpenController (Settings then shows single sign-on read-only):
+
+        ```bash
+        DISCOVERY_OIDC_ISSUER=https://login.microsoftonline.com/<tenant id>/v2.0
+        DISCOVERY_OIDC_CLIENT_ID=<client id>
+        DISCOVERY_OIDC_AUDIENCE=<client id>
+        DISCOVERY_OIDC_SCOPES="openid profile email offline_access api://<client id>/access_as_user"
+        ```
+
+        In the **Settings** > **Single sign-on** form, the fields are **Tenant id**, **Client id**, **Audience** (empty
+        means the client ID, which is what v2.0 tokens carry) and **Email domains**.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+The **Single sign-on** page shows **IdP Connected**. Open the console in a private window and sign in as a person in a
+mapped group or app role.
+
+## Map groups and app roles to roles
+
+Go to **Settings** > **Role mappings** (needs **Owner**). Under **Granted to these groups or roles**, enter group
+object IDs or app role values; with SCIM on, group display names work too. A person in several mapped groups gets the
+highest role. Select **Save**.
+
+<Warning>
+An app role whose value is a role name (`viewer`, `operator`, `admin`, `owner`, a custom role, or the same with
+`opencontroller.` in front) grants that role with no mapping. Whoever can assign the app's roles in Entra can make
+someone an **Owner**.
+</Warning>
+
+For large tenants, prefer app roles: a person in more than 200 groups gets no `groups` claim, so group mappings miss
+them.
+
+## Provision people with SCIM (optional)
+
+<Warning>
+Once a SCIM token exists, only people Entra has provisioned, and who are active, can sign in through SSO. Start
+provisioning before you rely on it.
+</Warning>
+
+1. On **Settings** > **Single sign-on**, under **3. Provisioning (SCIM 2.0, optional)**, copy the **SCIM base URL
+   (Tenant URL)** (`<console address>/scim/v2`).
+2. Select **Generate token**. Copy the token from the **Shown exactly once** dialog, then select **I stored it**. Only
+   its hash is kept; **Replace token** makes a new one and stops the old one.
+3. In Entra, open the Enterprise application > **Provisioning** > **Automatic**. Paste the **Tenant URL**, and the token
+   as **Secret Token**. **Test Connection**, then start provisioning.
+
+Disabling or removing a person in Entra ends their access on their next request.
+
+## What it uses
+
+| What | Value |
+|---|---|
+| Issuer | `https://login.microsoftonline.com/<tenant id>/v2.0` |
+| SAML metadata | `https://login.microsoftonline.com/<tenant id>/federationmetadata/2007-06/federationmetadata.xml?appid=<application id>` |
+| Claims read (OIDC access token) | Email from `preferred_username`, `upn` or `email`; groups from `groups` (object IDs); roles from `roles` |
+| SAML attributes read | Email from `emailaddress`, `upn`, `name` or a NameID with `@`; groups from Microsoft's `groups` claim; roles from its `role` claim |
+| Stored | No client secret. Tokens are checked against the tenant's keys and never stored. For SAML, OpenController's own signing key, in your secrets manager. For SCIM, the token's hash. |
+
+SAML sign-out ends only the console session; the Entra session stays.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+  <Card title="Microsoft (Azure and 365)" icon="cloud" href="/integrations/microsoft">
+    Discover agents in the same tenant.
+  </Card>
+</CardGroup>

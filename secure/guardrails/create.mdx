@@ -1,0 +1,130 @@
+---
+title: "Create a guardrail"
+description: "Make a guardrail from a template or from blank, change it later, copy it or delete it."
+sidebarTitle: "Create guardrails"
+icon: "shield-plus"
+---
+
+A saved guardrail goes into the LLM gateway when you save it.
+
+<Note>
+  Before you start:
+  - The **Guardrails** module is on. See [Modules](/administer/modules).
+  - You have the **Admin** role. A **Viewer** or **Operator** can open a guardrail and read it, but not change it.
+</Note>
+
+<Steps>
+  <Step title="Open Guardrails">
+    Go to **Runtime** > **Guardrails** and select **New guardrail**.
+  </Step>
+  <Step title="Choose a template or start blank">
+    The **New guardrail** panel opens: "Choose a template or start blank".
+
+    - Select **Start blank** to begin with every check off.
+    - Or select a template. Each card says what it turns on, and whether it checks **Prompts** or **Prompts and answers**.
+
+    Use **Search templates**, or the groups on the left, to find one.
+
+    {/* SCREENSHOT: gr-create-templates | crop | The New guardrail panel open over the Guardrails list: the left list (All templates, Custom > Start blank, Templates > Use cases, Data protection, Threat protection, Content moderation, Strictness) and the template cards with their Prompts / Prompts and answers tags. Crop to the panel. */}
+    <Frame caption="The New guardrail panel">
+      <img src="/images/guardrails/gr-create-templates.png" alt="The New guardrail panel with Start blank and the templates, grouped by use." />
+    </Frame>
+
+    | Template | Group | What it turns on | Checks |
+    |---|---|---|---|
+    | **Customer-facing assistant** | Use cases | Prompt injection, Toxicity, Sexual content; redacts emails, phone numbers, card numbers and US social security numbers; masks secrets | Prompts and answers |
+    | **Internal copilot** | Use cases | Prompt injection; blocks secrets; redacts card numbers and US social security numbers | Prompts and answers |
+    | **Text-to-SQL agent** | Use cases | Prompt injection; blocks secrets; Valid SQL | Prompts and answers |
+    | **API agent** | Use cases | Prompt injection; blocks secrets; Valid OpenAPI | Prompts and answers |
+    | **Data-safe** | Data protection | Redacts every kind of personal data; masks secrets | Prompts and answers |
+    | **Financial data** | Data protection | Blocks card numbers and US social security numbers; blocks secrets | Prompts and answers |
+    | **Prompt attacks** | Threat protection | Prompt injection at the **Strict** level | Prompts |
+    | **Civil conversations** | Content moderation | Toxicity, Sexual content and Gibberish | Prompts |
+    | **Strict** | Strictness | Prompt injection, Toxicity, Sexual content and Gibberish at **Strict**; blocks every kind of personal data; blocks secrets | Prompts and answers |
+
+    No template turns on Banned topics, Allowed topics or Keywords. Those need your own list.
+  </Step>
+  <Step title="Name it">
+    The editor opens on its own page, with a **Draft** badge. It goes through the steps in order. The first is **Name and purpose**:
+
+    - **Name**: up to 80 characters, for example `Customer support`.
+    - **What it is for** (optional): up to 500 characters, for example "What the support agents may be sent and say".
+
+    Select **Continue**.
+  </Step>
+  <Step title="Turn on the checks you need">
+    Each next step is one group of checks: **Data protection**, **Threat protection**, **Content moderation**, **Custom rules and format**, **Custom policies (OPA)**, **Tool call rules (Cedar)** and **Cloud provider guardrails**.
+
+    Each check is a card with a switch. Turn the switch on, and the check's settings open under it. The small tag on the card says what the check reads: **Prompts**, **Prompts and answers**, **Tool calls**, or, for OPA set to also check tool calls, **Prompts, answers and tool calls**.
+
+    {/* SCREENSHOT: gr-create-editor | crop | The guardrail editor for a new guardrail "Customer support" from the Customer-facing assistant template: the header with the Draft badge and "from the Customer-facing assistant template", the path strip, the steps on the left with Data protection open, and the Try it panel on the right. Leave the console sidebar out. */}
+    <Frame caption="The guardrail editor">
+      <img src="/images/guardrails/gr-create-editor.png" alt="The guardrail editor with its steps on the left, Try it on the right and the path above." />
+    </Frame>
+
+    For example, the **Personal data** card has **What to look for**. Tick each kind of personal data, then choose **Redact** or **Block** for it.
+
+    Every check and its settings are in [Guardrail checks](/secure/guardrails/checks). Select **Continue** to go to the next step, or **Back** to go back.
+
+    <Tip>While you work, type a sample prompt in **Try it** on the right. It runs on the settings on screen, saved or not. See [Try a guardrail](/secure/guardrails/try-it). Trying needs the **Operator** role or above.</Tip>
+  </Step>
+  <Step title="Review">
+    The **Review** step says what the guardrail does, in a sentence. Under it is each group and what is on in it. Select **Change** next to a group to go back to it.
+  </Step>
+  <Step title="Create it">
+    Select **Create guardrail**. You see "*Customer support* saved" (with your guardrail's name), and the editor now shows the saved guardrail.
+
+    <Warning>A check that is on with nothing set up stops the save. The editor opens that check and says what is missing, for example "Add a topic to block, or turn the check off: with none, it blocks nothing." Set it up, or turn it off.</Warning>
+  </Step>
+</Steps>
+
+## Edit a guardrail
+
+1. Go to **Runtime** > **Guardrails** and select the guardrail's name.
+2. The editor opens on its first group of checks. Select **Change** on any step to open it.
+3. Change what you need. The footer says how many checks are on, for example "5 of 18 checks on".
+4. Select **Save changes**. To undo what you changed, select **Discard changes**.
+
+If you leave the page with changes not saved, you see **Discard your changes?**. Select **Keep editing** to stay, or **Discard and leave**.
+
+If another admin saves the guardrail while you have it open:
+
+- With no changes of yours, the editor loads their version.
+- With changes of yours, a bar says "Someone else saved this guardrail". Select **Load their version** to drop yours. If you select **Save changes**, you see **Replace someone else's changes?**: choose **Keep editing**, **Load their version** or **Save mine**. Saving replaces the whole guardrail, so their changes are lost.
+
+## Duplicate a guardrail
+
+1. In **Runtime** > **Guardrails**, select **More** (**…**) on the guardrail's row.
+2. Select **Duplicate**.
+
+OpenController makes a copy named "*name* (copy)", with the same description and checks, and opens it. Change its name and checks, then select **Save changes**.
+
+## Delete a guardrail
+
+1. Select **More** (**…**) > **Delete** on the guardrail's row. Or, in the guardrail's editor, select the trash icon (**Delete the guardrail**) at the top right.
+2. In **Delete *name*?**, select **Delete**.
+
+If content rules in the LLM gateway use the guardrail, it cannot be deleted. Remove those rules, or point them at another guardrail, in **LLM Gateway** > **Content Rules** first.
+
+## Check it worked
+
+- The guardrail is in the **Runtime** > **Guardrails** list, with its line of checks and its sentence.
+- Within minutes, the row shows the **LLM gateway** badge. In the editor, the **Review** step says "In the LLM gateway: a content rule there can use it."
+- To make it act on gateway calls, add a content rule that uses it. See [In the LLM gateway](/secure/guardrails/list#in-the-llm-gateway).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Guardrail checks" icon="list-checks" href="/secure/guardrails/checks">
+    What each check does, and its settings.
+  </Card>
+  <Card title="Try a guardrail on text" icon="flask-conical" href="/secure/guardrails/try-it">
+    Test it on a prompt or an answer before you use it.
+  </Card>
+  <Card title="Use guardrails in any app or Claude Code" icon="plug" href="/secure/guardrails/use-anywhere">
+    Call it from an app or Claude Code.
+  </Card>
+  <Card title="Guardrails" icon="shield-check" href="/secure/guardrails/list">
+    The path, the list, and the LLM gateway.
+  </Card>
+</CardGroup>

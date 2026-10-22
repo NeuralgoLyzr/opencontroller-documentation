@@ -1,54 +1,49 @@
 ---
-title: "Cost"
-description: "What your agents' model calls cost, over time and broken down by project, model, provider, agent, team, user, customer and gateway key."
+title: "Track cost"
+description: "What your agents' model calls cost, read from their traces: how spend moved, its pace, what failed calls wasted, and who spent it."
+sidebarTitle: "Cost"
 icon: "circle-dollar-sign"
 ---
 
-import { ApiLink } from '/snippets/api-link.mdx'
+<Note>Needs the **Observability** module and a connected trace store. See [Modules](/administer/modules).</Note>
 
-The **Cost** page turns the traces into a bill. It sums what every model call cost across all projects, or within one project, for a window of time, and breaks the total down by whoever or whatever you want to charge it to. Where the posture shows risk, Cost shows spend, and both use the same projects and agents.
+Cost comes from the traces: the cost recorded on each model call's span. It is on **Observability** > **Cost** for every project, and on a project's **Cost** for that project alone.
 
-## Where prices come from
+{/* SCREENSHOT: obs-cost | full | Observability > Cost, Last 30 days: the eight figures, Spend over time split by Projects with support-bot and billing-agent coloured, and the top of Costliest runs. */}
+<Frame caption="Cost across every project, last 30 days">
+  <img src="/images/observability/obs-cost.png" alt="The Cost page with spend figures, spend over time split by project, and the costliest runs." />
+</Frame>
 
-A price travels with the span. OpenController reads the GenAI usage cost attribute, or the OpenInference total cost, from each model call and adds them up; it does not keep a price list of its own for traced calls.
+**Monthly pace** is what 30 days would cost at this window's rate. It is not a forecast of the calendar month.
 
-- A call made through the [LLM gateway](/runtime/llm-gateway) is priced by the gateway, which writes the cost onto its span. The gateway's span is the one priced, so a call is never counted twice when both the SDK and the gateway traced it.
-- A call made straight to a provider arrives unpriced unless the SDK that traced it set a cost attribute.
-- A model call is counted once per trace, at the deepest span that carries usage.
+This is not the [Spend](/discover/people-and-spend) page, which reads what clouds and AI providers bill. A call through Bedrock or Azure is in both.
 
-When some calls in the window carry no price the page says so: **N model calls came with no price**, with a link to set a price for a model in the gateway's pricing overrides (`/llm-gateway/pricing-overrides` in the console). The totals on the page cover only the priced calls.
+## Calls with no price
 
-## Time ranges
+When some model calls came with no cost, a yellow notice under the figures names each model. Their tokens count, but their spend is missing from the figures.
 
-The window is **Last hour**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. Each figure is compared with the window before it. **Spend over time** buckets the window by minute for the last hour, by hour for a day or a week, and by day for 30 days.
+Calls through the LLM gateway (Rekori) are priced by the gateway. To price a model it does not know, select **set a price for a model** in the notice. {/* TODO verify: the link opens the LLM gateway's pricing overrides page (/llm-gateway/pricing-overrides) for every gateway kind. */}
 
-## What is on the page
+## Spend over time and breakdown
 
-| Metric | What it is |
-|---|---|
-| **Cost** | The window's priced spend, against the window before |
-| **Monthly pace** | At this window's rate, what 30 days would cost |
-| **Per run** | The average per model call, and per thousand tokens |
-| **Failed calls' spend** | What was spent on calls that errored |
-| **Model calls**, **Input tokens**, **Cached input**, **Output tokens** | The volume behind the spend |
+**Split by** colours the five that spent the most, and puts the rest in **Everything else**. **Spend over time** shows only when the trace store can return series. {/* TODO verify: which trace store kinds support series (ClickHouse does). */}
 
-**Spend over time** charts the window. **Split by** chooses **Total**, **Projects**, **Models**, **Providers** or **Agents**; the chart shows the top five and folds the rest into **Everything else**. **Costliest runs** lists the traces that cost the most and opens each.
+{/* SCREENSHOT: obs-cost-breakdown | later | Not taken: preview does not show Breakdown. */}
 
-**Breakdown** is a table grouped by one of:
+In **Breakdown**, a row with no name, such as **Not through the gateway** under **Gateway keys**, holds the calls that named none.
 
-| Group | Notes |
-|---|---|
-| **Projects** | Only when looking across all projects |
-| **Models** | The model the response named |
-| **Providers** | The model's provider |
-| **Agents** | The inventory agent each project stands for; traces whose project has none show as **No agent named** |
-| **Tools & MCP** | Tool and MCP server calls |
-| **Teams** | The LLM gateway's team on the key used; also the project's team |
-| **Users** | The id of the user the span carries |
-| **Customers** | The gateway's customer, or a customer name attribute; **No customer** otherwise |
-| **Gateway keys** | The gateway virtual key; **Not through the gateway** for direct calls |
-| **Services** | The `OTEL_SERVICE_NAME` of the sender |
+## Who can use it
 
-To charge cost to an agent, give each project its **Agent** in the project's settings; see [Observability](/monitor/observability). To charge it to a team or a customer, route the agent through the gateway with a virtual key owned by that [team or customer](/runtime/teams-and-customers).
+- Every role, from **Viewer** up, reads Cost. A member of a project's team reads that project's cost.
+- Pricing a model in the LLM gateway needs the gateway's own permissions.
 
-<ApiLink />
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See people and spend" icon="wallet" href="/discover/people-and-spend">
+    What the clouds and AI providers bill.
+  </Card>
+  <Card title="Set team budgets and rate limits" icon="building" href="/secure/budgets-and-limits">
+    Give a team a budget in the LLM gateway.
+  </Card>
+</CardGroup>

@@ -1,0 +1,126 @@
+---
+title: "Give apps virtual keys"
+description: "Create a virtual key for an agent or team, with the models it may call, a budget, a rate limit and caller sign-in."
+sidebarTitle: "Virtual keys"
+icon: "key-round"
+---
+
+<Note>Needs the **LLM Gateway** module. See [Modules](/administer/modules).</Note>
+
+A virtual key is the key an agent or team uses to call the LLM gateway (Rekori). Each key says which providers and models it may call and how much it may spend. When you finish, you have a key value to give to the agent, and the key in the list with its limits.
+
+<Note>
+**Before you start**
+- You need the **Admin** role. A key is a credential, so only administrators create, change, rotate and delete keys. A **Viewer** can read the list, with values masked.
+- The LLM gateway is connected. See [Connection](/secure/gateway-overview#connection).
+- The gateway has at least one provider. See [Gateway pages](/secure/routing-and-mcp#providers).
+- To use **Callers sign in with**, the gateway has an identity provider. See [Identity providers](/secure/who-trips/caller-sign-in).
+</Note>
+
+## Create a key
+
+<Steps>
+  <Step title="Open Virtual Keys">
+    Go to **LLM Gateway** > **Virtual Keys**. Select **New key** at the top right.
+
+    {/* SCREENSHOT: vk-list | full | LLM Gateway > Virtual Keys with 5 keys (support-bot, billing-agent, research-agent, …): Name, Key (masked, sk-bf-…abcd), Belongs to, May call, Budget bars, Rate limit, and the New key button. */}
+    <Frame caption="The Virtual keys page">
+      <img src="/images/llm-gateway/vk-list.png" alt="The Virtual keys list with masked key values, owners, allowed providers, budgets and rate limits." />
+    </Frame>
+  </Step>
+  <Step title="Name the key and choose who it belongs to">
+    - **Name**: one name per agent or team, for example `support-bot`. Up to 128 characters.
+    - **Description** (optional).
+    - **Belongs to**: **No team** (or **No team or customer**), a **Team · …** or a **Customer · …**. The key's spend also counts against that team's or customer's budget. See [Teams and customers](/secure/budgets-and-limits).
+  </Step>
+  <Step title="Choose what the key may call">
+    Under **May call**, switch on each provider the key may call. A provider left off cannot be called with this key.
+
+    In the field beside a provider, leave it empty for every model, or list models separated by commas, for example `gpt-4o, gpt-4o-mini`.
+
+    On a gateway that does not tell providers apart, you see one **Models** field instead. Leave it empty for every model.
+  </Step>
+  <Step title="Make callers sign in (optional)">
+    Use **Callers sign in with** when people, not only the agent, call through this key. Switch on one or more identity providers. Each caller must then send a token from one of them with every call. The gateway records who made each call, and who tripped each guardrail.
+
+    Leave all off for an agent that calls on its own.
+
+    | Next to a provider | Meaning |
+    |---|---|
+    | The issuer address | The provider is on and ready. |
+    | **Disabled** | The provider is switched off in the gateway. Its tokens are not accepted until it is on again. {/* TODO verify: that a key naming only a disabled provider refuses every call */} |
+    | **Not in the gateway** | The provider was deleted from the gateway. Switch it off here. |
+
+    If you see **The gateway has no identity provider yet; add one there first.**, [add an identity provider](/secure/who-trips/caller-sign-in) first.
+
+    This section shows only when the connected gateway supports caller sign-in.
+  </Step>
+  <Step title="Set limits">
+    Under **Limits · leave empty for none**:
+
+    | Field | What it caps | Example |
+    |---|---|---|
+    | **Budget** | Spend in dollars, per period | `50`, **Monthly** |
+    | **Tokens** | Tokens per period | `1000000`, **Daily** |
+    | **Requests** | Requests per period | `1000`, **Hourly** |
+
+    The periods you can choose come from the gateway: **Per minute**, **Hourly**, **Daily**, **Weekly** or **Monthly**. Leave a field empty for no limit. **Tokens** and **Requests** show only when the gateway has rate limits.
+  </Step>
+  <Step title="Create the key and copy its value">
+    Leave **Active** on, then select **Create**. A dialog named **support-bot's key** shows the value. Select the copy button, then give the value to the agent or team. Select **Done**.
+
+    <Warning>The value is shown once. After you close the dialog, the list shows it masked (`sk-bf-…abcd`), for administrators too. If you lose it, rotate the key for a new value.</Warning>
+  </Step>
+</Steps>
+
+## Call the gateway with the key
+
+The agent sends the key in the `x-bf-vk` header. If the key has **Callers sign in with** on, each call also carries the caller's token from the identity provider, as `Authorization: Bearer <token>`.
+
+```bash
+curl https://gateway.example.com/v1/chat/completions \
+  -H "x-bf-vk: $VIRTUAL_KEY" \
+  -H "Authorization: Bearer $CALLER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+{/* TODO verify: the gateway's public address and the OpenAI-compatible path and model naming callers use on Rekori */}
+
+Leave out the `Authorization` line for a key with no identity provider.
+
+## Edit, rotate or delete a key
+
+Open the menu (**⋯**) at the end of the key's row:
+
+| Action | What happens |
+|---|---|
+| **Edit** | Opens the same form. Change access, limits, owner, sign-in or **Active**, then select **Save**. Switch **Active** off to stop the key without deleting it; the row shows **Inactive**. |
+| **Rotate value** | Gives the key a new value at once and shows it in the copy dialog, once. Give the new value to the agent. {/* TODO verify: the old value stops working at once */} Shows only when the gateway supports key rotation. |
+| **Delete** | Asks you to confirm. Calls made with the key are refused from then on. Its budget and usage are deleted with it. |
+
+## Check it worked
+
+The key is in the list:
+- **Key** shows the value masked.
+- **May call** shows the providers and models, for example `openai (gpt-4o-mini)`. **Nothing**, in red, means the key may call nothing.
+- **Budget** shows `$0.00 of $50.00 a month` and an empty bar.
+- **Rate limit** shows the limits, for example `1,000,000 tokens a day · 1,000 requests an hour`.
+
+After the agent makes a call, it shows in [Logs](/secure/logs) with the key's name under **Caller**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set team budgets and rate limits" icon="users" href="/secure/budgets-and-limits">
+    Cap a whole team with one budget.
+  </Card>
+  <Card title="Make callers sign in" icon="fingerprint" href="/secure/who-trips/caller-sign-in">
+    Let callers sign in, so every call names its user.
+  </Card>
+  <Card title="Read the gateway logs" icon="scroll" href="/secure/logs">
+    See the calls made with the key.
+  </Card>
+  <Card title="See which users trip guardrails" icon="shield" href="/secure/who-trips/guide-violations-per-user">
+    Use caller sign-in to see violations per user.
+  </Card>
+</CardGroup>

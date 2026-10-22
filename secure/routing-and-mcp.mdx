@@ -1,0 +1,184 @@
+---
+title: "Route models and connect MCP servers"
+description: "Use the LLM gateway's own pages inside OpenController: providers, routing rules, MCP servers and content rules."
+sidebarTitle: "Routing and MCP"
+icon: "route"
+---
+
+<Note>Needs the **LLM Gateway** module. See [Modules](/administer/modules).</Note>
+
+Besides the shared pages (**Overview**, **Virtual Keys**, **Teams & Customers**, **Logs**), the gateway menu holds the pages the connected gateway brings. For Rekori, these are its providers, routing, MCP servers, content rules and settings. You use them inside OpenController, with your OpenController role.
+
+{/* SCREENSHOT: gw-content-rules | full | LLM Gateway > Content Rules: the Guardrails tab with 3 rules (block-prompt-injection using a guardrail provider, Block; no-secrets keyword rule, Block; a PII rule on the PII tab not shown), columns Name, Matches, Action, Checks, Applies to, On. Include the gateway menu. */}
+<Frame caption="Content Rules, one of the gateway's own pages">
+  <img src="/images/llm-gateway/gw-content-rules.png" alt="The Content Rules page with guardrail rules, what each matches, its action and where it applies." />
+</Frame>
+
+## Find a page
+
+Four pages sit at the top of the gateway menu, under the shared pages: **Providers**, **Routing Rules**, **MCP Servers** and **Content Rules**. The rest are in groups, folded at first:
+
+| Group | Pages |
+|---|---|
+| **Traffic** | **Tool Calls**, **OpenTelemetry**, **OTLP Destinations**, **Alert Channels**, **Log Settings** |
+| **Routing** | **Model Catalog**, **Adaptive Routing**, **Complexity Router**, **Semantic Routes**, **Classifier Routing**, **Classifier Tags**, **Classifier Playground**, **Routing Insights**, **API Services**, **API Policies**, **Identity Providers**, **Tool Policies**, **Budgets & Limits**, **Pricing Overrides**, **Model Settings** |
+| **Tools** | **MCP Library**, **Tool Groups**, **MCP Sessions**, **MCP Settings** |
+| **Access** | **Members**, **Business Units**, **Provisioning (SCIM)**, **Roles**, **Access Profiles**, **Gateway Audit** |
+| **API Hub** | **API Products**, **Access Requests**, **Approval Flows** |
+| **Policies** | **Guardrail Providers**, **LLM Policies**, **Rego Modules**, **Policy Decision Point**, **Policy Blocks**, **Plugins**, **Prompts** |
+| **System** | **Client Settings**, **Compatibility**, **Caching**, **Security**, **Outbound Proxy**, **Scoped API Keys**, **Performance**, **Feature Flags** |
+
+## Providers
+
+**Providers** lists the model providers the gateway calls under **Configured Providers**, and each one's keys under **Configured keys**, with their **Weight** and whether they are **Enabled**.
+
+- **Add New Provider** adds a provider from the list.
+- **Add new key** adds a key to the selected provider. See [Add a model provider](/secure/set-up-gateway#add-a-model-provider).
+- **Edit Provider Config** changes the provider's own settings; the bin icon removes it.
+
+Changing providers and their keys needs the **Admin** role.
+
+## Routing
+
+Rekori decides where a request goes in this order:
+
+1. **Routing rules.** The rules of the request's virtual key are tried first, then its team's, its customer's, and the global ones. Within each, the lowest **Priority** goes first, and the first rule that matches decides.
+2. **Route by job,** on **Classifier Routing**, when no rule matched.
+3. Otherwise the request keeps the model the caller asked for.
+
+**Complexity Router**, **Semantic Routes** and **Classifier Routing** do not route by themselves. Each one labels a request (its difficulty, its intent or its sensitivity), and creates the routing rules that act on that label when you pick a model for it.
+
+### Routing rules
+
+<Steps>
+  <Step title="Open Routing Rules">
+    In the gateway menu, select **Routing Rules**, then **New Rule**.
+  </Step>
+  <Step title="When should this rule apply?">
+    Pick a case: **By prompt difficulty** (**Simple**, **Medium**, **Complex**, **Reasoning**), **By intent** (one of your [semantic routes](#by-intent-semantic-routes)), **By sensitivity** (**Sensitive data**), or **Every request**. Picking one also fills in the rule's name.
+
+    To narrow it, open **Refine with more conditions** and add conditions on the **Model**, **Provider**, **Request Type**, a **Header**, a **Query Parameter**, or how much of a budget or limit is used.
+  </Step>
+  <Step title="Send it to">
+    Choose the **Provider** and **Model** that should answer. Leave either empty to keep the caller's. Optionally pick an **API Key**; left unset, the provider's keys share the load.
+
+    - **Split traffic across several models** sends a share to each model by **Weight**. The weights must add up to 1.
+    - **If that model fails, try** lists backups, tried in order. Select **Add Fallback** for each.
+    - **Also change reasoning effort or output length** sets **Reasoning effort** or **Max output tokens** for these requests. A value the caller sent is kept unless you tick **Override values the caller sent**.
+  </Step>
+  <Step title="Name it">
+    Check the **Rule Name**, and add a **Description** if you want.
+  </Step>
+  <Step title="Options">
+    | Option | What it does |
+    |---|---|
+    | **Enable Rule** | Off keeps the rule saved but unused. |
+    | **Try it first (shadow mode)** | Records what the rule would do, in **Routing Insights**, without changing any request. |
+    | **Chain Rule** | After this rule matches, the rules run again with the new provider and model. |
+    | **Scope** | **Global**, or one **Team**, **Customer** or **Virtual Key**. |
+    | **Priority** | 0 to 1000. Lower runs first. |
+
+    Select **Save Rule**.
+  </Step>
+</Steps>
+
+{/* SCREENSHOT: gw-routing | crop | LLM Gateway > Routing Rules: Name, Targets, Scope, Priority, Applies when, Status. Crop to the table. */}
+<Frame caption="Routing Rules">
+  <img src="/images/llm-gateway/gw-routing.png" alt="The Routing Rules list with each rule's targets, scope, priority and condition." />
+</Frame>
+
+### By prompt difficulty: Complexity Router
+
+Gives every prompt a tier, **SIMPLE**, **MEDIUM**, **COMPLEX** or **REASONING**, scored inside the gateway with no extra model call. Use it to send easy prompts to a cheap model.
+
+1. In the gateway menu, under **Routing**, select **Complexity Router**. **Complexity routing** is on by default.
+2. Under **Try a prompt**, paste a prompt your users send and select **Score it** to see its tier.
+3. Under **Pick a model for each tier**, choose a provider and model for the tiers you want to change, and select **Save**. Tiers you leave alone keep the model the caller asked for.
+4. Optional: under **Fine-tune the tiers**, pick **Save more** (more traffic on cheaper tiers), **Balanced** or **Best quality** (stronger tiers sooner), then **Save changes**.
+
+### By intent: Semantic Routes
+
+Matches each prompt to an intent you describe with example messages, such as `billing-support`. It runs inside the gateway: no embedding model or provider key is needed. It works on English text.
+
+1. In the gateway menu, under **Routing**, select **Semantic Routes**, and turn on **Semantic routing**. It is off by default.
+2. Select **New intent**, and fill in:
+   - **Name**: what routing rules match on, for example `billing-support`. It cannot change after you save.
+   - **Example utterances**: messages users really send, one per line. At least 2; five or more match better.
+   - **Counter-examples** (optional): messages that share the words but not the intent. A prompt closer to one of these never matches.
+
+   Select **Save route**.
+3. Under **Try a message**, check which intent a message lands in, and why the others did not.
+4. Under **Pick a model for each intent**, choose a provider and model, and select **Save**.
+
+### By sensitivity: Classifier Routing
+
+Sends each prompt to a classifier, Jev from TypeSafe, which says how sensitive it is (**Public**, **Internal**, **Confidential** or **Restricted**) and what job it is. Use it to keep confidential prompts on a model you trust. The prompt leaves the gateway to be classified, so you choose whose prompts are sent.
+
+1. In the gateway menu, under **Routing**, select **Classifier Routing**, and turn on **Classifier routing**. It is off by default.
+2. Under **Connect TypeSafe**, set the **API key**, for example `env.TYPESAFE_API_KEY`, and a pinned **Model**, for example `jev-1.13.0`. Names such as `jev-latest` are refused.
+3. Under **Choose whose prompts are classified**, pick **Virtual keys** or **Teams**, or turn on **Everyone**. Requests from anyone else are routed unclassified. Select **Save changes**.
+4. Under **Try a prompt**, select **Classify** to see what your rules would see.
+5. Under **Send sensitive prompts to an approved model**, choose a model for **Confidential** and for **Restricted**, and select **Save**.
+
+**Route by job (optional).** Select **Add job**, and give the job a **Name** (for example `code_generation`), a **Description** of the kind of request, and the **Provider** and **Model** that should handle it. Turn on **Route by job automatically**. A prompt that no rule matched, and that clearly fits a job (**How sure it must be**, 0.7 by default), goes to that job's model.
+
+**Classifier Playground** sends a prompt through the gateway and shows how it was classified, routed and answered. It is a real request to the provider, so it uses tokens.
+
+### See what routing saves
+
+**Routing Insights** shows what each tier and reasoning effort costs, measured from billed tokens, and what each shadow rule would have saved.
+
+## MCP servers
+
+**MCP Servers** lists the MCP servers agents reach through the gateway: **Name**, **State**, **Connection**, **Sign-in** and the number of **Tools**.
+
+**New server** adds one by **URL**, with **Connection** (**Streamable HTTP** or **Server-sent events**) and **Sign-in** (**None**, **Headers the gateway sends** or **Headers each user gives**). You also choose **Tools that may be called** (`*` for every tool) and whether **Every virtual key may use it**.
+
+Servers that sign in with OAuth, and servers that run as a command on the gateway's host, are set up in Rekori's own console, not here. Changing MCP servers needs the **Admin** role.
+
+## Content rules
+
+**Content Rules** checks what goes to a model and what comes back. A rule blocks the request, or redacts what matched. Rules run in priority order. The page has two tabs: **Guardrails** and **PII**.
+
+Select **New guardrail** (or **New PII rule** on the **PII** tab) and fill in:
+
+| Field | Options |
+|---|---|
+| **Name**, **Priority**, **Description** | Identify the rule and its order. The name cannot change after you save. |
+| **Matches by** | **PII detectors** (email, phone, ssn, credit card, api key), **A pattern (regular expression)**, **Keywords**, or **A guardrail provider**. |
+| **Provider** | With **A guardrail provider**: the provider to send text to. Each OpenController [guardrail](/secure/guardrails/list) shows here with **(OpenController)** after its name, for example **Prompt safety (OpenController)**. |
+| **Then** | **Block the request** or **Redact what matched**. With redact, **Replace with** sets the mask, for example `[REDACTED]`. |
+| **Checks** | **Prompts**, **Answers**, or both. |
+| **Applies to** | **Every request**, a **Team · …** or a **Key · …**. |
+| **When the provider fails** | With a provider: **Let the request through** or **Block the request**. |
+| **Enabled** | Turns the rule on. |
+
+Every block or redaction a content rule makes is a violation. See [Guardrail violations](/secure/who-trips/violations). Changing content rules needs the **Operator** role.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read every gateway page. Secret values, such as provider keys and webhook addresses, are masked. |
+| **Operator** | Also change routing rules, content rules, groupings and prompts. |
+| **Admin** | Also change what holds or grants credentials: providers and their keys, MCP servers, members, roles, SCIM, plugins, API services, LLM policies and settings. |
+| **Owner** | Everything an Admin can do. |
+
+Some parts of Rekori stay out of reach from OpenController: Rekori's own administrators and sign-in, sign-in flows that need a browser (OAuth), and anything that would run code on Rekori's host.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Block prompt injection and personal data" icon="shield" href="/secure/guardrails/block-prompt-injection">
+    Put a guardrail on every call.
+  </Card>
+  <Card title="Make callers sign in" icon="fingerprint" href="/secure/who-trips/caller-sign-in">
+    Let callers sign in with their own identity.
+  </Card>
+  <Card title="Guardrails" icon="shield-check" href="/secure/guardrails/list">
+    Make the checks content rules run.
+  </Card>
+  <Card title="Turn on modules" icon="plug" href="/administer/modules">
+    Connect the gateway and show its own console.
+  </Card>
+</CardGroup>

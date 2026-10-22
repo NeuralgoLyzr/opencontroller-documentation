@@ -1,0 +1,82 @@
+---
+title: "Connect your accounts"
+description: "Connect the cloud accounts and platforms OpenController discovers AI from, check each can be reached, and follow every discovery scan."
+sidebarTitle: "Connect accounts"
+icon: "cable"
+---
+
+Discovery only reads: nothing it connects to is changed.
+
+{/* SCREENSHOT: int-list | crop | The Integrations table: Name (with provider, Control and Guardrails lines), Account, Access badges (Verified, Unreachable, 1 refused), Enabled switches and the Verify, Map, Setup and Remove actions. Two screenshots joined, Signs in as left out; account values and internal connection names blurred. */}
+<Frame caption="The Integrations table">
+  <img src="/images/integrations/int-list.png" alt="The Integrations table with six connections across Google Cloud, AWS, Databricks, Anthropic and Microsoft, each with its access status, an Enabled switch and actions." />
+</Frame>
+
+## What each integration unlocks
+
+Each integration connects one account, tenant or workspace with a read credential.
+
+| Integration | Signs in as | What it finds |
+|---|---|---|
+| **AWS** | A read-only IAM role, with an external ID | Bedrock AgentCore and Bedrock agents, across enabled regions |
+| **Microsoft** | An Entra app registration | Copilot Studio, Agent Builder, Foundry and Agent 365 agents, and who they are shared with |
+| **Databricks** | A service principal | Agents, models, MCP servers and skills; AI spend from billing |
+| **Google Cloud** | A read-only service account | Agent Runtime, Managed Agents, Agent Registry and CX Agent Studio |
+| **Anthropic** | An Admin API key, used only to read | Claude models and API keys in use; cost and Claude Code use by person |
+| **Snowflake** | A service user | Cortex Agents and their tools, MCP servers and Cortex Search |
+
+Each has a setup guide with every field and the role, permissions or SQL to create on the provider's side:
+
+<CardGroup cols={3}>
+  <Card title="AWS" icon="cloud" href="/integrations/aws">
+    A read-only role in an account.
+  </Card>
+  <Card title="Microsoft (Azure and 365)" icon="cloud" href="/integrations/microsoft">
+    Azure, Copilot Studio and Agent 365.
+  </Card>
+  <Card title="Google Cloud" icon="cloud" href="/integrations/gcp">
+    A project, folder or organization.
+  </Card>
+  <Card title="Databricks" icon="database" href="/integrations/databricks">
+    A workspace, as a service principal.
+  </Card>
+  <Card title="Snowflake" icon="snowflake" href="/integrations/snowflake">
+    An account, as a service user.
+  </Card>
+  <Card title="Anthropic" icon="bot" href="/integrations/anthropic">
+    A Claude Platform organization.
+  </Card>
+</CardGroup>
+
+{/* SCREENSHOT: int-add | crop | Reuses the quickstart's qs-connect-choose: the "What are you connecting?" dialog with its six cards and the Setup guides links. */}
+<img className="w-[420px] mx-auto rounded-xl border border-gray-200 dark:border-gray-700" src="/images/get-started/qs-connect-choose.png" alt="The What are you connecting dialog with a card for each of the six platforms." />
+
+Secrets you enter go to the organization's secrets manager. They are never shown again, returned by the API or logged.
+
+## What to know
+
+- **Verify checks each permission separately.** A missing one fails only its own part; everything else is still read, and what the last good scan found is kept.
+- **Control is optional.** It is a second credential, kept apart, that changes are made as (blocking or sharing an agent). Without it, OpenController changes nothing.
+- **Guardrail credentials** for a cloud's own guardrails (AWS Bedrock Guardrails, Azure AI Content Safety, Google Model Armor) are kept on that cloud's integration. See [Cloud guardrail providers](/secure/guardrails/cloud-providers).
+- **Scans** run every 5 minutes per provider. Until an AWS account is connected, they read the service's own AWS account. See [Scans and the scan schedule](/discover/scans).
+- **Removing an integration** deletes its stored secrets. Discovered assets stay until later scans retire them, and the role or app in the provider stays for you to remove.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read the integrations and the scans. |
+| **Operator** | Also **Verify** and **Run scan**. |
+| **Admin** | Also connect, change, disable and remove integrations, update secrets, and set control and guardrail credentials. |
+| **Owner** | Everything an Admin can do. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run and schedule scans" icon="radar" href="/discover/scans">
+    Run a scan and set how often each cloud is read.
+  </Card>
+  <Card title="Explore your AI inventory" icon="boxes" href="/discover/ai-inventory">
+    Everything discovery found.
+  </Card>
+</CardGroup>

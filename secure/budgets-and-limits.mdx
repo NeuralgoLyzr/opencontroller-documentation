@@ -1,0 +1,113 @@
+---
+title: "Set team budgets and rate limits"
+description: "Group virtual keys under a team or customer so one budget and one rate limit cap them together, know what callers get at the limit, and watch the spend."
+sidebarTitle: "Budgets and limits"
+icon: "building-2"
+---
+
+<Note>Needs the **LLM Gateway** module. See [Modules](/administer/modules).</Note>
+
+A team gathers the virtual keys of the agents one group runs. A customer gathers teams, for spend billed to one client. A budget or rate limit on a team or customer caps every key under it, together. A key can also carry its own limits: a call is refused as soon as it would go past the key's limit or its team's, whichever comes first. When you finish, you have a team (or customer) with a budget and rate limits, and keys counted against it.
+
+<Info>
+This team is the LLM gateway's, under **LLM Gateway** > **Teams & Customers**. It is not the same as the teams under **Settings** > **Teams**, which decide what people in OpenController may see.
+</Info>
+
+<Note>
+**Before you start**
+- You need the **Operator** role or higher to create teams and customers. A **Viewer** can read the list. Putting keys under a team needs an **Admin**.
+- The LLM gateway is connected. See [Connection](/secure/gateway-overview#connection).
+- The agents' virtual keys exist, one per agent. See [Give apps virtual keys](/secure/virtual-keys).
+- **Customers** show only when the connected gateway supports them.
+</Note>
+
+## Create a team or customer
+
+<Steps>
+  <Step title="Open Teams & Customers">
+    Go to **LLM Gateway** > **Teams & Customers**. If the gateway supports customers, choose the **Teams** or **Customers** tab.
+
+    {/* SCREENSHOT: teams-list | crop | LLM Gateway > Teams & Customers, Teams tab, with Support, Billing and Research: Customer column, Budget bars (Support at about 80%), Rate limit, and the New team button. Crop to the page content, no sidebar. */}
+    <Frame caption="The Teams tab">
+      <img src="/images/llm-gateway/teams-list.png" alt="The Teams list with each team's customer, budget use and rate limit." />
+    </Frame>
+  </Step>
+  <Step title="Select New team or New customer">
+    The button at the top right follows the tab you are on.
+  </Step>
+  <Step title="Fill in the form">
+    - **Name**: for example `Support`. Up to 128 characters.
+    - **Customer** (optional, teams only): the customer the team belongs to, or **No customer**.
+    - Under **Limits · leave empty for none**:
+      - **Budget**: dollars per period, for example `500`, **Monthly**.
+      - **Tokens**: tokens per period, for example `1000000`, **Daily**.
+      - **Requests**: requests per period, for example `1000`, **Hourly**.
+
+      Leave a field empty for no limit. The periods offered (**Per minute**, **Hourly**, **Daily**, **Weekly**, **Monthly**) are the ones the connected gateway supports. A gateway with no rate limits shows only **Budget**.
+  </Step>
+  <Step title="Save">
+    Select **Create**. The team shows in the list.
+  </Step>
+  <Step title="Put keys under it">
+    An **Admin** does this for each of the team's keys:
+
+    1. Go to **LLM Gateway** > **Virtual Keys**.
+    2. On the key, open its menu and select **Edit**.
+    3. Set **Belongs to** to **Team · Support**. The key's spend now also counts against the team's budget.
+    4. Select **Save**.
+
+    See [Give apps virtual keys](/secure/virtual-keys).
+
+    <Tip>Keep a smaller budget on each key as well, so one agent cannot spend the whole team's budget.</Tip>
+  </Step>
+</Steps>
+
+## Edit or delete
+
+Open the menu (**⋯**) at the end of the row:
+
+- **Edit** opens the same form. Select **Save** when done.
+- **Delete** asks you to confirm. The team's or customer's virtual keys stay, no longer grouped under it. Its budget is deleted with it.
+
+## Check it worked
+
+The row shows:
+- **Budget**: the spend so far against the budget, for example `$0.00 of $500.00 a month`, with a bar. The bar turns amber at 70% and red at 90%.
+- **Rate limit**: the limits, or **No rate limit**.
+- **Customer** (teams, when the gateway has customers): the customer, or a dash.
+
+As keys under the team make calls, the team's name shows next to the key under **Caller** in [Logs](/secure/logs).
+
+## What happens at the limit
+
+When a limit is reached, the gateway refuses the call until the period resets:
+
+| Limit reached | The gateway answers |
+|---|---|
+| **Budget** of the key or the team | HTTP 402 |
+| **Tokens** or **Requests** of the key or the team | HTTP 429 |
+
+Your agents should handle both: tell the user, and retry a 429 later. Do not retry a 402 in a loop: nothing changes until the budget's period resets or someone raises it.
+
+## Watch the spend
+
+- **LLM Gateway** > **Teams & Customers**: the **Budget** column shows what each team has spent of its budget in this period.
+- **LLM Gateway** > **Overview**: **Closest to budget** lists the keys nearest their own budget.
+- **LLM Gateway** > **Logs**: the cost of every call, and the key and team that made it.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Give apps virtual keys" icon="key" href="/secure/virtual-keys">
+    Budgets and rate limits on one key.
+  </Card>
+  <Card title="Read the gateway logs" icon="scroll" href="/secure/logs">
+    Every call, its caller and its cost.
+  </Card>
+  <Card title="LLM Gateway overview" icon="gauge" href="/secure/gateway-overview">
+    See which keys are closest to their budget.
+  </Card>
+  <Card title="See people and spend" icon="chart-line" href="/discover/people-and-spend">
+    All AI spend across your clouds and tools.
+  </Card>
+</CardGroup>

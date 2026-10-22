@@ -1,0 +1,135 @@
+---
+title: "Databricks"
+description: "Connect a Databricks workspace so OpenController finds its agents, models, MCP servers and skills, and reads its AI spend."
+icon: "database"
+---
+
+OpenController reads a Databricks workspace as a **service principal**, signing in with OAuth machine-to-machine
+credentials: the principal's application ID and an OAuth secret. One integration is one workspace, on AWS, Azure or
+Google Cloud.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** agent serving endpoints, Agent Bricks Knowledge Assistants and
+  Supervisor Agents, Genie spaces, Databricks Apps that host agents or MCP servers, registered models, Foundation Model
+  APIs, external models behind AI Gateway, MCP services and connections, and Unity Catalog and workspace skills.
+- **How they connect:** which agent uses which model, tool, MCP server, skill or other agent.
+- **Guardrails and limits:** each endpoint's AI Gateway guardrails (safety, PII, blocked keywords, allowed topics) as a
+  guardrail it uses; usage tracking, inference tables and rate limits as properties of the endpoint.
+- **[Spend](/discover/people-and-spend):** estimated daily cost of Model Serving, AI Gateway, Agent Bricks, Vector
+  Search, Apps and other AI products, from Databricks' system billing tables.
+
+OpenController never queries an endpoint, agent, Genie space or MCP server, and never reads tables (other than the
+system billing tables, for spend), volumes, model files or inference tables. Unity Catalog is needed for models, Unity
+Catalog skills and MCP services; serving endpoints, Genie spaces, apps and workspace skills are read without it.
+
+## Connect a Databricks workspace
+
+<Steps>
+  <Step title="Create the service principal">
+    As a workspace admin, go to **Settings** > **Identity and access** > **Service principals** > **Add service
+    principal**, and name it `opencontroller-discover`. Open it, then **Secrets** > **Generate secret**. Copy the secret
+    and the principal's **application ID**.
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Databricks workspace**. Give a **Name**, the **Workspace URL** (the address
+    you open it at, for example `https://adb-1234567890123456.7.azuredatabricks.net`; only Databricks hosts, https, no
+    path), **Read service principal: application ID** and **Read service principal: OAuth secret**. Leave **Control
+    service principal** at **None: discovery only**: Databricks has no changes yet. Select **Connect**.
+
+    The **Grant the service principal access** dialog opens, with the grants in three groups (**Sign in**, **Models,
+    skills and MCP services**, **Agents**) and the `GRANT` statement.
+  </Step>
+  <Step title="Grant the service principal its access">
+    Grant what you want discovered. Catalog grants come from each catalog's owner or a metastore admin; endpoint, Genie
+    and app grants from a workspace admin.
+
+    | Verify check | Grant |
+    |---|---|
+    | **Sign in** | The service principal added to the workspace, with an OAuth secret. |
+    | **Unity Catalog** | **USE CATALOG** on each catalog, and **USE SCHEMA** on its schemas. |
+    | **Registered models** | **EXECUTE** on the models or their schemas, or **BROWSE** for metadata only. |
+    | **Model Serving** | **CAN VIEW** on each serving endpoint. |
+    | **Agent Bricks** | **CAN VIEW** on each agent's serving endpoint (its `ka-…` or `mas-…` endpoint). |
+    | **Genie** | **CAN VIEW** on each Genie space. |
+    | **Apps** | **CAN USE** on each app that hosts an agent or MCP server. |
+
+    Skills and MCP services are read schema by schema during a scan: **READ VOLUME** on Unity Catalog skills, **EXECUTE**
+    on MCP services, and **CAN READ** on the `/Workspace/.assistant/skills` folder for workspace skills. For a whole
+    catalog:
+
+    ```sql
+    GRANT USE CATALOG, USE SCHEMA, EXECUTE, READ VOLUME ON CATALOG main TO `<application ID>`;
+    ```
+
+    <Tip>
+    Discovery only reads, but `EXECUTE` and `READ VOLUME` would let the principal call MCP services and read volumes.
+    Where that matters, grant them on the schemas that hold models, skills and MCP services rather than the whole
+    catalog, and use `BROWSE` instead of `EXECUTE` for models. Discovery never needs `SELECT`.
+    </Tip>
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**. The **Access** badge reads **Verified**, or how many checks were refused; open it to
+    see each check and how many items it found. A check says **not available on this workspace** when the feature is off
+    (no Unity Catalog metastore, Agent Bricks not enabled, Model Serving not in the region), and **refused**, with the
+    missing grant, when the principal lacks it. Scans run every 5 minutes by default.
+  </Step>
+</Steps>
+
+## Read spend (optional)
+
+Once a day, OpenController reads the last 35 days of AI usage from `system.billing.usage`, priced at
+`system.billing.list_prices`. The rows are **estimated**: list prices leave out discounts. The system tables belong to
+the Databricks account, so one workspace connection reads every workspace's AI usage in that account.
+
+As a metastore admin or account admin, grant:
+
+```sql
+GRANT USE CATALOG ON CATALOG system TO `<application ID>`;
+GRANT USE SCHEMA ON SCHEMA system.billing TO `<application ID>`;
+GRANT SELECT ON TABLE system.billing.usage TO `<application ID>`;
+GRANT SELECT ON TABLE system.billing.list_prices TO `<application ID>`;
+```
+
+Then in **SQL Warehouses**, open a warehouse > **Permissions** > add the principal with **Can use**. The query spends
+that warehouse's DBUs. OpenController uses a running warehouse, else a serverless one, else the first listed. With no
+warehouse it can use, spend shows **not set up**; without the grants, **needs permission**.
+
+## Permissions it uses
+
+| Surface | Grant | Why |
+|---|---|---|
+| Sign in | The service principal in the workspace, with an OAuth secret | Gets a token (OAuth machine-to-machine, scope `all-apis`) |
+| Unity Catalog | **USE CATALOG**, **USE SCHEMA** | Lists catalogs and schemas, to find models, skills and MCP services. `system`, `samples`, `hive_metastore` and `__databricks*` catalogs are skipped. |
+| Registered models | **EXECUTE**, or **BROWSE** | Lists models and their versions |
+| MCP services | **EXECUTE** | Lists Unity Catalog MCP services |
+| Skills | **READ VOLUME** (Unity Catalog); **CAN READ** on `/Workspace/.assistant/skills` | Lists skills and reads each `SKILL.md` |
+| Model Serving and Agent Bricks | **CAN VIEW** on the endpoints | Reads endpoints and their AI Gateway settings |
+| Genie | **CAN VIEW** on the spaces | Reads Genie spaces |
+| Apps | **CAN USE** on the apps | Reads apps that host agents or MCP servers |
+| Spend | `USE CATALOG` on `system`, `USE SCHEMA` on `system.billing`, `SELECT` on `usage` and `list_prices`; **Can use** on a SQL warehouse | Reads the billing tables |
+
+MCP connections are not granted `USE CONNECTION`, which would let the principal call the server. A connection the
+principal cannot list is still found through the agents that use it.
+
+If you set a **Control service principal**, Verify adds a **Control sign in** check that only proves it can get a
+token; it needs no grants, since Databricks has no changes yet.
+
+The OAuth secret is kept in your secrets manager and sent only to the workspace URL, which must be a Databricks host, so
+a connection cannot be pointed at another server to collect the secret.
+
+## Remove the integration
+
+Removing it deletes the stored OAuth secrets and stops scans; what was discovered stays until later scans retire it.
+The service principals stay in the workspace: delete their secrets, or the principals, to revoke access.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Explore your AI inventory" icon="boxes" href="/discover/ai-inventory">
+    See the agents, models and MCP servers the scan found.
+  </Card>
+  <Card title="See people and spend" icon="dollar-sign" href="/discover/people-and-spend">
+    Read estimated Databricks AI spend.
+  </Card>
+</CardGroup>

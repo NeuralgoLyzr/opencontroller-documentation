@@ -1,0 +1,87 @@
+---
+title: "Google Workspace"
+description: "Let people sign in to the OpenController console with their Google Workspace account, over SAML."
+sidebarTitle: "Google"
+icon: "log-in"
+---
+
+Google Workspace signs people in to the console with **SAML 2.0**, through a custom SAML app in the Google Admin
+console. The SAML app can send group names, which map to roles. To discover agents in Google Cloud, see
+[Google Cloud](/integrations/gcp).
+
+Changing single sign-on needs the **Owner** role in OpenController, and a Google Workspace super administrator. SAML
+also needs a secrets manager: OpenController's signing key is kept there. Below, `<console address>` is the address
+under **Settings** > **Authentication** > **Console address**.
+
+## Connect Google Workspace
+
+<Steps>
+  <Step title="Add a custom SAML app in the Admin console">
+    In the Google Admin console, go to **Apps** > **Web and mobile apps** > **Add app** > **Add custom SAML app**. Note
+    the IdP ID from the SSO URL, `https://accounts.google.com/o/saml2/idp?idpid=<id>`, then set:
+
+    - **ACS URL:** `<console address>/saml/acs`
+    - **Entity ID:** `<console address>/saml/metadata`
+    - **Name ID:** **Primary email**.
+    - **Attribute mapping:** **Primary email** to `email`, and, for roles from groups, **Group membership** to
+      `groups`, with the groups you will map.
+
+    Turn the app on for the organizational units or groups that may use OpenController.
+  </Step>
+  <Step title="Connect Google Workspace in OpenController">
+    Go to **Settings** > **Single sign-on**. Under **Identity provider**, select **Google Workspace**; under **Signs in
+    with**, **SAML 2.0**. Fill in **SAML app's IdP id** and **Email domains** (every Workspace domain your people sign
+    in with; anyone from another domain is refused), then select **Connect Google Workspace**.
+
+    Check that the values under **1. In your identity provider, create a SAML application with these values** match
+    the app.
+  </Step>
+</Steps>
+
+The **Single sign-on** page shows **IdP Connected**. Open the console in a private window and sign in with a Workspace
+account from one of your domains.
+
+<Warning>
+**Signs in with** also offers **OpenID Connect** for Google, but it does not work yet: the console sends the access
+token to OpenController, which checks it as a signed JWT, and Google's access tokens are not JWTs. Google also requires a
+client secret for a web OAuth client, which OpenController does not hold. Use SAML.
+</Warning>
+
+## Give people roles
+
+A signed-in person's role comes only from **Settings** > **Role mappings**; it cannot be set per person under
+**Members**.
+
+- Under **Granted to these groups or roles**, enter the group names the `groups` attribute sends. A person in several
+  mapped groups gets the highest role.
+- Set **Anyone signed in whom nothing maps gets** to a default role (not **Owner**), or **no access** to refuse
+  everyone else.
+
+Changing role mappings needs **Owner**.
+
+<Note>
+Google Workspace provisions over SCIM only to apps in its own catalogue, not to a custom SAML app. Do not generate a
+SCIM token under **3. Provisioning (SCIM 2.0, optional)**: once one exists, only provisioned people can sign in, and
+Google would provision no one.
+</Note>
+
+## What it uses
+
+| What | Value |
+|---|---|
+| SAML metadata | `https://accounts.google.com/o/saml2/idp?idpid=<id>` |
+| SAML attributes read | Email from `email`, `mail` or a Name ID with `@`; groups from `groups`; roles from `roles` or `role` |
+| Stored | OpenController's own SAML signing key, in your secrets manager. Nothing of Google's. |
+
+Signing out ends only the console session; the Google session stays.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Single sign-on and role mappings" icon="log-in" href="/administer/sso">
+    Every field on the Single sign-on and Role mappings pages.
+  </Card>
+  <Card title="Roles and permissions" icon="user-cog" href="/get-started/roles">
+    What Viewer, Operator, Admin and Owner can do.
+  </Card>
+</CardGroup>

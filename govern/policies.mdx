@@ -1,47 +1,42 @@
 ---
-title: "Policies"
-description: "Policies are the rules OpenController governs by. The registry policy decides which asset kinds must be registered and what an approval needs."
+title: "Set registry policies"
+description: "The rules OpenController governs by: which kinds of asset must be registered, and what an approval needs."
+sidebarTitle: "Registry policies"
 icon: "scale"
 ---
 
-import { ApiLink } from '/snippets/api-link.mdx'
+Changes apply to new requests and decisions from the moment you save them.
 
-A policy is the registry's rules, kept as data an administrator edits. Today the Policies page holds one policy, the registry policy. It decides which discovered assets are shadow until registered, and what an approval needs. Changes apply to new requests and decisions from the moment they are saved; past requests keep the version they were made under.
+{/* SCREENSHOT: policies-hero | full | Policies: the Registry policy header with its version, the "What must be registered" grid of kind switches, the Approval block with Separation of duties, and the save bar. */}
+<Frame caption="The Policies page">
+  <img src="/images/govern/policies-hero.png" alt="The Policies page with the registry policy's kinds, the separation of duties switch and the save bar." />
+</Frame>
 
-## The registry policy
+## What must be registered
 
-The header shows the policy's version, who last changed it and when, or "Default policy, never changed".
+Switching a kind on puts its unregistered assets in [Shadow AI](/discover/shadow-ai); switching it off takes them out. Kinds left off show as **Not governed** and are governed through the assets that use them, for example an identity through the agent that runs as it.
 
-### What must be registered
+## Approval
 
-A switch per asset kind. Discovered assets of the kinds turned on are shadow until a registration for them is approved. Kinds left off are **Not governed**: they are governed through the assets that use them.
+**Separation of duties** is on by default: nobody can approve a registration they requested themselves.
 
-The default policy names what an agent runs, calls or loads: **Agents**, **MCP servers**, **Tools**, **Models**, **Skills**, **Gateways** and **Endpoints**. Every other kind can be turned on.
+## Save your changes
 
-### Approval
+Each save makes a new version of the policy, and the header shows who saved the one in force. If someone else saves while you edit, your save fails: select **Load the current policy**, then make your change again.
 
-**Separation of duties**: an administrator cannot approve a registration they requested themselves. On by default.
+Guardrails and budgets are not set here: see [Guardrails](/secure/guardrails/list) and [virtual keys](/secure/virtual-keys).
 
-### Checks
+## Who can use it
 
-The block links to **Posture, Security policies**, where the posture checks are chosen. Which checks run, and what each does, is set there, not here.
+Only **Admin** and **Owner** see and change **Policies** (`registry:govern`). Other roles do not see it in the sidebar.
 
-## Saving
+## Next steps
 
-**Save policy** saves the policy as a whole, at the version you read. If another administrator saved it meanwhile, the save is refused with "the registry policy was changed meanwhile" and a **Load the current policy** link. **Discard changes** drops your edits. **Restore defaults** puts the default policy in the editor; it still needs saving.
-
-## What is enforced, and what is flagged
-
-| Rule | How it is applied |
-|---|---|
-| A kind must be registered | Enforced on every list and badge: assets of that kind without a registration are **Shadow**, count as non-compliant on the map, and color red. Nothing is changed on the cloud; the asset keeps running. |
-| Checks | A request is checked against the posture's security policies set to warn or block, chosen under **Posture**, **Security policies**. A failed check does not refuse the request: it shows in the Approvals **Checks** column, and approving it then needs a note. |
-| Separation of duties | Enforced at decision time: the API refuses the approval and the button says why. |
-| Owner and purpose | Enforced at request time: a purpose is always required, and an owner when the platform names none. When the platform names an owner, that owner is recorded and the requester cannot change it. |
-| Blocking agents | Where the control module is on, an agent can be blocked only once it is registered or pending; unblocking is never refused. See [Control actions](/govern/control-actions). |
-
-## How it interacts with approvals
-
-The policy's kinds decide what reaches [Approvals](/govern/approvals): only assets of a governed kind can be requested. Separation of duties decides who may approve. The version in force when a request is made is recorded on the registration as **Policy**, so a later change does not alter what was agreed.
-
-<ApiLink />
+<CardGroup cols={2}>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    See what the policy makes shadow.
+  </Card>
+  <Card title="Review and approve requests" icon="stamp" href="/govern/approvals">
+    Decide the requests.
+  </Card>
+</CardGroup>

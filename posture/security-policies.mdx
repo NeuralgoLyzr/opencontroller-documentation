@@ -1,87 +1,120 @@
 ---
 title: "Security policies"
-description: "The checks the posture runs over your inventory, what each looks for, how they answer to frameworks, and how to turn them on and off."
+description: "Every security policy the posture runs, what it detects, and the framework items it maps to."
+sidebarTitle: "Security policies"
 icon: "list-checks"
-mode: "wide"
 ---
 
 import { Atlas } from '/snippets/atlas.mdx'
-import { ApiLink } from '/snippets/api-link.mdx'
 
-A security policy is one detector the posture runs over the inventory. Each one tests a single risk, such as an API key that never expires or an agent that calls models around the LLM gateway, on the clouds where it can be seen. When a policy matches an asset, that is a finding on [Findings](/posture/findings). The **Security policies** page, under Posture, is where you decide which policies run.
+A security policy is a detector the posture runs over the AI inventory. When it is on, it runs at each evaluation and lists what it finds on [Findings](/posture/findings). When it is off, it does not run.
 
-Security policies are not the same as governance policies. The **Policies** page under Govern holds the registration policy: what counts as a shadow asset, what a registration request must state, who approves it. Security policies only read the inventory and report.
+## The Security policies page
 
-## Policies by framework
+Go to **Posture** > **Security policies**.
 
-Each row is a category of policies, as Findings groups them, and each number counts the controls in one framework that the category's policies answer. Pick a framework to see its controls. The mapping is the one on [Frameworks](/posture/frameworks).
+{/* SCREENSHOT: secpol-list | crop | Posture > Security policies, By framework view, OWASP LLM selected in the tree on the left: the branch header "OWASP LLM" with the policy count, Turn all on and Turn all off, and the table with Policy (framework chips, OWASP LLM highlighted), Severity, Providers and On switches. Crop to the tree and the table, no sidebar. */}
+<Frame caption="Security policies, read by framework">
+  <img src="/images/posture/secpol-list.png" alt="The Security policies page with the framework tree on the left and the chosen framework's policies on the right." />
+</Frame>
 
-<Atlas />
+| Control | What it does | Least role |
+|---|---|---|
+| **By category** / **By framework** | Reads the tree on the left by category and class, or by framework and control. Each branch shows how many policies it holds. | Viewer |
+| **Find a policy** | Finds policies by title or by why they matter. | Viewer |
+| **Every provider** / a cloud | Shows only the policies that cover that cloud. **Clear the filters** removes the cloud and the search. | Viewer |
+| **On** switch | Turns one policy on or off. The change is saved at once, and findings follow within a minute. | Admin |
+| **Turn all on** / **Turn all off** | Turns every policy in the chosen branch on or off. With a cloud chosen, the buttons say **everywhere**: a policy turns on or off on every cloud it covers. | Admin |
+| **About** a framework | In a framework branch, opens that framework's guide. | Viewer |
+| **Framework guides** | Opens the guides: what each framework is, its official documentation, and how the policies cover it. | Viewer |
 
-## Turning policies on and off
-
-A change is saved as you make it, and findings follow at the next evaluation, within a minute.
-
-<Steps>
-<Step title="Find the policy">
-Filter by cloud with the **Provider** control (**Every provider** or one cloud), and browse the tree on the left by **category** (categories and their classes) or by **framework** (frameworks and their controls). Search by name. **Clear the filters** resets the page.
-</Step>
-<Step title="Switch it">
-Each row has an **On** switch. On means the policy runs at each evaluation, on every cloud it covers, and lists what it finds in Findings. Off means it does not run on any cloud, and what it found leaves Findings. **Turn all on** and **Turn all off** switch every policy in view; with a provider filter set the buttons read **everywhere**, because a policy turns on or off on every cloud it covers, not on one.
-</Step>
-<Step title="Read why it runs or does not">
-Click a row to open the policy. The drawer shows the **Detector** switch, **Clouds it covers** and **Frameworks it answers to**. When a policy cannot run, its row says **Not running** and why: it needs a source that is off (the registry, owners, the LLM gateway, traces, evaluations or an allowlist) or that could not be read.
-</Step>
-</Steps>
+Select a policy's name to open its panel: **Detector** (the on/off switch), **Clouds it covers** and **Frameworks it answers to**. A policy that is on but cannot run says **Not running** and why.
 
 ### Allowed model providers
 
-The policy **SUP-3 Models from providers the organization does not allow** needs a list to compare against. Open it and, under **Allowed model providers**, switch on the vendors the inventory has seen, or type **Another provider** and click **Allow**. A model from any other provider is a finding. With no provider allowed, the policy does not run. The list holds up to 50 names of up to 64 characters each, stored lowercased.
+The policy **SUP-3**, *Models from providers the organization does not allow*, runs only once you set the providers your organization allows. Open **SUP-3** and, under **Allowed model providers**, select each provider to allow, or type one in **Another provider** and select **Allow**. A model from any other provider is then a finding. With none allowed, this policy does not run. Changing the list needs the **Admin** role.
 
-## The catalog
+## Policies by framework
 
-The table columns are Policy (its title, why it matters, framework chips and any **Not running** reason), Severity, Providers (the clouds it covers) and On. The **Framework guides** button opens the guide for each framework; see [Frameworks](/posture/frameworks).
+Each row is a category of policies, as Findings groups them, and each number counts the controls in one framework that the category's policies answer. Pick a framework to see its controls. What each framework is, and every control it maps to, is on [Frameworks](/posture/frameworks).
 
-| Id | Policy | Class | Severity | Needs |
-|---|---|---|---|---|
-| EXP-1 | Assets anyone can use without signing in | Authentication | High | |
-| EXP-2 | Gateways without inbound authentication | Authentication | High | |
-| EXP-3 | Assets reachable from the internet | Network exposure | Medium | |
-| EXP-4 | Runtimes and projects on public networking | Network exposure | Medium | |
-| EXP-5 | Assets shared with the whole organization | Sharing | Medium | |
-| EXP-6 | Agents that read the open web | Untrusted input | Low | |
-| IAM-1 | Agents acting with their maker's credentials | Delegated identity | High | |
-| IAM-2 | Assets that share one identity | Delegated identity | Medium | |
-| IAM-3 | API keys that never expire | API keys | Medium | |
-| IAM-4 | API keys unused for 30 days | API keys | Medium | |
-| IAM-5 | API keys made by someone who is not a member | API keys | High | |
-| IAM-6 | Tools signing in with a static API key | API keys | Medium | |
-| DAT-1 | Credentials in environment variables | Secrets | High | |
-| DAT-2 | Credentials written into instructions | Secrets | High | |
-| DAT-3 | Outside input, private data and a way to act, in one agent | Data exfiltration | Critical | |
-| AGY-1 | Destructive tools, and the agents that can call them | Excessive agency | High | |
-| AGY-2 | Generative agents with little or no instructions | System instructions | Medium | |
-| AGY-3 | Agents that run code they write | Excessive agency | Medium | |
-| AGY-4 | Agents that call other agents | Multi-agent | Low | |
-| SUP-1 | Agents using MCP servers outside the registry | Unapproved components | High | |
-| SUP-2 | Tools, servers and models reached without TLS | Encryption in transit | Medium | |
-| SUP-3 | Models from providers the organization does not allow | Unapproved components | Medium | Allowed model providers |
-| RT-1 | Agents with no guardrail and no gateway | Guardrails | Medium | |
-| RT-2 | Agents calling models around the gateway | Gateway coverage | Low | The LLM gateway |
-| GOV-1 | Shadow assets | Inventory | Medium | The registry |
-| GOV-2 | Assets nobody answers for | Ownership | Medium | Owners |
-| GOV-3 | Assets whose owner has left | Ownership | High | Owners |
-| GOV-4 | Published agents nobody uses | Inventory | Medium | |
-| GOV-5 | Agents published from the default environment | Environments | Low | |
-| OBS-1 | Agents nobody traces | Tracing | Medium | Observability |
-| OBS-2 | Traced agents nobody evaluates | Evaluation | Low | Observability and evals |
+<Atlas />
 
-A few details worth knowing when you read a finding:
+## Categories
 
-- **DAT-1** reads only the names of environment variables, and **DAT-2** keeps only the shape of what it matched, never the value.
-- **AGY-2** flags generative agents whose instructions are under 100 characters.
-- **GOV-4** flags a published agent with no use for 90 days, and leaves agents under 30 days old alone.
-- **OBS-1** counts an agent as traced when a project stood for it in the last 30 days; **OBS-2** counts it as evaluated when a result scored it in the last 90 days.
-- **RT-1** applies to platforms where agents are built in code, where a guardrail or the gateway is the only runtime protection.
+| Category | What goes wrong |
+|---|---|
+| **Exposure** | Assets others can reach or use without signing in. |
+| **Identity and access** | Agents and keys acting with more access than they should, or with credentials that never end. |
+| **Data and secrets** | Credentials stored where they leak, and agents that can move private data out. |
+| **Agency** | Agents that can do harm: destructive tools, code they write, other agents. |
+| **Supply chain** | Components that are not approved or not encrypted. |
+| **Runtime protection** | Agents whose calls skip the LLM gateway and guardrails. |
+| **Governance** | Assets nobody registered, owns or uses. |
+| **Observability** | Agents nobody traces or evaluates. |
 
-<ApiLink />
+## Every policy
+
+**Severity** is the policy's own. A finding can be more severe, depending on the asset. See [Findings](/posture/findings#why-a-findings-severity-differs-from-its-policys).
+
+| ID | Policy | Category | Severity | Clouds | Framework items |
+|---|---|---|---|---|---|
+| EXP-1 | Assets anyone can use without signing in | Exposure | High | Microsoft, Databricks, Google Cloud, External | LLM01, ASI01, ASI03, AML.T0049, MS-2.7 |
+| EXP-2 | Gateways without inbound authentication | Exposure | High | AWS | ASI04, ASI07, AML.T0049, BedrockAgentCore.2 |
+| EXP-3 | Assets reachable from the internet | Exposure | Medium | Microsoft, Google Cloud, Databricks, AWS | LLM01, AML.T0049, MS-2.7 |
+| EXP-4 | Runtimes and projects on public networking | Exposure | Medium | AWS, Microsoft | MS-2.7, BedrockAgentCore.1 |
+| EXP-5 | Assets shared with the whole organization | Exposure | Medium | Microsoft, Databricks, Google Cloud | LLM02, ASI03, A.9.4 |
+| EXP-6 | Agents that read the open web | Exposure | Low | Microsoft, AWS | LLM01, ASI01, AML.T0051 |
+| IAM-1 | Agents acting with their maker's credentials | Identity and access | High | Microsoft | ASI03, LLM06, AML.T0012 |
+| IAM-2 | Assets that share one identity | Identity and access | Medium | AWS, Microsoft, Google Cloud | ASI03, A.3.2 |
+| IAM-3 | API keys that never expire | Identity and access | Medium | Anthropic | AML.T0055, MS-2.7 |
+| IAM-4 | API keys unused for 30 days | Identity and access | Medium | Anthropic | GV-1.7, AML.T0055 |
+| IAM-5 | API keys made by someone who is not a member | Identity and access | High | Anthropic | GV-2.1, ASI10, AML.T0055 |
+| IAM-6 | Tools signing in with a static API key | Identity and access | Medium | Google Cloud, Microsoft | ASI03, AML.T0055 |
+| DAT-1 | Credentials in environment variables | Data and secrets | High | AWS, Microsoft, Google Cloud, Databricks | LLM02, AML.T0083, AML.T0055 |
+| DAT-2 | Credentials written into instructions | Data and secrets | High | Microsoft, Google Cloud | LLM07, LLM02, AML.T0083 |
+| DAT-3 | Outside input, private data and a way to act, in one agent | Data and secrets | Critical | AWS, Microsoft, Google Cloud | LLM01, ASI01, ASI02, AML.T0051, AML.T0086 |
+| AGY-1 | Destructive tools, and the agents that can call them | Agency | High | AWS, Microsoft, Google Cloud, Databricks | LLM06, ASI02, AML.T0101, Art. 26 |
+| AGY-2 | Generative agents with little or no instructions | Agency | Medium | Microsoft | LLM01, ASI01 |
+| AGY-3 | Agents that run code they write | Agency | Medium | AWS, Microsoft, Google Cloud | ASI05, AML.T0105, BedrockAgentCore.7 |
+| AGY-4 | Agents that call other agents | Agency | Low | Microsoft, Databricks | ASI07, ASI08 |
+| SUP-1 | Agents using MCP servers outside the registry | Supply chain | High | AWS, Microsoft, Google Cloud, Databricks | LLM03, ASI04, GV-6.1, A.10.3, AML.T0104 |
+| SUP-2 | Tools, servers and models reached without TLS | Supply chain | Medium | AWS, Microsoft, Google Cloud, Databricks, External | ASI04, ASI07 |
+| SUP-3 | Models from providers the organization does not allow | Supply chain | Medium | Microsoft, Databricks, AWS, Google Cloud | LLM03, GV-6.1, A.10.3 |
+| RT-1 | Agents with no guardrail and no gateway | Runtime protection | Medium | AWS, Microsoft, Google Cloud | LLM01, LLM02, MS-2.4, Art. 26 |
+| RT-2 | Agents calling models around the gateway | Runtime protection | Low | AWS, Microsoft, Google Cloud | LLM10, MS-2.4 |
+| GOV-1 | Shadow assets | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks | GV-1.6, A.4.2 |
+| GOV-2 | Assets nobody answers for | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks, External | GV-2.1, A.3.2 |
+| GOV-3 | Assets whose owner has left | Governance | High | AWS, Microsoft, Google Cloud, Databricks | GV-2.1, A.3.2, ASI10 |
+| GOV-4 | Published agents nobody uses | Governance | Medium | Microsoft | GV-1.7, MG-2.4 |
+| GOV-5 | Agents published from the default environment | Governance | Low | Microsoft | A.6.2.5 |
+| OBS-1 | Agents nobody traces | Observability | Medium | AWS, Microsoft, Google Cloud | A.6.2.8, MS-2.4, Art. 26 |
+| OBS-2 | Traced agents nobody evaluates | Observability | Low | AWS, Microsoft, Google Cloud | LLM09, MS-2.5, A.6.2.4 |
+
+{/* TODO verify: this list matches the catalogue served by GET /v1/posture on the release being documented (taken from services/platform/internal/posture/checks.go) */}
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read every policy, its frameworks and the framework guides. |
+| **Operator** | Also **Evaluate now** on [Findings](/posture/findings). |
+| **Admin** | Also turn policies on and off, and set the allowed model providers. Every change is recorded in the audit log. |
+| **Owner** | Everything an Admin can do. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Review findings" icon="triangle-alert" href="/posture/findings">
+    See what the policies found, and how to fix it.
+  </Card>
+  <Card title="Guardrails" icon="shield-check" href="/secure/guardrails/list">
+    Close RT-1 by putting checks on an agent's calls.
+  </Card>
+  <Card title="Give apps virtual keys" icon="key" href="/secure/virtual-keys">
+    Give an agent its own key, and point it at the gateway.
+  </Card>
+  <Card title="Audit log" icon="history" href="/administer/audit-log">
+    See who changed a policy.
+  </Card>
+</CardGroup>

@@ -1,0 +1,51 @@
+---
+title: "Turn on modules"
+description: "Tell OpenController where each module runs and how to sign in to it, check the connection, and see the guardrail engine's state."
+sidebarTitle: "Modules"
+icon: "layout-grid"
+---
+
+**LLM Gateway**, **Observability**, **Evals** and **Fine-tuning** each run on an endpoint you choose. OpenController keeps the credential and calls the endpoint itself. The browser never holds it.
+
+<Note>The module must be on for your organization. A module that is off is not listed in **Settings**, and its pages are hidden. Whoever runs your OpenController turns modules on or off in its configuration. {/* TODO verify: how a customer on the hosted product asks for a module to be turned on. */} The module's service must also be running and reachable from OpenController.</Note>
+
+## Connect a module
+
+Go to **Settings** and select the module under **Modules**. Each module's own menu also links there: **Connection** in the LLM gateway, Observability and Fine-tuning menus, **Service** in the Evals menu. For the LLM gateway, follow [Set up the LLM gateway](/secure/set-up-gateway).
+
+- **Base URL** is where OpenController reaches the module, for example `https://clickhouse.example.com:8443`, or `http://clickhouse:8123` beside a local stack.
+- **Observability** (ClickHouse): **Database** defaults to `otel` and **Traces table** to `otel_traces`. Give OpenController a read-only ClickHouse user: it only reads traces.
+- **Fine-tuning** (OpenFinetuner): the **Token** is its API key, or a machine token minted for OpenController. Its console is always shown inside OpenController. If the browser reaches it at another address than the **Base URL**, select **Its console is at another address**.
+
+After **Save**, select **Check connection** in the **Connection** box.
+
+<Info>The password or token is kept in the secrets manager and cannot be read back. Leave the field empty to keep it, or type a new one to replace it. If you change the **Base URL** to another host, you must type the credential again.</Info>
+
+## Disconnect a module
+
+**Disconnect** stops OpenController reaching the module and deletes its credential from the secrets manager. Nothing in the module itself changes: the gateway, the trace store, the evals service or the studio keeps running with everything set in it.
+
+## Guardrails
+
+**Settings** > **Guardrails** has nothing to connect. The guardrail engine runs inside your OpenController and checks prompts and answers against the guardrails you make. Nothing it reads leaves it, except to a cloud guardrail a guardrail runs. **Cloud credentials** counts each cloud guardrail provider's credentials, which let a guardrail also run a cloud's own guardrails.
+
+{/* SCREENSHOT: modules-guardrails | crop | Settings > Guardrails: Guardrail engine "Answering · 3 guardrails" with Check and Guardrails; Cloud credentials for AWS Bedrock Guardrails, Azure AI Content Safety and Google Model Armor with Manage in Integrations. */}
+<Frame caption="Settings > Guardrails">
+  <img src="/images/settings/modules-guardrails.png" alt="The Guardrails module section with the guardrail engine answering and the cloud credentials summary." />
+</Frame>
+
+## Who can use it
+
+- **Admin** connects and disconnects modules, and changes guardrails.
+- Every role can see **Settings** > **Guardrails**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set up the LLM gateway" icon="route" href="/secure/set-up-gateway">
+    Connect the gateway and add its model providers.
+  </Card>
+  <Card title="Send traces" icon="activity" href="/monitor/send-traces">
+    Point your agents at Observability.
+  </Card>
+</CardGroup>

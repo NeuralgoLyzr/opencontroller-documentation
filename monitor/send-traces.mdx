@@ -1,1007 +1,114 @@
 ---
 title: "Send traces"
-description: "Point an agent's OpenTelemetry exporter at OpenController with a service-account key and a project, with the install line and start-up code for every framework the console supports."
+description: "Instrument an agent with OpenTelemetry or OpenInference, send its traces to OpenController's OTLP intake with an API key, and see the first trace arrive."
+sidebarTitle: "Send traces"
 icon: "send"
 ---
 
-An agent sends its traces to OpenController's intake, an OTLP endpoint on the console's own address. The intake checks the key, stamps the project and its agent onto the trace, and forwards it to the collector that writes the trace store. No OpenController library is involved: the agent runs an OpenTelemetry SDK with an instrumentor for its framework, and three environment variables tell the SDK where to send.
-
-Each project's **Setup** page writes everything on this page filled in with your project's id and your console's address. Open a project, then **Setup**, and choose the framework the agent is built on.
-
-## Two conventions
-
-Instrumentors write a span's attributes in one of two vocabularies. OpenController reads both, adds the other to every AI span, and shows them the same on every page. The choice is only about which instrumentor fits the agent.
-
-| Convention | Instrumentors | Prompts and answers |
-|---|---|---|
-| **OpenInference** | Arize's, the most frameworks, in Python and TypeScript. | Recorded on every span by default. |
-| **OpenTelemetry GenAI** | OpenTelemetry's own, writing its GenAI semantic conventions. Fewer frameworks, still in beta. | Off until the environment turns them on: `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental` and `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY`. Without them, a step arrives with its model, tokens and timing but not what was said. |
-
-The two can be mixed, even in one run. Spans that are not AI, such as HTTP requests, database queries and the app's own functions, can go along with them. They are kept as they came, and show in the run's steps beside the model calls, without a model or cost.
-
-## What every agent needs
-
-### The environment
-
-Every OpenTelemetry SDK reads these three variables. Set them where the agent runs:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=https://opencontroller.example.com/otlp
-OTEL_EXPORTER_OTLP_HEADERS=x-api-key=<your key>,x-project=<project id>
-OTEL_SERVICE_NAME=<project slug>
-```
-
-- `OTEL_EXPORTER_OTLP_ENDPOINT` is the console's origin followed by `/otlp`. The SDK appends `/v1/traces`.
-- `OTEL_EXPORTER_OTLP_HEADERS` carries the key as `x-api-key` and the project as `x-project`. The project's id is on its **Settings** page under **Sending traces**; its name works too. The project decides which agent the traces belong to, whatever the code says.
-- `OTEL_SERVICE_NAME` names the sender. The **Setup** page writes a lowercase slug of the project's name, with every run of other characters replaced by a dash: a project named `Support Agent` becomes `support-agent`.
-
-With OpenTelemetry GenAI, the **Setup** page adds the two variables from the table above, so the instrumentors write the conventions' latest names and keep prompts and answers on the spans.
-
-### The key
-
-Traces are sent with an OpenController API key, a [service account's](/setup/service-accounts), the same kind the API takes. Its role must allow `observability:send`: the operator or administrator role, or a custom role that holds only that permission, for a key that can do nothing but send traces.
-
-On the **Setup** page, choose a service account and click **Create key**. The key is shown once: copy it into `OTEL_EXPORTER_OTLP_HEADERS`. A viewer's key cannot be used; pick another account, or give it the operator role.
-
-### The protocol
-
-<Warning>
-The intake takes OTLP over HTTP only, as protobuf or JSON, gzipped or not. It does not take gRPC. Where an SDK or helper package offers both, pick the HTTP exporter: `opentelemetry-exporter-otlp-proto-http` in Python, `@opentelemetry/exporter-trace-otlp-proto` in Node.
-</Warning>
-
-## Frameworks
-
-The install line and the start-up code below are what the **Setup** page writes for each framework. Run the code once at start-up, before the agent runs; in Node, before anything imports the framework. The exporter reads where to send, the key and the project from the environment above.
-
-### Without code
-
-Claude Code needs no code. On the **Setup** page, choose **Claude Teams / Enterprise**, and the page writes a settings file for the organization's managed settings. The file turns Claude Code's telemetry on and sends its traces to the intake over `http/protobuf`, with the key and project in the headers. It turns the metrics and logs exporters off, and has Claude Code record user prompts and tool details and content. See [Claude Code](/connect/claude-code).
-
-### Model providers
-
-<AccordionGroup>
-<Accordion title="OpenAI">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-openai openai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.openai import OpenAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-OpenAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-openai openai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.openai import OpenAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-OpenAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="TypeScript, OpenInference">
-<CodeGroup>
-```bash Install
-npm install @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-proto @arizeai/openinference-instrumentation-openai openai
-```
-```typescript At start-up, before anything imports the framework
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
-import OpenAI from "openai"
-import { OpenAIInstrumentation } from "@arizeai/openinference-instrumentation-openai"
-
-const openai = new OpenAIInstrumentation()
-// With ES modules, hand it the module to patch.
-openai.manuallyInstrument(OpenAI)
-
-// Where to send, the API key and the project come from the environment above.
-new NodeSDK({ traceExporter: new OTLPTraceExporter() }).start()
-```
-</CodeGroup>
-</Tab>
-<Tab title="TypeScript, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-npm install @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-proto @opentelemetry/instrumentation-openai openai
-```
-```typescript At start-up, before anything imports the framework
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
-import { OpenAIInstrumentation } from "@opentelemetry/instrumentation-openai"
-
-// Where to send, the API key and the project come from the environment above.
-new NodeSDK({ traceExporter: new OTLPTraceExporter(), instrumentations: [new OpenAIInstrumentation()] }).start()
-```
-</CodeGroup>
-<Warning>
-OpenTelemetry's OpenAI instrumentor for Node writes prompts and answers as log events, not on its spans, and the intake takes traces only. Its spans arrive with their models, tokens, cost and timing, without what was said. For the conversation too, use OpenInference's.
-</Warning>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="Anthropic">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-anthropic anthropic
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.anthropic import AnthropicInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-AnthropicInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-anthropic anthropic
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.anthropic import AnthropicInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-AnthropicInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="Amazon Bedrock">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-bedrock boto3
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.bedrock import BedrockInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-BedrockInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-bedrock boto3
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.bedrock import BedrockInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-BedrockInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="Google GenAI">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-google-genai google-genai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-GoogleGenAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-google-genai google-genai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.google_genai import GoogleGenAiSdkInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-GoogleGenAiSdkInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="Vertex AI">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-vertexai google-cloud-aiplatform
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.vertexai import VertexAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-VertexAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-vertexai google-cloud-aiplatform
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.vertexai import VertexAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-VertexAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="LiteLLM">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-litellm litellm
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.litellm import LiteLLMInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-LiteLLMInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-<Accordion title="Mistral">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-mistralai mistralai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.mistralai import MistralAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-MistralAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-<Accordion title="Groq">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-groq groq
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.groq import GroqInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-GroqInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-</AccordionGroup>
-
-### Agent frameworks
-
-<AccordionGroup>
-<Accordion title="LangChain">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-langchain langchain
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.langchain import LangChainInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-LangChainInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-langchain langchain
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.langchain import LangChainInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-LangChainInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="TypeScript, OpenInference">
-<CodeGroup>
-```bash Install
-npm install @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-proto @arizeai/openinference-instrumentation-langchain @langchain/core
-```
-```typescript At start-up, before anything imports the framework
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
-import * as CallbackManagerModule from "@langchain/core/callbacks/manager"
-import { LangChainInstrumentation } from "@arizeai/openinference-instrumentation-langchain"
-
-new LangChainInstrumentation().manuallyInstrument(CallbackManagerModule)
-
-// Where to send, the API key and the project come from the environment above.
-new NodeSDK({ traceExporter: new OTLPTraceExporter() }).start()
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="LlamaIndex">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-llama-index llama-index
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-LlamaIndexInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-llama-index llama-index
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.llama_index import LlamaIndexInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-LlamaIndexInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="CrewAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-crewai crewai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.crewai import CrewAIInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-CrewAIInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-<Accordion title="OpenAI Agents">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-openai-agents openai-agents
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.openai_agents import OpenAIAgentsInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-OpenAIAgentsInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-openai-agents openai-agents
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.openai_agents import OpenAIAgentsInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-OpenAIAgentsInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="DSPy">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-dspy dspy
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.dspy import DSPyInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-DSPyInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-dspy dspy
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.dspy import DSPyInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-DSPyInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="Haystack">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-haystack haystack-ai
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.haystack import HaystackInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-HaystackInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-<Accordion title="smolagents">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-smolagents smolagents
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.smolagents import SmolagentsInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-SmolagentsInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-smolagents smolagents
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.smolagents import SmolagentsInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-SmolagentsInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="AutoGen">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-autogen-agentchat autogen-agentchat
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.autogen_agentchat import AutogenAgentChatInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-AutogenAgentChatInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-<Accordion title="Agno">
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-agno agno
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.agno import AgnoInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-AgnoInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-genai-agno agno
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.genai.agno import AgnoInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-AgnoInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-</Accordion>
-<Accordion title="MCP">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-mcp mcp
-```
-```python At start-up, before the agent runs
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from openinference.instrumentation.mcp import MCPInstrumentor
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-MCPInstrumentor().instrument(tracer_provider=provider)
-```
-</CodeGroup>
-</Accordion>
-</AccordionGroup>
-
-### Your own spans
-
-Any OpenTelemetry SDK, in any language, sends with the environment above. Write a span for each step, and give a model call its attributes in one convention. Its model, tokens and messages are what the pages read for cost and the conversation. Choose **Your own spans** on the **Setup** page for this code with your project filled in.
-
-<Tabs>
-<Tab title="Python, OpenInference">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
-```
-```python The SDK, and a model call traced by hand
-import json
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-tracer = trace.get_tracer("my-agent")
-
-# One model call, as a span of its own.
-with tracer.start_as_current_span("chat gpt-4o") as span:
-    span.set_attribute("openinference.span.kind", "LLM")
-    span.set_attribute("llm.provider", "openai")
-    span.set_attribute("input.value", question)
-    span.set_attribute("llm.input_messages.0.message.role", "user")
-    span.set_attribute("llm.input_messages.0.message.content", question)
-
-    reply = ask_the_model(question)
-
-    span.set_attribute("llm.model_name", reply.model)
-    span.set_attribute("llm.token_count.prompt", reply.input_tokens)
-    span.set_attribute("llm.token_count.completion", reply.output_tokens)
-    span.set_attribute("output.value", reply.text)
-    span.set_attribute("llm.output_messages.0.message.role", "assistant")
-    span.set_attribute("llm.output_messages.0.message.content", reply.text)
-```
-</CodeGroup>
-</Tab>
-<Tab title="Python, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
-```
-```python The SDK, and a model call traced by hand
-import json
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-
-# Where to send, the API key and the project come from the environment above.
-provider = TracerProvider(resource=Resource.create())
-provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-trace.set_tracer_provider(provider)
-
-tracer = trace.get_tracer("my-agent")
-
-# One model call, as a span of its own.
-with tracer.start_as_current_span("chat gpt-4o") as span:
-    span.set_attribute("gen_ai.operation.name", "chat")
-    span.set_attribute("gen_ai.provider.name", "openai")
-    span.set_attribute("gen_ai.request.model", "gpt-4o")
-    span.set_attribute("gen_ai.input.messages", json.dumps(
-        [{"role": "user", "parts": [{"type": "text", "content": question}]}]))
-
-    reply = ask_the_model(question)
-
-    span.set_attribute("gen_ai.response.model", reply.model)
-    span.set_attribute("gen_ai.usage.input_tokens", reply.input_tokens)
-    span.set_attribute("gen_ai.usage.output_tokens", reply.output_tokens)
-    span.set_attribute("gen_ai.output.messages", json.dumps(
-        [{"role": "assistant", "parts": [{"type": "text", "content": reply.text}], "finish_reason": "stop"}]))
-```
-</CodeGroup>
-</Tab>
-<Tab title="TypeScript, OpenInference">
-<CodeGroup>
-```bash Install
-npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-proto
-```
-```typescript The SDK, and a model call traced by hand
-import { trace } from "@opentelemetry/api"
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
-
-// Where to send, the API key and the project come from the environment above.
-new NodeSDK({ traceExporter: new OTLPTraceExporter() }).start()
-
-const tracer = trace.getTracer("my-agent")
-
-// One model call, as a span of its own.
-await tracer.startActiveSpan("chat gpt-4o", async (span) => {
-  span.setAttributes({
-    "openinference.span.kind": "LLM",
-    "llm.provider": "openai",
-    "input.value": question,
-    "llm.input_messages.0.message.role": "user",
-    "llm.input_messages.0.message.content": question,
-  })
-
-  const reply = await askTheModel(question)
-
-  span.setAttributes({
-    "llm.model_name": reply.model,
-    "llm.token_count.prompt": reply.inputTokens,
-    "llm.token_count.completion": reply.outputTokens,
-    "output.value": reply.text,
-    "llm.output_messages.0.message.role": "assistant",
-    "llm.output_messages.0.message.content": reply.text,
-  })
-  span.end()
-})
-```
-</CodeGroup>
-</Tab>
-<Tab title="TypeScript, OpenTelemetry GenAI">
-<CodeGroup>
-```bash Install
-npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-proto
-```
-```typescript The SDK, and a model call traced by hand
-import { trace } from "@opentelemetry/api"
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
-
-// Where to send, the API key and the project come from the environment above.
-new NodeSDK({ traceExporter: new OTLPTraceExporter() }).start()
-
-const tracer = trace.getTracer("my-agent")
-
-// One model call, as a span of its own.
-await tracer.startActiveSpan("chat gpt-4o", async (span) => {
-  span.setAttributes({
-    "gen_ai.operation.name": "chat",
-    "gen_ai.provider.name": "openai",
-    "gen_ai.request.model": "gpt-4o",
-    "gen_ai.input.messages": JSON.stringify([{ role: "user", parts: [{ type: "text", content: question }] }]),
-  })
-
-  const reply = await askTheModel(question)
-
-  span.setAttributes({
-    "gen_ai.response.model": reply.model,
-    "gen_ai.usage.input_tokens": reply.inputTokens,
-    "gen_ai.usage.output_tokens": reply.outputTokens,
-    "gen_ai.output.messages": JSON.stringify([{ role: "assistant", parts: [{ type: "text", content: reply.text }], finish_reason: "stop" }]),
-  })
-  span.end()
-})
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-
-The attributes a model call's span carries, in each convention:
-
-| What | OpenInference | OpenTelemetry GenAI |
-|---|---|---|
-| The kind of step | `openinference.span.kind` set to `LLM` | `gen_ai.operation.name` set to `chat` |
-| The provider | `llm.provider` | `gen_ai.provider.name` |
-| The model | `llm.model_name` | `gen_ai.request.model` and `gen_ai.response.model` |
-| Tokens | `llm.token_count.prompt` and `llm.token_count.completion` | `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens` |
-| The conversation | `input.value` and `output.value`, and the numbered `llm.input_messages.<n>.message.role` and `.content`, likewise `llm.output_messages` | `gen_ai.input.messages` and `gen_ai.output.messages`, each a JSON list of messages with `role` and `parts` |
-
-## Listen for the first trace
-
-The last step of the **Setup** page waits for the project's first trace from the moment you open it. It keeps listening while you start the agent in a terminal behind it. When traces arrive, the page says so with the count, and **View traces** opens the project's **Traces** for the last hour.
-
-To try the way there without any code, click **Send a test trace**. It sends one span from the console as you, so your own role must allow `observability:send`; otherwise the button says an operator can.
-
-## What OpenController reads from a span
-
-OpenController reads the OpenTelemetry GenAI semantic conventions first and OpenInference second, so either instrumentation works without mapping. In words:
-
-| It reads | From |
-|---|---|
-| The model | The response model, else the requested model, else the OpenInference model name |
-| The provider | The GenAI provider name or system, the OpenInference provider or system, or the gateway's provider name |
-| Input and output tokens | The GenAI usage counts (new and old names), else the OpenInference token counts |
-| Cached input tokens | The GenAI cache-read count, else the OpenInference prompt cache detail |
-| Cost | The GenAI usage cost, else the OpenInference total cost |
-| The kind of step | The OpenInference span kind, else the GenAI operation name: chat and text completion are model calls, embeddings an embedding, execute tool a tool, invoke or create agent an agent |
-| The session | The GenAI conversation id, else `session.id` |
-| The user | `enduser.id`, `user.id` or the GenAI request user |
-| The customer, gateway key and team | The LLM gateway's customer, virtual key and team attributes, or a customer name attribute |
-| The tool | The GenAI tool name, else `tool.name` |
-| What was asked and answered | The input and output values or messages, the prompt and completion, the first message's content, a tool call's arguments and result, or a retrieval query |
-
-Two things are not read from the sender. The agent a trace belongs to is the project's agent, written by the intake as the resource attribute `agent.id`, so a sender cannot claim another agent. The project is the resource attribute `opencontroller.project`, set the same way.
-
 <Note>
-A model call is counted once per trace, at the deepest span that carries usage. When a call goes through the LLM gateway, the gateway's span carries the price.
+**Before you start**
+
+- The **Observability** module is on and a trace store is connected. See [Modules](/administer/modules).
+- A project exists for the agent. See [Make a project](/monitor/observability#make-a-project).
+- You are an **Admin**: the **Setup** page and new API keys are an Admin's.
+- A service account with the **Operator** role exists, to send the traces. See [Service accounts](/administer/service-accounts).
 </Note>
+
+The agent sends its spans over OTLP/HTTP to the console's address. OpenController checks the key, writes the project onto every span, and forwards them to the OpenTelemetry Collector, which writes them to the trace store.
+
+<Steps>
+  <Step title="Open the project's Setup page">
+    Open the project and select **Setup** in its menu.
+
+    {/* SCREENSHOT: obs-setup | crop | The top of the support-bot project's Setup page: step 1 "Choose how the agent is built", Conventions set to OpenInference, the framework tiles with OpenAI selected. */}
+    <Frame caption="Setup: choose how the agent is built">
+      <img src="/images/observability/obs-setup.png" alt="The Setup page's first step, with the conventions switch and the framework tiles, OpenAI selected." />
+    </Frame>
+  </Step>
+  <Step title="Choose how the agent is built">
+    Pick the **Conventions** that have an instrumentor for your framework. OpenController reads both the same way.
+
+    - **OpenInference** (the default): the most frameworks, with prompts and answers on every span by default.
+    - **OpenTelemetry GenAI**: fewer frameworks, still in beta. Prompts and answers are off until the environment turns them on.
+
+    Then select the framework. Choose **Your own spans** to write the spans yourself, in any language, or **Claude Teams / Enterprise** for Claude Code.
+  </Step>
+  <Step title="Get an API key">
+    Traces are sent with a service account's API key. Its role must be able to send traces: an **Operator**'s, an **Admin**'s, or a custom role with `observability:send`. Choose the service account and select **Create key**.
+
+    <Warning>The key is shown once. Store it where the agent reads its secrets.</Warning>
+  </Step>
+  <Step title="Set the environment">
+    <Tabs>
+      <Tab title="Any agent">
+        Copy the variables under **Set the environment**. OpenTelemetry SDKs read them:
+
+        ```bash
+        OTEL_EXPORTER_OTLP_ENDPOINT=https://console.example.com/otlp
+        OTEL_EXPORTER_OTLP_HEADERS=x-api-key=cpk_…abcd,x-project=prj_…
+        OTEL_SERVICE_NAME=support-bot
+        ```
+
+        Traces go to `<endpoint>/v1/traces`. The `x-project` header decides which agent the traces are, whatever the code says.
+
+        With **OpenTelemetry GenAI**, two more variables make the instrumentors write the latest names and keep prompts and answers on the spans:
+
+        ```bash
+        OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+        OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY
+        ```
+      </Tab>
+      <Tab title="Claude Code">
+        Claude Code needs no code. The page shows `claude-code-settings.json` with the key and the project filled in.
+
+        - **Everyone in the organization:** paste it into claude.ai > **Organization settings** > **Claude Code** > **Managed settings**. Each person approves it once when Claude Code next starts, and cannot turn it off.
+        - **Just you:** merge it into `~/.claude/settings.json`, then restart Claude Code.
+
+        If you did not create a key here, replace `<YOUR_API_KEY>` with the service account's key. Then go to the last step.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Send its traces">
+    Run the **Install** command, and add the start-up code before the agent runs. For an OpenAI agent in Python with OpenInference:
+
+    ```bash
+    pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http openinference-instrumentation-openai openai
+    ```
+
+    ```python
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from openinference.instrumentation.openai import OpenAIInstrumentor
+
+    # Where to send, the API key and the project come from the environment above.
+    provider = TracerProvider(resource=Resource.create())
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
+
+    OpenAIInstrumentor().instrument(tracer_provider=provider)
+    ```
+
+    - Send over **OTLP/HTTP**, protobuf or JSON. The intake does not take gRPC.
+    - Spans that are not AI, such as HTTP requests or database queries, can go too. They show without a model or cost.
+    - OpenInference and the GenAI conventions can be mixed, even in one run.
+  </Step>
+  <Step title="Listen for the first trace">
+    Run the agent. The page checks every few seconds, even in a background tab.
+
+    **Send a test trace** sends one span, as you, to the project, with no code. It needs a role that can send traces.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Observability" icon="chart-line" href="/monitor/observability">
+    Read the new traces, spans and sessions.
+  </Card>
+  <Card title="Service accounts and API keys" icon="key" href="/administer/service-accounts">
+    Make, rotate and remove the keys agents send with.
+  </Card>
+</CardGroup>
