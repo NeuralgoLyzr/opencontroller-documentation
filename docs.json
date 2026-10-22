@@ -38,158 +38,165 @@
     "library": "lucide"
   },
   "navigation": {
-    "tabs": [
+    "versions": [
       {
-        "tab": "Documentation",
-        "icon": "book-open",
-        "groups": [
+        "version": "v0.108",
+        "tag": "Latest",
+        "default": true,
+        "tabs": [
           {
-            "group": "Get started",
-            "pages": [
-              "index",
-              "get-started/quickstart",
-              "get-started/roles",
-              "get-started/ask-ctrl"
-            ]
-          },
-          {
-            "group": "Discover AI",
-            "pages": [
-              "discover/connect-accounts",
-              "discover/scans",
-              "discover/ai-inventory",
-              "discover/shadow-ai",
-              "discover/people-and-spend",
-              "discover/asset-details"
-            ]
-          },
-          {
-            "group": "Govern agents",
-            "pages": [
-              "govern/registry",
-              "govern/approvals",
-              "govern/policies"
-            ]
-          },
-          {
-            "group": "Secure AI traffic",
-            "pages": [
-              "secure/gateway-overview",
-              "secure/set-up-gateway",
-              "secure/virtual-keys",
-              "secure/budgets-and-limits",
-              "secure/routing-and-mcp",
-              "secure/logs",
+            "tab": "Documentation",
+            "icon": "book-open",
+            "groups": [
               {
-                "group": "Guardrails",
+                "group": "Get started",
                 "pages": [
-                  "secure/guardrails/list",
-                  "secure/guardrails/create",
-                  "secure/guardrails/try-it",
-                  "secure/guardrails/block-prompt-injection",
-                  "secure/guardrails/opa-cedar",
-                  "secure/guardrails/cloud-providers",
-                  "secure/guardrails/use-anywhere",
-                  "secure/guardrails/checks"
+                  "index",
+                  "get-started/quickstart",
+                  "get-started/roles",
+                  "get-started/ask-ctrl"
                 ]
               },
               {
-                "group": "Who trips guardrails",
+                "group": "Discover AI",
                 "pages": [
-                  "secure/who-trips/caller-sign-in",
-                  "secure/who-trips/violations",
-                  "secure/who-trips/guide-violations-per-user"
+                  "discover/connect-accounts",
+                  "discover/scans",
+                  "discover/ai-inventory",
+                  "discover/shadow-ai",
+                  "discover/people-and-spend",
+                  "discover/asset-details"
+                ]
+              },
+              {
+                "group": "Govern agents",
+                "pages": [
+                  "govern/registry",
+                  "govern/approvals",
+                  "govern/policies"
+                ]
+              },
+              {
+                "group": "Secure AI traffic",
+                "pages": [
+                  "secure/gateway-overview",
+                  "secure/set-up-gateway",
+                  "secure/virtual-keys",
+                  "secure/budgets-and-limits",
+                  "secure/routing-and-mcp",
+                  "secure/logs",
+                  {
+                    "group": "Guardrails",
+                    "pages": [
+                      "secure/guardrails/list",
+                      "secure/guardrails/create",
+                      "secure/guardrails/try-it",
+                      "secure/guardrails/block-prompt-injection",
+                      "secure/guardrails/opa-cedar",
+                      "secure/guardrails/cloud-providers",
+                      "secure/guardrails/use-anywhere",
+                      "secure/guardrails/checks"
+                    ]
+                  },
+                  {
+                    "group": "Who trips guardrails",
+                    "pages": [
+                      "secure/who-trips/caller-sign-in",
+                      "secure/who-trips/violations",
+                      "secure/who-trips/guide-violations-per-user"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Posture",
+                "pages": [
+                  "posture/findings",
+                  "posture/security-policies",
+                  "posture/frameworks"
+                ]
+              },
+              {
+                "group": "Monitor",
+                "pages": [
+                  "monitor/observability",
+                  "monitor/send-traces",
+                  "monitor/issues",
+                  "monitor/cost",
+                  "monitor/guide-trace-an-agent",
+                  {
+                    "group": "Evals",
+                    "pages": [
+                      "monitor/evals/get-started",
+                      "monitor/evals/evaluators",
+                      "monitor/evals/tasks-scores",
+                      "monitor/evals/monitors",
+                      "monitor/evals/datasets-prompts",
+                      "monitor/evals/guide-first-evaluator"
+                    ]
+                  },
+                  "monitor/fine-tuning"
+                ]
+              },
+              {
+                "group": "Administer",
+                "pages": [
+                  "administer/members-roles-teams",
+                  "administer/sso",
+                  "administer/service-accounts",
+                  "administer/modules",
+                  "administer/audit-log",
+                  "administer/secrets-auth",
+                  "administer/guide-sso-okta"
                 ]
               }
             ]
           },
           {
-            "group": "Posture",
-            "pages": [
-              "posture/findings",
-              "posture/security-policies",
-              "posture/frameworks"
-            ]
-          },
-          {
-            "group": "Monitor",
-            "pages": [
-              "monitor/observability",
-              "monitor/send-traces",
-              "monitor/issues",
-              "monitor/cost",
-              "monitor/guide-trace-an-agent",
+            "tab": "Integrations",
+            "icon": "plug",
+            "groups": [
               {
-                "group": "Evals",
+                "group": "Clouds and data",
                 "pages": [
-                  "monitor/evals/get-started",
-                  "monitor/evals/evaluators",
-                  "monitor/evals/tasks-scores",
-                  "monitor/evals/monitors",
-                  "monitor/evals/datasets-prompts",
-                  "monitor/evals/guide-first-evaluator"
+                  "integrations/aws",
+                  "integrations/gcp",
+                  "integrations/microsoft",
+                  "integrations/databricks",
+                  "integrations/snowflake"
                 ]
               },
-              "monitor/fine-tuning"
-            ]
-          },
-          {
-            "group": "Administer",
-            "pages": [
-              "administer/members-roles-teams",
-              "administer/sso",
-              "administer/service-accounts",
-              "administer/modules",
-              "administer/audit-log",
-              "administer/secrets-auth",
-              "administer/guide-sso-okta"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Integrations",
-        "icon": "plug",
-        "groups": [
-          {
-            "group": "Clouds and data",
-            "pages": [
-              "integrations/aws",
-              "integrations/gcp",
-              "integrations/microsoft",
-              "integrations/databricks",
-              "integrations/snowflake"
-            ]
-          },
-          {
-            "group": "AI providers",
-            "pages": [
-              "integrations/anthropic"
-            ]
-          },
-          {
-            "group": "Console sign-in",
-            "pages": [
-              "integrations/identity/okta",
-              "integrations/identity/entra",
-              "integrations/identity/google",
-              "integrations/identity/keycloak",
-              "integrations/identity/oidc",
-              "integrations/identity/saml"
-            ]
-          },
-          {
-            "group": "Gateway callers",
-            "pages": [
-              "integrations/caller-identity/auth0",
-              "integrations/caller-identity/okta",
-              "integrations/caller-identity/keycloak"
-            ]
-          },
-          {
-            "group": "Observability",
-            "pages": [
-              "integrations/otel"
+              {
+                "group": "AI providers",
+                "pages": [
+                  "integrations/anthropic"
+                ]
+              },
+              {
+                "group": "Console sign-in",
+                "pages": [
+                  "integrations/identity/okta",
+                  "integrations/identity/entra",
+                  "integrations/identity/google",
+                  "integrations/identity/keycloak",
+                  "integrations/identity/oidc",
+                  "integrations/identity/saml"
+                ]
+              },
+              {
+                "group": "Gateway callers",
+                "pages": [
+                  "integrations/caller-identity/auth0",
+                  "integrations/caller-identity/okta",
+                  "integrations/caller-identity/keycloak"
+                ]
+              },
+              {
+                "group": "Observability",
+                "pages": [
+                  "integrations/otel"
+                ]
+              }
             ]
           }
         ]
