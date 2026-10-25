@@ -115,13 +115,18 @@ Anthropic's format, and answers in Claude Code's own terms:
 |---|---|---|
 | `UserPromptSubmit`, the prompt | `llm_input` | `{"decision": "block"}`: the prompt never reaches Claude |
 | `PreToolUse`, a tool call | `pre_tool`, by the guardrail's Cedar rules and OPA policies, then its input at `llm_input` | `hookSpecificOutput.permissionDecision: "deny"`: the tool does not run |
-| `PostToolUse`, a tool's output | `post_tool` | `{"decision": "block"}`: the tool has run, and Claude is told its output was blocked |
+| `PostToolUse`, a tool's output | `post_tool` | `{"decision": "block"}` and `updatedToolOutput`: the tool has run, and Claude reads `[withheld: …]` in place of its output |
 
 The hook matchers name the tools that act on the machine or bring in outside text. Before a call runs, the hook
 sees `Bash`, `Write`, `Edit`, `WebFetch` and every MCP tool. After one, it sees what `Read`, `Bash`, `WebFetch` and
 every MCP tool returned.
 
 - **Allowed steps.** When the guardrail lets a step through, and for every other event, the answer is `{}`.
+- **Withheld output.** `decision: "block"` alone only puts its reason beside a tool's output, which Claude still
+  reads; the output is what carries an injection from a file, a page or an MCP server. So a blocked output is
+  replaced, in the tool's own shape, as Claude Code ignores a replacement of another: Read's `file.content`, Bash's
+  `stdout` and `stderr`, WebFetch's `result`, an MCP tool's whole output, and another tool's strings but its types.
+  The tool has still run: what it did, it did; only Claude does not read what it returned.
 - **Long tool output.** Only the first 512 KiB of a tool's input or output is checked.
 - **Redaction.** A check set to redact lets the text through. Claude Code cannot rewrite a prompt, so only blocking
   acts.
