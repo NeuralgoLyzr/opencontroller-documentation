@@ -14,6 +14,10 @@ COPY . .
 # the result does not.
 RUN mint export --output /tmp/docs.zip && mkdir /out && unzip -q /tmp/docs.zip -d /out \
     && rm -f /out/serve.js "/out/Start Docs.command" "/out/Start Docs.bat"
+# The site runs where nothing else can be reached: a page that names a font
+# elsewhere fails the build, rather than a customer's browser.
+RUN elsewhere=$(find /out -type f \( -name '*.html' -o -name '*.txt' -o -name '*.css' \) -exec grep -lE 'https?://fonts\.(googleapis|gstatic)\.com' {} +); \
+    if [ -n "$elsewhere" ]; then echo "fonts from elsewhere in:" $elsewhere >&2; exit 1; fi
 
 FROM nginxinc/nginx-unprivileged:1.30-alpine@sha256:56b8272e43a0525f67aed68d1e0794a712d10e3e45a563e118e9a77c817e6f86
 LABEL org.opencontainers.image.title="opencontroller-documentation" \

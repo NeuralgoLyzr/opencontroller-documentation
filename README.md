@@ -48,6 +48,9 @@ pull request, and on every push to main publishes it to Lyzr Artifactory, the re
 `opencontroller/docs:v0-<commit>`. A customer's cell runs it at the tag its values pin (`docs_host` and
 `image_tags.docs` in the customer stack), and the console's sidebar links to it.
 
+It loads nothing from anywhere else: the export bundles its assets, JetBrains Mono is kept in `fonts/` (Open Font
+License), a build fails if a page names a font elsewhere, and nginx's Content-Security-Policy holds the browser to it.
+
 ```sh
 docker build -t opencontroller-documentation .
 docker run --rm -p 8081:8080 opencontroller-documentation   # http://localhost:8081
