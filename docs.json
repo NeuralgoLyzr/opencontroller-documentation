@@ -73,7 +73,8 @@
                 "pages": [
                   "govern/registry",
                   "govern/approvals",
-                  "govern/policies"
+                  "govern/policies",
+                  "govern/actions-by-provider"
                 ]
               },
               {

@@ -1,0 +1,195 @@
+---
+title: "Actions by provider"
+description: "Which changes OpenController can make to an agent in each cloud, what each change does there, and how to make it."
+sidebarTitle: "Actions by provider"
+icon: "table-2"
+---
+
+<Badge>Operator</Badge>
+
+OpenController can change an agent in its own cloud: share it, take access away, block it, delete it and more. What it can do depends on the provider and on the kind of agent, because each cloud offers different controls. This page lists them all, then explains each action and how to take it, provider by provider.
+
+## At a glance
+
+<Icon icon="check" size={16} color="#2f855a" /> = OpenController can do it. — = not available for this kind of agent (the reasons are under [Limits](#limits)).
+
+| Provider | Kind of agent | Share | Remove access | End org-wide access | Publish | Block / Unblock | Delete | Delete with cascade | Route through gateway |
+|---|---|---|---|---|---|---|---|---|---|
+| **AWS** | AgentCore runtime | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | AgentCore gateway | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | Bedrock agent (classic) | — | — | — | — | — | — | — | — |
+| **Microsoft** | Copilot Studio agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (API) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — |
+| | Agent Builder agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — |
+| | Agent 365 catalog agent | <Icon icon="check" size={16} color="#2f855a" /> (use only; your own and partners' agents) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | Foundry hosted agent | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Disable**) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — |
+| | Foundry prompt agent | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> |
+| | Foundry workflow agent | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — |
+| | Foundry agent published to Microsoft 365 | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| **Google Cloud** | Agent Runtime agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — |
+| | CX Agent Studio app | — | — | <Icon icon="check" size={16} color="#2f855a" /> (public web access) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — |
+| **Snowflake** | Cortex Agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (to CoWork) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | Snowflake-managed MCP server | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — |
+| **Anthropic (Claude)** | Managed Agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
+| | Workspace | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
+| | Deployment | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Pause**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
+| | API key | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Disable**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
+| | Member | — | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (remove from the organization) | — | — |
+| **Databricks** | Any | — | — | — | — | — | — | — | — |
+
+Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**, **Block in Claude** for an MCP server and **Change role** for a member. See [Claude actions](#claude-actions).
+
+## Before you take an action
+
+<Steps>
+  <Step title="Turn on control for the provider">
+    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
+  </Step>
+  <Step title="Register the agent and get it approved">
+    Where your deployment runs the registry, every action waits until the agent is registered **and an Admin has approved the registration**. This includes **Unblock**. A shadow or pending agent's controls show dimmed; selecting one opens **Register this agent first**. Assets your registry policy doesn't govern, such as Claude members, aren't held to this. See [Registry](/govern/registry) and [Approvals](/govern/approvals).
+  </Step>
+  <Step title="Open the agent's Access card">
+    In [AI Inventory](/discover/ai-inventory), select the agent, open the **Identity & access** tab and find the **Access** card. Every action on this page is a button on that card, except **Route through gateway**, which is on the **LLM gateway** card below it.
+  </Step>
+</Steps>
+
+- Every action on the **Access** card asks for a **Reason**, kept in the agent's **Change history** card and the [audit log](/administer/audit-log).
+- A change shows as pending (for example, **Block pending**) for a short while, until OpenController reads the agent again and sees it.
+- Actions need the **Operator** role. **Route through gateway** needs **Admin**.
+
+## Share
+
+Gives a person, group or role access to the agent. In the **Share this agent** dialog, choose **Can use** (call the agent) or, where offered, **Can edit** (call, change and deploy it), add a **Reason**, then select **Share**.
+
+<Tabs>
+  <Tab title="AWS">
+    Adds an Allow for an IAM role, user or account to the agent's resource policy, on the runtime and each of its endpoints. Type the ARN or account ID; there is no directory search. Only **Can use**: IAM groups and **Can edit** are refused.
+  </Tab>
+  <Tab title="Microsoft">
+    - **Copilot Studio:** **Can use** gives read access in Dataverse; **Can edit** makes the user a co-author (they need the Environment Maker or System Administrator role in the environment).
+    - **Agent 365 catalog agents:** use only; changes the package's availability list. Only your organization's and partners' agents: Microsoft's own agents and agents their creator shared can only be blocked. Needs an AI or Global administrator signed in, and an Agent 365 licence.
+    - **Foundry agents:** use only; assigns the **Foundry Agent Consumer** role on the agent alone.
+    - Choose users or groups from your Entra ID directory. **Can edit** is for users only.
+  </Tab>
+  <Tab title="Google Cloud">
+    **Agent Runtime agents:** **Can use** binds the agent user role (`opencontrollerAgentUser`); **Can edit** binds `roles/aiplatform.user`, on the agent's own IAM policy. Type an email, or a `principal://` (person) or `principalSet://` (group) identifier.
+  </Tab>
+  <Tab title="Snowflake">
+    - **Cortex Agent:** **Can use** runs `GRANT USAGE`, **Can edit** runs `GRANT MODIFY`, to a role or a user.
+    - **MCP server:** use only (`GRANT USAGE`).
+  </Tab>
+  <Tab title="Anthropic">
+    **Workspace:** **Can use** adds the person as a workspace developer, **Can edit** as a workspace admin. Not the Default workspace. Organization admins, billing members and owners are in every workspace already.
+  </Tab>
+</Tabs>
+
+## Remove access
+
+Takes a person's, group's or role's access away. Select the remove icon next to their name, confirm with **Remove**.
+
+<Tabs>
+  <Tab title="AWS">Takes the principal out of every Allow and adds a Deny for it. The agent's own account cannot be removed: that would block every caller.</Tab>
+  <Tab title="Microsoft">Copilot Studio: removes their access and their co-author role (the owner cannot be removed). Agent 365 catalog and Foundry agents: removes them from the list or the role. For Foundry, access from the project or above stays. For an Agent 365 agent available to everyone, end organization-wide access first.</Tab>
+  <Tab title="Google Cloud">Removes every role the person holds on the agent. Roles they hold on the whole project stay; OpenController's log of the change names the ones that still let them call the agent.</Tab>
+  <Tab title="Snowflake">Runs `REVOKE` of every privilege the role or user holds on the agent or MCP server. The owner role is refused. Grants inherited from the schema, database or account stay; the log names them.</Tab>
+  <Tab title="Anthropic">Removes the person from the workspace; they stay in the organization. Organization admins, billing members and owners are in every workspace through their organization role, so they can't be removed here: change their role instead.</Tab>
+</Tabs>
+
+## End organization-wide access
+
+Stops everyone in the organization from using the agent, while people named one by one keep their access. The button shows only when the agent is open to the whole organization or the public; its wording varies a little by provider.
+
+| Provider | What it does |
+|---|---|
+| AWS | Removes everyone (`*`) from Allows open to any AWS principal or to the whole account or organization. Named roles, users and accounts keep access, and so does anyone the account's own IAM policies allow |
+| Microsoft (Copilot Studio, Agent 365 catalog) | Limits the agent to the people it is shared with |
+| Google Cloud, Agent Runtime | Removes `allUsers`, `allAuthenticatedUsers` and whole domains from the agent's own IAM policy; project roles stay |
+| Google Cloud, CX Agent Studio app | Turns off public access on every web widget; WhatsApp, Instagram and phone channels stay |
+| Snowflake | Runs `REVOKE … FROM ROLE PUBLIC` |
+
+## Publish
+
+Makes the agent's latest changes reach the people using it. Select **Publish**, then confirm.
+
+- **Google Cloud, CX Agent Studio app:** makes the draft a new version and points every pinned deployment at it. Deployments that serve the draft already have the change.
+- **Snowflake, Cortex Agent:** adds the agent to CoWork. Only where the account has a CoWork object; otherwise share the agent.
+- **Microsoft, Copilot Studio:** OpenController publishes automatically after every sharing change; there is no separate button.
+
+## Block and Unblock
+
+Makes the agent unusable, and can be undone. **Unblock** brings it back as it was. The button's words depend on the agent: **Block** / **Unblock**, **Disable** / **Enable** (Foundry hosted agents), **Disable** / **Re-enable** (Claude API keys), **Pause** / **Resume** (Claude deployments) and **Block in Claude** / **Unblock in Claude** (MCP servers, see [Claude actions](#claude-actions)).
+
+<Tabs>
+  <Tab title="AWS">
+    Adds a Deny of `bedrock-agentcore:Invoke*` from everyone to the runtime or gateway; new calls stop. **Unblock** removes that Deny and nothing else, so the policy is as it was. Works for AgentCore runtimes and gateways only.
+  </Tab>
+  <Tab title="Microsoft">
+    - **Copilot Studio:** quarantines the agent in Power Platform. Needs a Microsoft administrator (Global, AI or Power Platform) signed in: the dialog asks you to **Sign in to Microsoft**. The sign-in lasts about an hour.
+    - **Agent Builder and Agent 365 catalog agents:** blocks the agent in the Agent 365 catalog for the whole tenant. Needs an AI or Global administrator signed in and an **Agent 365 licence**. Published agents only.
+    - **Foundry hosted agents:** **Disable** stops the agent in Foundry; sessions already running are not ended. **Enable** turns it back on.
+    - **Foundry agents published to Microsoft 365:** blocks the published copy; the agent still runs in Foundry. Needs an AI or Global administrator signed in and an Agent 365 licence.
+  </Tab>
+  <Tab title="Snowflake">
+    **Cortex Agent:** OpenController's control role takes ownership of the agent and revokes its grants, keeping a snapshot in your account; **Unblock** gives them back. While blocked, sharing, removing, ending organization-wide access and publishing are refused. Needs a warehouse on the connection.
+  </Tab>
+  <Tab title="Anthropic">
+    - **Managed Agent:** turns all its tools off, pauses its deployments and stops its open sessions. **Unblock** turns back on exactly the tools the block turned off and resumes the deployments it paused; stopped sessions stay stopped. Custom tools stay on, and a session started while blocked can still talk but use no tool. Needs the service-account control key, in the agent's workspace.
+    - **API key:** **Disable** sets the key inactive; **Re-enable** turns it back on (not for an expired key). Disabling a member's Claude Code key stops their Claude Code.
+    - **Deployment:** **Pause** stops scheduled runs (a run going now finishes, and it can still be run by hand); **Resume** restarts the schedule. Missed runs aren't made up.
+  </Tab>
+</Tabs>
+
+## Delete
+
+Removes the agent from its cloud for good. Type the agent's name to confirm. **Delete with cascade** also deletes what only this agent uses, and lists it before you confirm.
+
+<Warning>Delete cannot be undone. It removes the agent in its own cloud, not only in OpenController.</Warning>
+
+- **Microsoft, Copilot Studio:** deletes the agent; **Delete with cascade** also deletes the flows only this agent uses.
+- **Microsoft, Agent Builder:** deletes the agent (published or draft) and its catalog entry. Needs a Global, AI or Power Platform administrator signed in. No cascade.
+- **Microsoft, Foundry agents:** deletes the agent; **Delete with cascade** also deletes its Azure Bot Services.
+- **Anthropic:** archives the API key, workspace, Managed Agent, deployment, vault, environment or memory store (a custom skill is deleted). Deleting a member removes them from the organization. Archiving a workspace archives its API keys; removing a member archives their personal keys. The Default workspace can't be archived, and admins and owners can't be removed.
+
+## Route through gateway
+
+Sends an agent's model calls through the [LLM gateway](/secure/gateway-overview), where virtual keys, budgets, guardrails and logs apply. Today this works for **Microsoft Foundry prompt agents**, with the **LLM Gateway** module. On the **LLM gateway** card, select **Route through gateway**: OpenController makes a virtual key and publishes a new agent version that calls its model through the gateway. **Take off gateway** undoes it. Needs the **Admin** role.
+
+For any other agent, point the agent's model address at the gateway and give it a [virtual key](/secure/virtual-keys).
+
+## Claude actions
+
+| Action | Works on | What it does |
+|---|---|---|
+| **Stop sessions** | Managed Agent, deployment | Ends the sessions running now |
+| **Turn tools off or on** | Managed Agent | Switches a tool or a set of tools, for new sessions |
+| **Block in Claude** / **Unblock in Claude** | MCP server | Turns the server's tools off in every Managed Agent connected to it now, in each organization whose control key is a service-account key (workspaces it isn't in are skipped and named). New sessions only; agents that connect later are not blocked |
+| **Change role** | Member | Sets their organization role: user, developer, billing or Claude Code user. Admins and owners cannot be changed |
+| **Delete** | Member | Removes them from the organization; their personal API keys are archived. Admins and owners can't be removed |
+| **Delete** | Deployment, vault, environment, memory store, custom skill | Archives it (a skill is deleted) |
+
+## Limits
+
+Why some actions show — in the table:
+
+- **AWS:** classic Bedrock agents cannot be changed from OpenController, and AgentCore agents cannot be published or deleted from here. Agents with a JWT authorizer can only be blocked.
+- **Microsoft:** only an Agent Builder agent's creator can share it, in Microsoft 365 Copilot. Drafts are not in the Agent 365 catalog, so they can be deleted but not blocked. Foundry can disable only hosted agents, not prompt or workflow agents.
+- **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
+- **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
+- **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
+- **Databricks:** no actions yet.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Asset details" icon="panel-right" href="/discover/asset-details">
+    The Access card and the rest of an agent's page.
+  </Card>
+  <Card title="Registry" icon="book-marked" href="/govern/registry">
+    Register an agent so actions can be taken on it.
+  </Card>
+  <Card title="Connect your accounts" icon="plug" href="/discover/connect-accounts">
+    Add an integration and its Control credential.
+  </Card>
+  <Card title="Route through the gateway" icon="route" href="/secure/gateway-overview">
+    Put an agent's model calls behind keys, limits and guardrails.
+  </Card>
+</CardGroup>
