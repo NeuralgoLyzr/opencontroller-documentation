@@ -23,7 +23,7 @@
   }
 
   function setTone() {
-    var t = tone(location.pathname);
+    var t = tone(location.pathname.replace(/^\/docs(?=\/|$)/, "")); // a cell serves the site under /docs
     if (t) document.documentElement.setAttribute("data-tone", t);
     else document.documentElement.removeAttribute("data-tone");
   }
