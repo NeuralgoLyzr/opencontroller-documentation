@@ -8,7 +8,7 @@
 FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS export
 WORKDIR /site
 # Pinned with the preview's and CI's (README).
-RUN npm i -g mint@4.2.1084
+RUN npm i -g mint@4.2.1184
 COPY . .
 # The export reaches Mintlify to render, so the build needs the network;
 # the result does not.
