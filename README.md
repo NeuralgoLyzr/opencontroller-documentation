@@ -44,9 +44,9 @@ CI runs the same on every pull request.
 
 `Dockerfile` builds the site as a container: the pages exported by `mint export` (nothing of Mintlify's runs
 afterwards), served by nginx with the rules the export asks for (`docker/nginx.conf`). CI builds it on every
-pull request, and on every push to main publishes it to Lyzr's registry as `opencontroller/docs:v0-<commit>`. A cell
-runs it beside the console at the tag its chart values pin (`docs.enabled` in the Helm chart), for people who cannot
-reach the public site, and the console's sidebar links to it.
+pull request, and on every push to main publishes it to Lyzr Artifactory, the registry customers pull from, as
+`opencontroller/docs:v0-<commit>`. A customer's cell runs it at the tag its values pin (`docs_host` and
+`image_tags.docs` in the customer stack), and the console's sidebar links to it.
 
 ```sh
 docker build -t opencontroller-documentation .
