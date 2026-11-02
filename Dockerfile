@@ -13,7 +13,7 @@ COPY . .
 # The export reaches Mintlify to render, so the build needs the network;
 # the result does not.
 RUN mint export --output /tmp/docs.zip && mkdir /out && unzip -q /tmp/docs.zip -d /out \
-    && rm -f /out/serve.js "/out/Start Docs.command" "/out/Start Docs.bat"
+    && rm -rf /out/serve.js "/out/Start Docs.command" "/out/Start Docs.bat" /out/docker
 # The site runs where nothing else can be reached: a page that names a font
 # elsewhere fails the build, rather than a customer's browser.
 RUN elsewhere=$(find /out -type f \( -name '*.html' -o -name '*.txt' -o -name '*.css' \) -exec grep -lE 'https?://fonts\.(googleapis|gstatic)\.com' {} +); \
@@ -23,6 +23,8 @@ FROM nginxinc/nginx-unprivileged:1.30-alpine@sha256:56b8272e43a0525f67aed68d1e07
 LABEL org.opencontainers.image.title="opencontroller-documentation" \
       org.opencontainers.image.source="https://github.com/NeuralgoLyzr/opencontroller-documentation"
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/license.sh /docker-entrypoint.d/40-license.sh
+COPY docker/locked.html /usr/share/nginx/locked/_locked.html
 COPY --from=export /out /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD wget -qO /dev/null http://127.0.0.1:8080/ || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 CMD wget -qO /dev/null http://127.0.0.1:8080/healthz || exit 1

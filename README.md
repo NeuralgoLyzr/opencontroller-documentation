@@ -51,6 +51,9 @@ pull request, and on every push to main publishes it to Lyzr Artifactory, the re
 It loads nothing from anywhere else: the export bundles its assets, JetBrains Mono is kept in `fonts/` (Open Font
 License), a build fails if a page names a font elsewhere, and nginx's Content-Security-Policy holds the browser to it.
 
+It is held to the cell's license: with `LICENSE_API_URL`, which the chart sets, each page asks the cell's API first, and a
+locked cell shows a locked page. An API that is down or restarting does not stop the pages. `/healthz` is for probes.
+
 ```sh
 docker build -t opencontroller-documentation .
 docker run --rm -p 8081:8080 opencontroller-documentation   # http://localhost:8081
