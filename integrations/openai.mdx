@@ -1,0 +1,291 @@
+---
+title: "OpenAI"
+description: "Connect an OpenAI API Platform organization so OpenController finds its agents, the models and API keys in use and what each project allows, reads the bill and whose it was, and can change them."
+icon: "bot"
+---
+
+OpenController reads an **OpenAI API Platform organization** (the OpenAI API, managed at platform.openai.com) with an
+**Admin key**. One integration is one organization. The read key only reads: it never creates, changes or revokes
+anything, and never calls a model. Changes are made with a second, optional key, the **control key**.
+
+This integration reads the API Platform, not ChatGPT. A ChatGPT Enterprise workspace (custom GPTs, workspace agents,
+apps) has admin keys of its own and is not supported yet.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):**
+  - each model called in the last 30 days, with its tokens and requests, the projects it was called from and how many
+    API keys called it;
+  - each project, with its members and service accounts;
+  - each project API key, with its project, its owner (a person or a service account), when it was last used and
+    expires, and its 30-day tokens;
+  - the organization's Admin keys, and who made each;
+  - each project's permissions: which hosted tools (remote MCP servers, web search, file search, code interpreter,
+    image generation) and which models its keys may use;
+  - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
+    tools, and its **knowledge bases** (vector stores).
+- **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
+  key it was called with and the member who holds that key. OpenAI reports this, so nothing is estimated.
+- **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
+  turn its tools off, and delete API keys, service accounts, agents and knowledge bases. See
+  [Turn on control](#turn-on-control-optional).
+
+To call OpenAI models through the [LLM gateway](/secure/gateway-overview), add OpenAI as a gateway provider instead
+([Providers and routing](/secure/routing-and-mcp)).
+
+## Connect an OpenAI organization
+
+<Note>Only an **organization owner** can create Admin keys. If you see no **Admin keys** under **Settings**, ask an owner.</Note>
+
+<Steps>
+  <Step title="Create an Admin key">
+    At [platform.openai.com](https://platform.openai.com), as an organization owner, go to **Settings** >
+    **Organization** > **Admin keys** > **Create new admin key**. Name it `opencontroller`, and choose **read-only**
+    permissions: discovery never writes. Copy the key: it starts with `sk-admin-`, and it is shown once.
+
+    Then copy the organization ID from **Settings** > **Organization** > **General**. It starts with `org-`.
+
+    A project API key (`sk-proj-…`) is refused: the form and the API accept only `sk-admin-…`.
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **OpenAI**. Fill in **Name**, **Organization ID** and **Admin key**. Leave
+    **Control Admin key** at **None: discovery only** for now, and select **Connect**. The key goes to your secrets
+    manager and cannot be read back.
+
+    The **What opencontroller reads in …** dialog lists what the key reads. It needs no grants of its own. Select
+    **Done**.
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**. The **Access** badge reads **Verified** when every check passes.
+
+    | Check | Passes when |
+    |---|---|
+    | **Sign in** | The key is accepted for the organization you named. Shows the organization's ID. |
+    | **Projects** | Active projects are listed; shows how many. |
+    | **API keys** | The first project's API keys are listed; shows how many. |
+    | **Project permissions** | The first project's hosted tool and model permissions can be read. |
+    | **Members** | The organization's members are listed; shows how many. |
+    | **Admin keys** | The organization's keys can be listed, Admin keys among them. |
+    | **Project members** | The first project's members and service accounts are listed. |
+    | **Agents** | Each project key reads its project's agents. Without project keys, it passes and says no agents are read. |
+    | **Knowledge bases** | Each project key reads its project's knowledge bases. |
+    | **Usage** | Yesterday's completions usage can be read. |
+
+    Scans run every 5 minutes by default, and read the last 30 days of usage; a model nobody called for 30 days is
+    retired. Models, keys and projects appear in [AI Inventory](/discover/ai-inventory) after the first scan.
+  </Step>
+</Steps>
+
+## Read agents and knowledge bases (project keys)
+
+OpenAI answers the Agents API only for a key of the project, never for an Admin key. So OpenController reads agents
+and knowledge bases only in the projects it holds a key for. A project without a key is not read, and that is not an
+error. Each project's **Project permissions** asset says whether its agents are read.
+
+On the integration's row, **Agents: not read** shows under the name. Select **Add project keys** (or **Change**). There
+are two ways to give the keys.
+
+<Tabs>
+  <Tab title="Let OpenController make them">
+    Turn on **Make the keys for me**. It needs the [control key](#turn-on-control-optional): the keys are made with it.
+
+    After each scan, every active project without keys gets two service accounts and their keys:
+
+    | Service account | Its key may | Used for |
+    |---|---|---|
+    | `opencontroller-discovery` | Read only (`api.all.read`) | Reading agents and knowledge bases |
+    | `opencontroller-control` | Read and write agents and knowledge bases | Blocking agents, turning their tools off, deleting |
+
+    Each key is stored in your secrets manager. OpenAI never shows its value again. A new project gets its keys after
+    the scan that first finds it, and its agents are read from the next scan on.
+
+    - **Only these projects:** project IDs (`proj_…`), separated by commas. Only these get keys. Start with a few
+      before turning it on for the whole organization. Left empty, every project gets them.
+    - **Projects to leave alone:** project IDs that get no keys.
+
+    A key you added by hand is never touched, even one that stops working. To have OpenController replace a key it
+    made, remove it in this dialog: the next scan deletes the old service account and makes a new one.
+
+    <Warning>
+    Do not give your own service accounts the names `opencontroller-discovery` or `opencontroller-control`. One whose
+    key OpenController does not hold is taken as one it made and lost, and is deleted before a new one is made.
+    </Warning>
+  </Tab>
+  <Tab title="Add them by hand">
+    1. In the project at platform.openai.com, go to its **API keys** page and create a key for a **service account**,
+       with **read-only** permissions. A person's key holds that person's access in the project, so prefer a service
+       account's.
+    2. Copy the project's ID from **Settings** > **Project** > **General**. It starts with `proj_`.
+    3. In the dialog, enter the **Project ID** and the **Project key**. To change the project's agents and knowledge
+       bases too, add a second key of the same project, with write permissions, in **Control key**.
+    4. Select **Store and verify**. Repeat for each project.
+
+    A restricted key needs these permissions, as OpenAI's API names them:
+
+    | Key | Permissions |
+    |---|---|
+    | **Project key** (read) | `api.all.read` |
+    | **Control key**, for agents | `api.agents.read`, `api.agents.write` |
+    | **Control key**, for knowledge bases | `vector_store.read`, `vector_store.write` |
+
+    Write the knowledge base scopes without the `api.` prefix. Some of OpenAI's guides write `api.vector_store.read`,
+    which the API refuses.
+
+    To remove a project's keys, select **Remove** next to it in the dialog.
+  </Tab>
+</Tabs>
+
+## Turn on control (optional)
+
+Control changes projects, agents, keys and members in the organization. Changes are never made with the read key, but
+with a second Admin key, the **control key**, **with write permissions**. Discovery never uses it.
+
+1. On the connect form, set **Control Admin key** to **An Admin key of its own (recommended)**, or select **Turn on**
+   next to **Control: off** on the integration's row.
+2. At platform.openai.com, create a second Admin key named `opencontroller-control`, **with write permissions**.
+3. Paste it in **Control Admin key**, and select **Connect** (or **Store and verify**). Verify also runs **Control sign
+   in** and **Control write**.
+
+**Control write** tries a change to a project that does not exist, so nothing changes. A read-only key fails it.
+
+<Warning>
+**The read Admin key, copied** works only if the read key can write too. That defeats keeping the two apart. Use a key
+of its own.
+</Warning>
+
+Control of OpenAI is on unless your OpenController deployment turned it off. If an asset's page shows no actions once
+the control key is verified, ask whoever runs your OpenController.
+
+### What control can change
+
+Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory). Each one is in the
+[Audit log](/administer/audit-log), with who made it and why.
+
+| Asset | Actions | Undone by |
+|---|---|---|
+| **Project** | **Block** (below). **Share** with a member of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
+| **Project permissions** | Turn each hosted tool (remote MCP servers, web search, file search, code interpreter, image generation) and each model **off** and **on**. | Turning it back on. |
+| **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. A deleted agent cannot be brought back. |
+| **Knowledge base** | **Delete**: nothing can search it again. Its files stay in the project. Needs the project's control key. | Nothing. |
+| **API key** | **Delete**: every call made with it fails at once. | Nothing. OpenAI cannot turn a key off and on: block its project to stop it for now. |
+| **Service account** | **Delete**, with its API keys. | Nothing. |
+| **Member** | Change their organization role (**owner**, **reader**). **Delete** removes them from the organization. | Changing it back; inviting them again. |
+| **Admin key** | None. OpenAI's API cannot turn off or delete an Admin key. Delete one at platform.openai.com. | |
+
+{/* TODO verify: the exact button labels on each OpenAI asset's page (Block, Share, Delete, the tool and model switches). */}
+
+**Blocking a project.** OpenAI has no switch that stops a project. So **Block** sets the project's monthly hard spend
+limit to one cent. Once the project has spent anything this month, OpenAI refuses its calls (`429
+project_spend_limit_exceeded`), from every API key in it. This is not instant: calls stop once OpenAI applies the
+limit. OpenController keeps the limit the project had before, and **Unblock** puts it back exactly, or removes the
+limit if it had none. A scan shows a blocked project as **Blocked**.
+
+**Blocking an agent.** OpenAI's agent tools have no switch. Turning a tool off takes it off the agent, and turning it
+on puts it back exactly as it was. **Block** takes every tool off: the agent still answers, but reaches nothing.
+**Unblock** puts back what the block took off; a tool you turned off by itself stays off. The agent's metadata says
+what OpenController took off (`opencontroller_tools_off`, `opencontroller_blocked`), so anyone reading the agent in
+OpenAI sees it.
+
+**Models.** A project's model policy is an allow list (only these) or a deny list (all but these). Turning a model off
+adds it to the deny list, or takes it out of the allow list. The last model of an allow list cannot be turned off:
+that would refuse every model, which is what **Block** is for. The models offered are those the project called in the
+last 30 days and those its policy already names.
+
+<Info>
+If a project shows a hosted tool on after you turned it off, the organization enables that tool for all projects,
+which a project cannot override. At platform.openai.com, set the tool's organization policy to selected projects, then
+turn it off in the project.
+</Info>
+
+## Read the bill
+
+After each scan (at most every six hours), once a day, and on **Refresh**, OpenController reads the last 35 days of the
+organization's cost report with the read Admin key. Two sources appear under **Spend** > **Sources**:
+
+| Source | What it is |
+|---|---|
+| **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`flex`, `priority`, `fast mode`). Web search calls show as the service **Web search**. Spend outside every project is the **Organization**'s. These rows are **billed**. |
+| **OpenAI bill by key and person** | The same bill by the API key it was called with, and the member who holds that key. A service account's key names no person. These rows are **attributed**: they say whose the spend was, and never add to a total. |
+
+On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
+organization, project, API key, person and model, and lists every API key with its share of the bill. A key opens its
+own page, with how to rotate it.
+
+OpenController does not read usage without dollars yet (tokens by tier, web searches, embeddings), nor spend per agent
+or knowledge base, which OpenAI does not report.
+
+## Permissions it uses
+
+An Admin key reads the whole organization. OpenController calls only `https://api.openai.com`.
+
+### Read Admin key
+
+| Endpoint | What for |
+|---|---|
+| `/v1/organization/projects` | Projects. |
+| `/v1/organization/projects/{project}/api_keys` | Each project's API keys. |
+| `/v1/organization/projects/{project}/hosted_tool_permissions`, `/model_permissions` | What each project allows. |
+| `/v1/organization/projects/{project}/users`, `/service_accounts` | Each project's members and service accounts. |
+| `/v1/organization/users` | Members' names, emails and roles, to name who owns each key. |
+| `/v1/organization/admin_api_keys` | Admin keys. |
+| `/v1/organization/usage/completions` | Tokens by day, model, project and API key: the models in use. |
+| `/v1/organization/costs` | The bill by day, project, line item and API key. |
+
+### Project keys
+
+| Endpoint | What for |
+|---|---|
+| `/v1/agents` | The project's agents. |
+| `/v1/vector_stores` | The project's knowledge bases. Their files' contents are never read. |
+
+### Control Admin key (optional)
+
+Used only for the changes in [What control can change](#what-control-can-change), each made by a person in
+OpenController and recorded. With **Make the keys for me** on, it also makes and deletes the
+`opencontroller-discovery` and `opencontroller-control` service accounts, and nothing else.
+
+<Warning>
+An Admin key with write permissions can change the whole organization: its projects, keys and members. Treat it as an
+administrator credential.
+</Warning>
+
+OpenController never calls a model, reads prompts, responses or files, or sees an API key's secret (the API returns
+only a redacted form). It stores each agent's instructions only as a hash and a length, never their text, and an MCP
+server's address without credentials.
+
+## Change the key
+
+When the connection cannot sign in, the **Integrations** page shows **Update the key**. Create a new Admin key at
+platform.openai.com (**Settings** > **Organization** > **Admin keys**), paste it there, then delete the old one there.
+The new key is verified at once.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Sign-in refused (HTTP 401) | The key is wrong or revoked. Create a new one and select **Update the key**. |
+| Sign-in refused (HTTP 403) | The key is not an Admin key. |
+| The Admin key belongs to another organization | Use a key of the organization the integration names, or fix the **Organization ID**. |
+| No **Admin keys** in Settings | You are not an organization owner. |
+| No models | No API calls in the last 30 days. |
+| No agents, though the project has some | The integration holds no key for that project. Add one in **Project keys**. |
+| Agents: the key of a project is refused | The key is not that project's, or cannot read agents. Replace it in **Project keys**. |
+| **Control write** fails | The control key is read-only. Create an Admin key with write permissions. |
+| A check fails with HTTP 429 | OpenAI's rate limit. Calls are retried; try again later. |
+
+## Remove the integration
+
+On **Integrations**, select the bin icon on the row, then confirm. The stored keys are deleted and scans stop; what was
+discovered stays until later scans retire it. The service accounts OpenController made for project keys are deleted.
+The Admin keys still work: delete them at platform.openai.com, under **Settings** > **Organization** > **Admin keys**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See people and spend" icon="dollar-sign" href="/discover/people-and-spend">
+    See the OpenAI bill and whose each dollar was.
+  </Card>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Find OpenAI agents nobody has registered.
+  </Card>
+</CardGroup>

@@ -6,7 +6,7 @@ icon: "play"
 ---
 
 Start with whichever platform your organization uses most: **AWS**, **Microsoft**, **Google Cloud**,
-**Databricks**, **Snowflake** or **Anthropic**. The steps are the same for all of them; only the connection
+**Databricks**, **Snowflake**, **Anthropic** or **OpenAI**. The steps are the same for all of them; only the connection
 form changes.
 
 **What you need:**
@@ -120,6 +120,15 @@ Only the identity differs. Choose your platform:
     2. Select **Anthropic organization**, enter the organization and paste the key, then select **Connect**.
 
     Full steps and permissions: [Anthropic](/integrations/anthropic).
+  </Tab>
+  <Tab title="OpenAI">
+    OpenController reads an OpenAI API Platform organization with an **Admin key**. The key is kept in your secrets
+    manager.
+
+    1. At platform.openai.com, as an organization owner, create a read-only Admin key.
+    2. Select **OpenAI**, enter the organization ID and paste the key, then select **Connect**.
+
+    Full steps and permissions: [OpenAI](/integrations/openai).
   </Tab>
 </Tabs>
 

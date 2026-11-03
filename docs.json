@@ -170,7 +170,8 @@
               {
                 "group": "AI providers",
                 "pages": [
-                  "integrations/anthropic"
+                  "integrations/anthropic",
+                  "integrations/openai"
                 ]
               },
               {
