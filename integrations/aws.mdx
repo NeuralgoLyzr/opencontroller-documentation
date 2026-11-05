@@ -22,6 +22,11 @@ OpenController's own AWS identity, and only when it presents the role's external
 
 Discovery only reads. It never invokes an agent, reads a conversation or memory, or reads a secret value.
 
+OpenController scans AWS only through the accounts you connect. With no AWS integration, nothing in AWS is scanned:
+**Run scan** leaves AWS out, and a scan started through the API is refused with *connect an account under
+Integrations first*. This holds for the AWS account OpenController itself runs in, too: its own AWS identity is used
+only to assume your roles. To discover that account, connect it like any other.
+
 ## Connect an AWS account
 
 <Steps>
