@@ -66,6 +66,11 @@ conversations, traces or files users upload to CoWork.
     | **Inherited grants** | Says whether one set of grants covers every database. It never fails. |
     | **Account usage** | The warehouse reads `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AGENT_USAGE_HISTORY`. **not set up** without a warehouse. |
 
+    <Note>In a large account, Snowflake can take longer to list agents, search services or semantic views than Verify
+    waits (8 seconds for each check). That check then shows a clock and *not counted*, and the badge reads **1 not
+    finished**: it is not a missing grant. The scan waits longer and reads them. Select **Verify** again, or
+    **Run scan**.</Note>
+
     With control on, Verify also runs **Control sign in**, **Control one role**, **Control scope** (`MANAGE GRANTS` on
     the account), **Control CoWork** (`MODIFY` on the CoWork object) and **Control block state** (rights on the block
     table).

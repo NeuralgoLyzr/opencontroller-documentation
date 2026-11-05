@@ -42,9 +42,20 @@ For a named provider such as Okta, OpenController can work out the metadata URL 
 
 With SCIM, your identity provider decides who exists and which groups they are in. Only provisioned, active people can then sign in through single sign-on. Deactivating someone at the provider ends their access on their next request.
 
-Paste **SCIM base URL (Tenant URL)**, for example `https://console.example.com/scim/v2`, and the token from **Generate token** into your provider's provisioning settings.
+Paste **SCIM base URL (Tenant URL)**, for example `https://console.example.com/scim/v2`, and the token from **Generate token** into your provider's provisioning settings. Everyone provisioned is then listed under **Settings** > **Members** > **Single sign-on**, with their groups and role.
+
+<Note>With Okta, provisioning needs an app of its own: Okta offers no SCIM on the Single-Page Application people sign in with. See [Okta: provision people with SCIM](/integrations/identity/okta#provision-people-with-scim-optional).</Note>
+
+<Warning>Once a SCIM token exists, only provisioned, active people can sign in through single sign-on. Set up provisioning at your provider straight after you generate it.</Warning>
 
 <Warning>The SCIM token is shown once. Only its hash is kept. **Replace token** makes a new one, and the old token stops working.</Warning>
+
+### Change roles from OpenController (Okta, optional)
+
+**4. Change roles from opencontroller (Okta, optional)** connects OpenController to Okta's API, so an **Admin** can
+change a provisioned person's role from **Members**: OpenController moves the person between the mapped groups in
+Okta. It needs an Okta **API Services** app. See
+[Change roles from OpenController](/integrations/identity/okta#change-roles-from-opencontroller-optional).
 
 ## Map groups to roles
 
@@ -57,6 +68,9 @@ Paste **SCIM base URL (Tenant URL)**, for example `https://console.example.com/s
 
 - **Anyone signed in whom nothing maps gets**: set it to **no access** to refuse people outside the mapped groups. It can never be **Owner**.
 - A role value that is itself a role name, such as `admin` or `opencontroller.admin`, grants that role without being listed.
+- To change roles from **Members** through Okta, map each role from exactly one group.
+
+<Tip>Role mappings are here, under **Role mappings**. **Settings** > **Roles** says what each role may do, not who gets it.</Tip>
 
 ## Change or disconnect
 

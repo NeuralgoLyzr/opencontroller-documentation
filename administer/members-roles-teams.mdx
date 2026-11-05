@@ -18,7 +18,7 @@ icon: "users"
 
 ## Members: add, change and remove people
 
-**Members** lists the people who sign in with an email and password. People who sign in through single sign-on are not listed: they get their role from your identity provider. See [Single sign-on](/administer/sso).
+**Members** lists the people who sign in with an email and password. People who sign in through single sign-on get their role from your identity provider: they are listed below, under **Single sign-on**, once your provider provisions them with SCIM. See [Single sign-on](/administer/sso).
 
 There is no self sign-up and no email invite. An admin adds each person with an **Initial password** of at least 8 characters, and gives it to them over a channel you trust. They can change it after they sign in.
 
@@ -39,6 +39,25 @@ Rules that always apply:
 - Nobody can change their own role, disable themselves or remove themselves.
 - Only an **Owner** can change an **Owner** or make someone an **Owner**.
 - There is always at least one active **Owner**. The last one cannot be removed, disabled or given a lower role.
+
+### People from your identity provider
+
+With SCIM provisioning on, **Members** has a second list, **Single sign-on**: everyone your identity provider
+provisioned, deactivated people too. For each person it shows:
+
+- Their groups. The group that gives their role is highlighted.
+- Their **Role**, and where it comes from: *from oc-admins* when a [role mapping](/administer/sso#map-groups-to-roles)
+  names one of their groups, or *the default role*.
+- *None: cannot sign in* when no mapping names their groups and there is no default role.
+- **Active**, or **Deactivated** when the provider deactivated them.
+
+Search by name, email or group. With SCIM off, the list says so.
+
+These people's roles live in the identity provider, so you change them there, or by changing the role mappings. With
+Okta, you can also change them here: connect Okta's API as in
+[Change roles from OpenController](/integrations/identity/okta#change-roles-from-opencontroller-optional), and each row
+gets **Change role**. Choosing a role shows which Okta groups the person joins and leaves; **Change in Okta** does it,
+and the new role shows within about a minute.
 
 ## Roles: see and make roles
 

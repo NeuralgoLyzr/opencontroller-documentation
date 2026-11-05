@@ -140,7 +140,9 @@ The console checks the connection at once. In the Integrations table, the **Acce
 **Verified** with the time it was checked.
 
 If it cannot reach the account yet, the identity you created may still be getting ready. Wait a minute, then
-select **Verify** on the row. Verify lists each check and says which one failed.
+select **Verify** on the row. Verify lists each check and says which one failed. A check
+the account was too slow to answer shows a clock and *not finished*, not a failure: the scan waits longer, so select
+**Verify** again or **Run scan**.
 
 {/* SCREENSHOT: qs-verified | crop | The Integrations page with connected accounts listed (name, platform, control and guardrails per row; Account and Signs in as columns blurred). Crop to the page header and the table; no sidebar. */}
 <Frame caption="Connected accounts on Integrations">

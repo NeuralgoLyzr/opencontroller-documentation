@@ -61,11 +61,11 @@ In **Settings** > **Role mappings**, map **Admin** to `oc-admins`, **Operator** 
 
 ## Step 5 (optional): Provision people with SCIM
 
-1. In **Settings** > **Single sign-on**, copy **SCIM base URL (Tenant URL)** and select **Generate token**. The token is shown once.
-2. In the Okta app, **Provisioning** > **Integration**: set the base URL, and **HTTP Header** authentication with the token.
-3. Turn on **Create Users**, **Update User Attributes** and **Deactivate Users**. Push the groups you mapped in step 4.
+With SCIM, **Settings** > **Members** lists everyone in Okta who may use OpenController, with their groups and role, and deactivating someone in Okta ends their access on their next request.
 
-Deactivating someone in Okta then ends their access on their next request. See [Provision people with SCIM](/administer/sso#provision-people-with-scim-optional).
+Okta offers no SCIM on the Single-Page Application from step 1. Provisioning uses a second Okta app, of type **SAML 2.0**, that no one signs in with. Follow [Provision people with SCIM](/integrations/identity/okta#provision-people-with-scim-optional): it creates that app, turns SCIM on, and pushes the groups you mapped in step 4.
+
+<Warning>Once you select **Generate token**, only people Okta has provisioned can sign in through Okta. Finish all of step 5 before your people next sign in.</Warning>
 
 ## Step 6: Test the sign-in
 
@@ -76,6 +76,12 @@ Deactivating someone in Okta then ends their access on their next request. See [
 3. In your own session, **Settings** > **Audit log** > **Identity & access**, with **Show** set to `sign_in`, lists the sign-in.
 
 <Info>Once single sign-on works, whoever runs your OpenController can turn email-and-password sign-in off (`DISCOVERY_PASSWORD_LOGIN=false`). Keep it on until you are sure you will not need the local **Owner** account.</Info>
+
+## Step 7 (optional): Change roles from the console
+
+Okta groups decide each person's role. To change a role from **Settings** > **Members** instead of in Okta, connect a third Okta app, of type **API Services**: OpenController then moves the person between the mapped groups in Okta for you. Follow [Change roles from OpenController](/integrations/identity/okta#change-roles-from-opencontroller-optional).
+
+<Tip>Three things trip this step up: the **Okta domain** must be your Okta org (`your-org.okta.com`), not your company's domain; the **Client ID** must be the API Services app's, not the sign-in app's; and the API Services app needs the **Group Membership Administrator** admin role, besides its scopes.</Tip>
 
 ## Next steps
 
