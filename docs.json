@@ -146,6 +146,8 @@
                   "administer/sso",
                   "administer/service-accounts",
                   "administer/modules",
+                  "administer/ask-ctrl-settings",
+                  "administer/mcp-server",
                   "administer/audit-log",
                   "administer/secrets-auth",
                   "administer/guide-sso-okta"

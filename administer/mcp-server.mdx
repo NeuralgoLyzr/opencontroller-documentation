@@ -1,0 +1,285 @@
+---
+title: "MCP server"
+description: "Connect Claude Code, Cursor, Codex or any other MCP client to OpenController, so it reads your AI estate with an API key of its own, and turn that access on or off."
+sidebarTitle: "MCP server"
+icon: "plug"
+---
+
+OpenController is an MCP server. An agent outside it, such as Claude Code, Cursor, VS Code with Copilot, Codex, Claude Desktop, Windsurf or Gemini CLI, connects with an API key. It then reads your AI estate with the tools [Ask Ctrl](/get-started/ask-ctrl) uses. It only reads: nothing changes through it.
+
+<Info>This is OpenController's own MCP server, for agents to read OpenController. The MCP servers your agents reach through the LLM gateway are a different thing: see [MCP servers](/secure/routing-and-mcp#mcp-servers).</Info>
+
+Go to **Settings** > **MCP server**. The line under the title says whether agents may connect: **On: agents connect at the address below.** or **Off: every agent is refused.**
+
+{/* SCREENSHOT: mcp-server | crop | Settings > MCP server, on: "On: agents connect at the address below."; Agents may connect: On, "The server's configuration."; Address https://console.example.com/v1/mcp; What agents can do. Crop above Connect an agent. */}
+<Frame caption="Settings > MCP server">
+  <img src="/images/settings/mcp-server.png" alt="The MCP server settings: whether agents may connect, the server's address, and what agents can do." />
+</Frame>
+
+## What an agent can do
+
+- **Read what two roles allow**: its key's role, and [Ask Ctrl's role](/administer/ask-ctrl-settings#limit-what-ask-ctrl-may-do). A **Viewer** key reads the estate: assets, findings, scans, traces and the rest a **Viewer** may read.
+- **Change nothing.** No tool that changes something is offered, and a call to one is refused. A change is made in the console, or asked of Ask Ctrl there, for someone to confirm.
+- **Never see a credential.** No tool returns a password, a secret's value or a key.
+
+Each call is an API request, made as the key's service account through MCP, and checked like any other request.
+
+**Address** is your console's address with `/v1/mcp`, for example `https://console.example.com/v1/mcp`. It speaks MCP over Streamable HTTP. An agent sends its API key as `Authorization: Bearer <key>`, or as `X-API-Key: <key>`.
+
+## Connect an agent
+
+**Connect an agent**, under the settings, takes you through three steps.
+
+<Steps>
+  <Step title="Get an API key">
+    Under **Get an API key**, choose a service account and select **Create key**. A **Viewer** account is enough, since an agent only reads. Make one account for each agent, so you can revoke one without the others. With no service account yet, make one with the **Viewer** role in [Service accounts](/administer/service-accounts), then come back.
+
+    <Warning>The key is shown once: copy it now. The console also writes it into the next step's settings. Keep it out of chat, tickets and files you commit.</Warning>
+  </Step>
+  <Step title="Add it to your agent">
+    Under **Add it to your agent**, select your agent. The console writes its settings with your address, and with the key once you have created one. Put them where the console says. Each agent's settings are [below](#settings-for-each-agent).
+
+    {/* SCREENSHOT: mcp-connect | crop | Settings > MCP server > Connect an agent, step 2 Add it to your agent: the agent cards (Claude Code selected, Cursor, VS Code, Codex, Claude Desktop, Windsurf, Gemini CLI, Any other) and the claude mcp add command for https://console.example.com/v1/mcp with <YOUR_API_KEY>. */}
+    <Frame caption="Add it to your agent">
+      <img src="/images/settings/mcp-connect.png" alt="The agent cards with Claude Code selected, and the command that adds OpenController to Claude Code." />
+    </Frame>
+  </Step>
+  <Step title="Check it connects">
+    Under **Check it connects**, select **Test the connection**. With the key created above, the console connects as your agent will. Without one, it uses your own sign-in, and shows what an agent would read as you.
+
+    It shows **Connected to opencontroller** with the version of MCP it answered in, and the tools the agent gets, each reading only.
+
+    {/* SCREENSHOT: mcp-test | crop | Step 3 Check it connects after Test the connection: "Connected to opencontroller …, on MCP 2025-11-25." and the folded list of tools, each reading only. */}
+    <Frame caption="Check it connects">
+      <img src="/images/settings/mcp-test.png" alt="The connection test: connected to opencontroller, with the number of tools the agent gets, each reading only." />
+    </Frame>
+  </Step>
+</Steps>
+
+## Settings for each agent
+
+These are the settings the console writes. Replace `https://console.example.com` with your console's address, and `<YOUR_API_KEY>` with the key. The console fills both in for you.
+
+<Tabs>
+  <Tab title="Claude Code">
+    Run in a terminal:
+
+    ```bash
+    claude mcp add --transport http --scope user \
+      --header "Authorization: Bearer <YOUR_API_KEY>" \
+      opencontroller https://console.example.com/v1/mcp
+    ```
+
+    With `--scope user`, every project of yours gets it; without it, the current project alone. Check it with `claude mcp list`, or `/mcp` in Claude Code.
+  </Tab>
+  <Tab title="Cursor">
+    Merge this into `~/.cursor/mcp.json`, beside any servers already there. In a project, `.cursor/mcp.json` gives it to that project alone.
+
+    ```json
+    {
+      "mcpServers": {
+        "opencontroller": {
+          "url": "https://console.example.com/v1/mcp",
+          "headers": {
+            "Authorization": "Bearer <YOUR_API_KEY>"
+          }
+        }
+      }
+    }
+    ```
+
+    Cursor lists it in its settings, under MCP.
+  </Tab>
+  <Tab title="VS Code">
+    Put this in `.vscode/mcp.json`. It holds no key: VS Code asks for it.
+
+    ```json
+    {
+      "inputs": [
+        {
+          "type": "promptString",
+          "id": "opencontroller-key",
+          "description": "opencontroller API key",
+          "password": true
+        }
+      ],
+      "servers": {
+        "opencontroller": {
+          "type": "http",
+          "url": "https://console.example.com/v1/mcp",
+          "headers": {
+            "Authorization": "Bearer ${input:opencontroller-key}"
+          }
+        }
+      }
+    }
+    ```
+
+    Start the server from the file. VS Code asks for the key once, and keeps it in its secret storage. Copilot Chat uses the tools in agent mode.
+  </Tab>
+  <Tab title="Codex">
+    Put this in `~/.codex/config.toml`:
+
+    ```toml
+    [mcp_servers.opencontroller]
+    url = "https://console.example.com/v1/mcp"
+    bearer_token_env_var = "OPENCONTROLLER_API_KEY"
+    ```
+
+    Codex reads the key from `OPENCONTROLLER_API_KEY`. Set it in the shell Codex starts from, or in your shell's profile:
+
+    ```bash
+    export OPENCONTROLLER_API_KEY=<YOUR_API_KEY>
+    ```
+
+    Check it with `codex mcp list`, or `/mcp` in Codex.
+  </Tab>
+  <Tab title="Claude Desktop">
+    Open `claude_desktop_config.json` from Claude Desktop with **Settings** > **Developer** > **Edit Config**. Merge this in, then restart Claude Desktop.
+
+    ```json
+    {
+      "mcpServers": {
+        "opencontroller": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "mcp-remote",
+            "https://console.example.com/v1/mcp",
+            "--header",
+            "Authorization:${AUTH_HEADER}"
+          ],
+          "env": {
+            "AUTH_HEADER": "Bearer <YOUR_API_KEY>"
+          }
+        }
+      }
+    }
+    ```
+
+    It runs `mcp-remote` with `npx`, so it needs Node.js. Claude Desktop's connectors sign in only with OAuth, which OpenController's MCP server does not offer yet.
+  </Tab>
+  <Tab title="Windsurf">
+    Merge this into `~/.codeium/windsurf/mcp_config.json`, beside any servers already there:
+
+    ```json
+    {
+      "mcpServers": {
+        "opencontroller": {
+          "serverUrl": "https://console.example.com/v1/mcp",
+          "headers": {
+            "Authorization": "Bearer <YOUR_API_KEY>"
+          }
+        }
+      }
+    }
+    ```
+
+    Refresh Windsurf's MCP servers to connect it.
+  </Tab>
+  <Tab title="Gemini CLI">
+    Merge this into `~/.gemini/settings.json`, beside any settings already there:
+
+    ```json
+    {
+      "mcpServers": {
+        "opencontroller": {
+          "httpUrl": "https://console.example.com/v1/mcp",
+          "headers": {
+            "Authorization": "Bearer <YOUR_API_KEY>"
+          }
+        }
+      }
+    }
+    ```
+
+    Check it with `/mcp` in Gemini CLI.
+  </Tab>
+  <Tab title="Any other">
+    Any client that speaks MCP over Streamable HTTP and can send a header connects. Give it the address, and the key as `Authorization: Bearer <YOUR_API_KEY>`. This lists the tools it would get:
+
+    ```bash
+    curl https://console.example.com/v1/mcp \
+      -H "Authorization: Bearer <YOUR_API_KEY>" \
+      -H "Content-Type: application/json" \
+      -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>Most of these files hold the key. Keep them out of source control: prefer your own user-level file to a project's.</Warning>
+
+<Note>claude.ai and ChatGPT connectors sign in only with OAuth, which OpenController's MCP server does not offer yet.</Note>
+
+## Agent platforms that run MCP servers as a command
+
+Some agent platforms run each MCP server as a command, for example in a sandbox for each session, and cannot add a remote server with a header. There, run `mcp-remote` as the command. It connects to OpenController over HTTP and relays the agent's calls.
+
+| Field | Value |
+|---|---|
+| Name, or server key | `opencontroller`. The agent's tools are named after it. |
+| Command | `npx` |
+| Arguments | As below, one per line. |
+| Environment | Nothing more. |
+
+```text
+-y
+mcp-remote
+https://console.example.com/v1/mcp
+--transport
+http-only
+--header
+X-API-Key:${OPENCONTROLLER_API_KEY}
+```
+
+- **Keep the key in the platform's secrets**, given to the command as the environment variable `OPENCONTROLLER_API_KEY`. Never put the key itself in the arguments. `mcp-remote` fills in `${OPENCONTROLLER_API_KEY}` from its environment.
+- **Why `X-API-Key`:** it has no space in it, so it passes through platforms that split arguments on spaces. OpenController takes the key either way.
+- **What the command needs:** Node.js, and network access to your console's address. The first start downloads `mcp-remote`, so allow it a minute.
+
+If the platform can add a remote server with a header, use that instead: the address, and the header `X-API-Key` with the key.
+
+{/* TODO verify: run this once on an agent platform against a cell. Checked against mcp-remote's source (header expansion from the environment, --transport http-only), not yet run end to end. */}
+
+## Turn it on or off
+
+The MCP server is on unless the configuration turns it off.
+
+<Steps>
+  <Step title="Choose On or Off">
+    In **Settings** > **MCP server**, under **Agents may connect**, select **On** or **Off**.
+  </Step>
+  <Step title="Save">
+    Select **Save**. It applies from each agent's next request.
+  </Step>
+</Steps>
+
+When it is off, every agent is refused with `403` and the message "opencontroller's MCP server is off: an administrator can turn it on in Settings → MCP server". Ask Ctrl in the console is not affected: it reaches the same tools another way. An agent you set up while it is off connects once it is on again.
+
+As on [Ask Ctrl settings](/administer/ask-ctrl-settings#change-a-setting), **Configured:** shows the configuration's value when you changed it, and **Use it** goes back to it. The change is in **Settings** > **Audit log** > **Identity & access** as `ask_ctrl_settings.changed`, with the detail `MCP server on → off`. Whoever runs your OpenController sets the default with `ASK_CTRL_MCP`: `true` unless set.
+
+## If an agent cannot connect
+
+| What you see | Why | What to do |
+|---|---|---|
+| `401`, or "The key was refused: it may have been revoked, or its account disabled." | The key is wrong or revoked, or its service account is disabled. | Create a new key, or enable the account in [Service accounts](/administer/service-accounts). |
+| `403` with "opencontroller's MCP server is off" | An **Admin** turned the MCP server off. | Turn it on under **Agents may connect**. |
+| `403` for another reason | The key's role does not hold `chat:ask`. Every built-in role holds it; a custom role may not. | Add `chat:ask` to the custom role, or use a key with a built-in role. |
+| Connected, but "It offers no tools" | Neither the key's role nor Ask Ctrl's role allows a read. With Ask Ctrl's role set to **None (turned off)**, agents get no tools. | Use a key whose role reads, or give Ask Ctrl a role in [Ask Ctrl settings](/administer/ask-ctrl-settings#limit-what-ask-ctrl-may-do). |
+| `405` on `GET` | The agent asked for a stream. The server answers each `POST` with JSON, with no session and no stream. | Choose Streamable HTTP in the agent, not SSE. With `mcp-remote`, add `--transport http-only`. |
+
+## Who can use it
+
+- Every role sees **Settings** > **MCP server**, and can test the connection with its own sign-in.
+- **Admin** turns the MCP server on or off (`chat:settings`), and creates service accounts and their keys.
+- An agent's key needs `chat:ask`, which every built-in role holds. It reads only what its role and Ask Ctrl's role allow.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Service accounts and API keys" icon="bot" href="/administer/service-accounts">
+    Make an account for each agent, and rotate or revoke its key.
+  </Card>
+  <Card title="Ask Ctrl settings" icon="sliders-horizontal" href="/administer/ask-ctrl-settings">
+    Choose Ask Ctrl's role, which limits what agents read.
+  </Card>
+</CardGroup>
