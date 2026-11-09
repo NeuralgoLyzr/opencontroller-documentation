@@ -37,8 +37,9 @@ After **Run**, the card reads **Scan started.** and the scan appears under Integ
 ## Good to know
 
 - **It answers from what you may see.** A **Viewer** gets answers without the prompts and answers inside traces; an **Operator** and above get them too.
-- **Conversations stay in this browser tab.** Select **New conversation** to start again.
-- **"The assistant is off."** means no model key is set. An **Admin** adds the Anthropic API key in **Settings** > **Secrets**.
+- **Your conversations are kept for you alone.** Open one again with **Earlier conversations** in the Ctrl panel, from any browser. Select **New conversation** to start again. A conversation is kept 90 days after its last answer, unless an **Admin** changes that in [Ask Ctrl settings](/administer/ask-ctrl-settings).
+- **When Ctrl is not answering, it says why**, for example that no LLM gateway is connected. An **Admin** connects one in **Settings** > **LLM Gateway**, or gives Ask Ctrl another gateway in [Ask Ctrl settings](/administer/ask-ctrl-settings).
+- **Your own agents can ask too.** Claude Code, Cursor, Codex and other MCP clients read the same tools through OpenController's [MCP server](/administer/mcp-server).
 
 ## Next steps
 
