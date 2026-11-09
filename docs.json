@@ -148,6 +148,7 @@
                   "administer/modules",
                   "administer/audit-log",
                   "administer/secrets-auth",
+                  "administer/ask-ctrl-computeragent",
                   "administer/guide-sso-okta"
                 ]
               }
@@ -171,7 +172,8 @@
                 "group": "AI providers",
                 "pages": [
                   "integrations/anthropic",
-                  "integrations/openai"
+                  "integrations/openai",
+                  "integrations/github"
                 ]
               },
               {
