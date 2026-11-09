@@ -1,6 +1,6 @@
 ---
 title: "Snowflake"
-description: "Connect a Snowflake account so OpenController finds its Cortex Agents, CoWork, MCP servers, Cortex Search services and semantic views."
+description: "Connect a Snowflake account so OpenController finds its Cortex Agents, CoWork, MCP servers, Cortex Search services, semantic views and AI Gateway, how much each is used, and what the AI credits cost and whose they were."
 icon: "snowflake"
 ---
 
@@ -21,9 +21,15 @@ Each user signs in one of two ways:
 
 - **[AI Inventory](/discover/ai-inventory):** Cortex Agents with their models, tools, skills and instructions
   (credentials masked); the CoWork object (formerly Snowflake Intelligence) and the agents it shows; Snowflake-managed and
-  external MCP servers; Cortex Search services; semantic views; Model Registry models.
+  external MCP servers; Cortex Search services; semantic views; Model Registry models; the Cortex AI Gateway, the
+  models it lets through and whether it logs requests.
+- **Usage**, with a warehouse: how much each agent, search service, model, AI function and the gateway was used over
+  the last 30 days, on the asset's page. See [Read usage and spend](#read-usage-and-spend-optional).
+- **[Spend](/discover/people-and-spend)**, with a warehouse: the AI credits the account was billed each day, priced,
+  and whose they were, by user and by agent.
 - **[Shadow AI](/discover/shadow-ai):** the owner role of each agent and MCP server, the roles and users that
-  can use or edit it, and whether `PUBLIC` holds it (exposure to the whole account).
+  can use or edit it, and whether `PUBLIC` holds it (exposure to the whole account), and whether every user may send
+  inference through the AI Gateway.
 - **Control (optional):** share agents and MCP servers with roles and users, end access for everyone, publish to
   CoWork, and block an agent.
 
@@ -40,7 +46,8 @@ conversations, traces or files users upload to CoWork.
     |---|---|
     | **Name** | A name for the account, for example `analytics`. |
     | **Account identifier** | `orgname-account_name`, for example `myorg-myaccount`. In Snowsight: your name (bottom left) > **Account** > **View account details**. |
-    | **Warehouse** (optional) | A warehouse for the **Account usage** check and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. |
+    | **Warehouse** (optional) | A warehouse the account usage views are read on, for usage and spend, and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. |
+    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage. Without one, spend reads the organization's rate sheet. You can set it later, under **Spend** on the account's row. |
     | **Read user** | Keep `OPENCONTROLLER_READ`, or enter another name. |
     | **Read user: signs in with** | **Workload identity federation (recommended)** or **Key pair**. The form starts on **Key pair**. |
     | **Control user** | **None: discovery only** for now. See [Turn on control](#turn-on-control-optional). |
@@ -65,12 +72,16 @@ conversations, traces or files users upload to CoWork.
     | **CoWork** | Shows how many agents the CoWork object holds, or that there is none. |
     | **Inherited grants** | Says whether one set of grants covers every database. It never fails. |
     | **Account usage** | The warehouse reads `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AGENT_USAGE_HISTORY`. **not set up** without a warehouse. |
+    | **AI Gateway** | The read role holds `MONITOR` on the Cortex AI Gateway, to read what goes through it. A note, not a failure, without it or on an account with no gateway. |
 
     With control on, Verify also runs **Control sign in**, **Control one role**, **Control scope** (`MANAGE GRANTS` on
     the account), **Control CoWork** (`MODIFY` on the CoWork object) and **Control block state** (rights on the block
     table).
 
-    Scans run every 5 minutes by default. They use `SHOW` and `DESCRIBE`, which need no warehouse.
+    Scans run every 5 minutes by default. Nine sources are read per account, named `snowflake:<account>:global:<family>`:
+    `cortex.agents`, `cowork`, `mcp.servers`, `mcp.external`, `cortex.search`, `semantic.views`, `models`, `ai.gateway`
+    and `usage`. All but `usage` use `SHOW` and `DESCRIBE`, which need no warehouse. An account without the Cortex AI
+    Gateway, a preview feature in some regions, shows `ai.gateway` as **skipped**.
   </Step>
 </Steps>
 
@@ -101,6 +112,57 @@ power. It changes grants, never your data.
 A block keeps what it took in your own account (`OPENCONTROLLER.STATE.BLOCK_SNAPSHOTS` and the
 `OPENCONTROLLER.STATE.BLOCK_OWNER` tag), never in OpenController. It needs the connection's warehouse.
 
+## Read usage and spend (optional)
+
+With a warehouse on the connection, OpenController reads the account usage views on it. The read role needs `USAGE`
+on the warehouse and the `SNOWFLAKE.USAGE_VIEWER` database role, which the setup script grants. Without a warehouse,
+the `usage` scan source and spend both show **not set up**, and the objects are listed without their use.
+
+### Usage
+
+Once an hour, the `usage` source reads how much each object was used over the last 30 days, and every scan in
+between describes the objects with that reading:
+
+| Asset | What its page shows |
+|---|---|
+| Cortex Agent | Calls, people, tokens and credits (`runs_30d`, `users_30d`, `tokens_30d`, `credits_30d`), the interfaces it was called from, and when it was last used. Calls made through CoWork count in the credits, not the calls. |
+| CoWork | Its credits and people. |
+| Cortex Search service | Its credits, split into serving, embedding and batch. |
+| Model | Credits, queries and people through AI functions such as `AI_COMPLETE`, and requests, people and tokens sent straight to the Cortex REST API (`api_requests_30d`, `api_users_30d`, `api_tokens_30d`). A model only the API calls is listed too. |
+| AI function and Cortex Code | Each AI function and each Cortex Code interface, with its credits and people. |
+| Cortex AI Gateway | Credits and people over 30 days, and the requests, people, credits and models over the year the view keeps (`requests_365d`, `users_365d`, `credits_365d`, `models_365d`). This part needs `MONITOR` on the gateway; without it the gateway shows `usage_error`. |
+
+Each reading runs seven queries on the warehouse and spends its credits. The views lag Snowflake by up to an hour.
+
+### Spend
+
+Every 6 hours by default (**Settings** > **Spend schedule**), spend reads the last 35 days of AI credits:
+
+- **What was billed**, each day by service: Cortex Agents, CoWork, Cortex Code, AI functions, AI Gateway inference,
+  Cortex Search and the other Cortex AI services, from `METERING_DAILY_HISTORY`.
+- **Whose it was**: each user's credits per service and, for agents, per agent, from `USER_AI_USAGE_HISTORY`. These
+  rows are **attributed** under the totals, so the totals count once. **People** says who spent what, an agent's
+  rows show on the agent's page, and the gateway's on the gateway's. Inference sent straight to the Cortex REST API,
+  not through the gateway, is in the totals but is put down to no one: no view says whose it was.
+
+Snowflake meters AI in **credits**. The rows are priced one of two ways, and are **estimated** either way, because
+the bill settles at month end:
+
+1. At the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the connect form,
+   or later under **Spend** on the account's row.
+2. Without one, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
+   rate after contract discounts. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for
+   it, which the setup script does not grant, or the connection must be the organization account.
+
+Without either, spend shows **not set up** and asks for a credit price. Refused the warehouse or the views, it shows
+**needs permission** and names the grant.
+
+**Spend** > **Provider** > **Snowflake's own page** breaks the credits down by account, user, person and object (an
+agent, an AI function, the AI Gateway, Cortex Code), and shows each agent's cost against how much it was used.
+
+Reading usage and spend spends the warehouse's credits each time. The script creates the warehouse as `XSMALL`,
+suspending after 60 seconds. A longer interval under **Settings** > **Spend schedule** spends fewer.
+
 ## Rotate a key
 
 For a key-pair user, open the setup script (the **Setup** icon on the row) and select **Generate a new key for
@@ -123,9 +185,10 @@ roles.
 | `INHERITED MONITOR ON ALL CORTEX SEARCH SERVICES IN ACCOUNT` | Lists them; never queries one. |
 | `INHERITED REFERENCES ON ALL SEMANTIC VIEWS IN ACCOUNT` | Their structure, never their data. |
 | `USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT` | Which agents CoWork shows. Skip it if `SHOW SNOWFLAKE INTELLIGENCES` returns nothing. |
-| `DATABASE ROLE SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` | The account usage views. |
+| `MONITOR ON AI GATEWAY SNOWFLAKE` | What goes through the Cortex AI Gateway. The script runs it inside a block that returns a note on an account with no gateway, so the rest of the script runs on. |
+| `DATABASE ROLE SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` | The account usage views: usage and spend. |
 | `APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER` | Trust Center findings (granted, not read yet). |
-| `USAGE` on the warehouse | The **Account usage** check. The script creates the warehouse: `XSMALL`, suspends after 60 seconds. |
+| `USAGE` on the warehouse | Usage, spend and the **Account usage** check. The script creates the warehouse: `XSMALL`, suspends after 60 seconds. |
 | With a separate control user: `USAGE` on `OPENCONTROLLER` and `OPENCONTROLLER.STATE`, `SELECT` on `BLOCK_SNAPSHOTS` | Read the block records. |
 
 It never holds `OWNERSHIP`, `MODIFY`, `OPERATE`, `MANAGE GRANTS`, `APPLY`, `INSERT`, `UPDATE`, `DELETE`, any `CREATE`
@@ -171,5 +234,8 @@ DROP DATABASE OPENCONTROLLER;
   </Card>
   <Card title="Register an agent" icon="list-checks" href="/govern/registry#register-an-agent">
     Register the agents you approve.
+  </Card>
+  <Card title="See people and spend" icon="circle-dollar-sign" href="/discover/people-and-spend">
+    What the AI credits cost, and whose they were.
   </Card>
 </CardGroup>
