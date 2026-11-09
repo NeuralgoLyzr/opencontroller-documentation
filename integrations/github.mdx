@@ -1,0 +1,264 @@
+---
+title: "GitHub"
+description: "Connect a GitHub organization so OpenController finds GitHub Copilot and its agents, what people use with Copilot, and what Copilot costs, by seat, model and person."
+icon: "git-branch"
+---
+
+OpenController reads a **GitHub organization** on github.com, as a **GitHub App** the organization owns and installs,
+or with an organization owner's **personal access token**. One integration is one organization. It only reads: it
+never assigns a seat, changes a policy, installs an app or writes to a repository.
+
+By default an integration reads **Copilot alone**. Reading every repository's custom agents and the installed apps
+are two switches, both off, so the app needs no access to other repositories.
+
+<Note>
+OpenController calls `https://api.github.com` only. Organizations on GitHub Enterprise Server, or on GHE.com with
+data residency, are not supported yet.
+</Note>
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):**
+  - the organization's **GitHub Copilot**, as one agent: its plan, seats, seats idle for 30 days, the editors people
+    use, and the features its policies switch on;
+  - the **Copilot cloud agent**: whether it is on, and which repositories it may work in;
+  - the organization's **custom agents** (in the `agents` directory of its `.github-private` or `.github`
+    repository), with their model, tools and **MCP servers**;
+  - from Copilot's usage metrics, what people use with Copilot on their own machines over the last 28 days: how many
+    use agent mode, the Copilot CLI and the cloud agent, and, by name, the **custom agents** they run (those kept on a
+    laptop among them), the **MCP servers** they connect, the **skills** they run, the **models** Copilot calls for
+    them, and the **agent apps** (Claude, Codex) they start. People are counted, never named.
+- **[Spend](/discover/people-and-spend):** Copilot's lines of the organization's bill each day, each seat and who holds
+  it, and the metered use of models put down to each model and person.
+- **[Shadow AI](/discover/shadow-ai) and posture:** custom agents, MCP servers and skills nobody registered are shadow
+  assets, and Copilot using an MCP server outside the registry is a finding.
+
+## Connect a GitHub organization
+
+<Note>You need an **organization owner** on GitHub, and the organization on **Copilot Business** or **Copilot Enterprise**.</Note>
+
+<Steps>
+  <Step title="Create the GitHub App">
+    A GitHub App belongs to the organization, not a person: nothing breaks when someone leaves, and GitHub gives it
+    tokens that last one hour. On github.com, go to your organization's **Settings** > **Developer settings** >
+    **GitHub Apps** > **New GitHub App**.
+
+    - **GitHub App name:** `opencontroller` (add your organization's name if it is taken).
+    - **Homepage URL:** your OpenController's address, for example `https://console.example.com`.
+    - **Webhook:** clear **Active**. OpenController needs no webhook, and the URL is then not asked for.
+    - **Where can this GitHub App be installed?** **Only on this account**.
+
+    Set these permissions, all **Read-only**. Leave every other permission at **No access**.
+
+    | Section | Permission | What for |
+    |---|---|---|
+    | **Organization permissions** | **GitHub Copilot Business** | The Copilot subscription and its seats. |
+    | **Organization permissions** | **Copilot agent settings** | Where the cloud agent may work. |
+    | **Organization permissions** | **Organization Copilot metrics** | What people use with Copilot. |
+    | **Organization permissions** | **Administration** | Copilot's bill, for Spend. Optional. |
+    | **Repository permissions** | **Contents** | The custom agents' files. |
+
+    <Warning>
+    **Administration** and **Copilot agent settings** are in both lists. Choose them under **Organization
+    permissions**. The ones under **Repository permissions** do not give access, and Verify reports them as refused.
+    </Warning>
+
+    Select **Create GitHub App**.
+  </Step>
+  <Step title="Copy its client ID and make a private key">
+    On the app's page, copy the **Client ID** (it starts with `Iv23`). Then, under **Private keys**, select **Generate a
+    private key**. Your browser downloads a `.pem` file. It is plain text, and it is the app's only credential.
+  </Step>
+  <Step title="Install the app">
+    In the app's settings, select **Install App** and choose your organization. Under **Repository access**, choose
+    **Only select repositories** with `.github-private` and `.github` for Copilot alone, or **All repositories** to read
+    every repository's custom agents.
+
+    When you change the app's permissions later, an organization owner must accept them: go to the organization's
+    **Settings** > **GitHub Apps** > **Configure**, then **Review request** > **Accept new permissions**. Until then the
+    installation keeps its old permissions.
+  </Step>
+  <Step title="Connect it">
+    In OpenController, go to **Integrations** > **Connect** > **GitHub**.
+
+    - **Organization:** the organization's login, as in `github.com/your-org`. Not its display name.
+    - **Sign in:** **As a GitHub App (recommended)**.
+    - **Client ID:** the client ID you copied.
+    - **Private key:** open the `.pem` file in a text editor, select all of it (from `-----BEGIN RSA PRIVATE KEY-----` to
+      `-----END RSA PRIVATE KEY-----`), copy it and paste it here. On a Mac, `pbcopy < ~/Downloads/*.private-key.pem`
+      copies it without showing it.
+    - **Installation ID:** leave it empty; OpenController finds it.
+    - **Beyond Copilot (off unless turned on):** leave **Repositories' custom agents** and **Installed apps** off for
+      Copilot alone.
+
+    Select **Connect**. The key goes to your secrets manager and cannot be read back. Delete the downloaded `.pem` file.
+  </Step>
+  <Step title="Verify">
+    On the row, select **Verify**.
+
+    | Check | Passes when |
+    |---|---|
+    | **Sign in** | The app signs in as its installation on the organization. Shows its name and login. |
+    | **Copilot subscription** | Shows the plan and the number of seats. |
+    | **Copilot seats** | The seats can be read. |
+    | **Copilot cloud agent** | Shows whether it may work in all, selected or no repositories. |
+    | **Organization custom agents** | The `agents` directories can be read. Shows how many agents, or none. |
+    | **Repository custom agents** | Only with that switch on. Code search answers. |
+    | **Installed apps** | Only with that switch on. The installed apps can be listed. |
+    | **Copilot usage metrics** | Optional. The latest usage report can be read. Fails, saying so, while the policy is off. |
+    | **Copilot bill** | Optional. This month's bill can be read. |
+
+    Scans run every 5 minutes. Copilot and its agents appear in [AI Inventory](/discover/ai-inventory) after the first
+    scan.
+  </Step>
+</Steps>
+
+### With a personal access token instead
+
+<Tabs>
+  <Tab title="Fine-grained token">
+    As an organization owner, go to **Settings** > **Developer settings** > **Personal access tokens** >
+    **Fine-grained tokens** > **Generate new token**. Set **Resource owner** to the organization, give it the same
+    permissions as the app above, and copy it (`github_pat_…`). If the organization approves tokens, an owner approves
+    it under the organization's **Settings** > **Personal access tokens** > **Pending requests**.
+
+    In the connect form, choose **Sign in** > **With a personal access token**, and paste it.
+  </Tab>
+  <Tab title="Classic token">
+    As an organization owner, create a classic token with `read:org` (Copilot, the cloud agent, usage metrics and
+    installed apps) and `repo` (custom agents in private repositories, and the bill). If the organization uses SAML
+    single sign-on, select **Configure SSO** > **Authorize** for it on the token's row.
+
+    A classic token reaches every repository its owner can. Prefer the GitHub App or a fine-grained token.
+  </Tab>
+</Tabs>
+
+## Read what people use with Copilot
+
+GitHub keeps Copilot's usage metrics only while the **Copilot usage metrics** policy is on. An organization owner
+turns it on under the organization's **Settings** > **Copilot** > **Policies** > **Copilot usage metrics** >
+**Enabled**. If your enterprise sets that policy for its organizations, an enterprise owner turns it on there.
+
+GitHub makes a report a day. OpenController reads the latest 28-day report about once a day, and from it adds to AI
+Inventory:
+
+| From the report | In AI Inventory |
+|---|---|
+| A custom agent people ran that no repository read defines | An agent, **Copilot custom agent**, status **in use** |
+| An MCP server people connected Copilot to, by the name they gave it | **MCP server used with Copilot** |
+| A skill people ran | **Copilot skill** |
+| An agent app people started, such as Claude or Codex | **Agent app in Copilot** |
+| A model Copilot called for them | **Model used by Copilot**, with its maker |
+
+The Copilot agent also counts how many people used agent mode, the Copilot CLI, the Copilot app, the cloud agent, and
+models of their own. People are counted, never named.
+
+<Info>
+The metrics never hold prompts, answers or code. People whose editor sends no telemetry are counted as active only.
+A day keeps each person's 25 most used customizations of each kind; the rest show as *other* and are not listed.
+</Info>
+
+## Read the bill
+
+Every 6 hours, and on **Refresh**, three sources appear under **Spend** > **Sources**:
+
+| Source | What it is |
+|---|---|
+| **GitHub Copilot bill** | Copilot's lines of the organization's bill each day, at what is charged after discounts, in US dollars: seats, AI credits and anything else GitHub bills as Copilot. These rows are **billed**. |
+| **GitHub Copilot seats** | Each seat, the GitHub login that holds it, its plan, and when they last used Copilot. |
+| **GitHub Copilot bill by model and person** | The metered use of models each day, put down to each model and to the people who called it. These rows are **attributed**: they never add to a total. It needs Copilot's usage metrics. |
+
+GitHub bills a seat a day at a time: a seat taken today shows a thirtieth of the plan's monthly price, and adds up to
+it over the month.
+
+<Warning>
+Leave **GitHub_Copilot_Business** and **GitHub_Copilot_Enterprise** unpriced in **Spend** > **Licences**. The bill
+already holds every seat, so a price there counts each seat twice.
+</Warning>
+
+The bill needs **Administration** (organization) and the organization's billing on GitHub's enhanced billing platform.
+Without them, the source shows **needs permission** or **not set up**, and the seats are still read.
+
+## Network and firewall
+
+OpenController only calls out, over HTTPS on port 443. GitHub never connects to it: there is no webhook and no inbound
+port. Allow these from the cluster OpenController runs in:
+
+| Host | What for |
+|---|---|
+| `api.github.com` | Every call: sign-in, Copilot, agents, the bill. |
+| GitHub's storage for the usage report | The usage report downloads. If it is blocked, the scan's error names the host to allow. {/* TODO verify: the report links' host (likely under *.githubusercontent.com or *.blob.core.windows.net). */} |
+
+<Tabs>
+  <Tab title="AWS">
+    - **NAT gateway with default security groups:** nothing to do.
+    - **Security groups that limit outbound traffic:** allow TCP 443 outbound from the cluster's nodes.
+    - **AWS Network Firewall:** add a stateful domain list rule group (allow list, `TLS_SNI` and `HTTP_HOST`) with the
+      hosts above, and attach it to the firewall policy.
+    - **A proxy and no NAT gateway:** set `proxy.https` in the OpenController chart's values to the proxy's address.
+
+    If your organization uses GitHub's **IP allow list**, add every NAT gateway's Elastic IP (one for each
+    Availability Zone) under the organization's **Settings** > **Authentication security** > **IP allow list**:
+
+    ```sh
+    aws ec2 describe-nat-gateways --region <region> \
+      --query 'NatGateways[?State==`available`].NatGatewayAddresses[].PublicIp' --output text
+    ```
+  </Tab>
+  <Tab title="Other networks">
+    Allow the hosts above in your firewall or proxy. Behind a proxy, set `proxy.https` in the OpenController chart's
+    values. If your organization uses GitHub's IP allow list, add the address your traffic leaves from.
+  </Tab>
+</Tabs>
+
+## Permissions it uses
+
+| Endpoint | Permission | What for |
+|---|---|---|
+| `/orgs/{org}/copilot/billing`, `/copilot/billing/seats` | GitHub Copilot Business | The subscription and seats. |
+| `/orgs/{org}/copilot/coding-agent/permissions` | Copilot agent settings | Where the cloud agent may work. |
+| `/repos/{owner}/{repo}/contents/…` | Contents | Custom agents' files: their front matter only, never their prompts. |
+| `/search/code` | Contents | Repositories' custom agents, only with that switch on. |
+| `/orgs/{org}/copilot/metrics/reports/users-28-day/latest` | Organization Copilot metrics | Usage metrics. |
+| `/organizations/{org}/settings/billing/usage`, `/ai_credit/usage`, `/premium_request/usage` | Administration | The bill and the metered use. |
+| `/orgs/{org}/installations` | Administration | Installed apps, only with that switch on. |
+
+OpenController never reads code, issues, pull requests, conversations, or MCP servers' arguments, environment or
+header values.
+
+## Change what it reads, or the key
+
+- **What it reads:** the row shows **Reads: Copilot only**. Select **Change** to turn **Repositories' custom agents**
+  or **Installed apps** on or off. Turned off, what an earlier scan found stays, and is no longer read.
+- **The key:** when the app's key is deleted or the app uninstalled, the row shows the integration cannot sign in,
+  with **Update the private key** (or **Update the token**). Generate a new key on the app's page, paste it there, then
+  delete the old key on GitHub.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| *The GitHub App … is not installed on organization …* | Install the app on the organization. Check that **Organization** is the login (as in `github.com/your-org`), not the display name. To change it, remove the integration and connect again. |
+| *The GitHub App refused its own key* | The client ID is not the app's, or the key was deleted. Generate a new key and select **Update the private key**. |
+| **Copilot cloud agent** or **Copilot bill** refused (HTTP 403) | The permission is set under **Repository permissions**, or the organization has not accepted the new permissions. See steps 1 and 3. |
+| **Organization custom agents:** none | The app lacks **Contents**, or neither repository has an `agents` directory. |
+| **Copilot usage metrics** off | Turn on the **Copilot usage metrics** policy. |
+| Calls refused although permissions are right | Your organization's IP allow list. Add OpenController's egress IP. |
+| Spend shows no Copilot | No seats are assigned, or the bill was read before. Select **Refresh** on **Spend**. |
+
+## Remove the integration
+
+On **Integrations**, select the bin icon on the row, then confirm. The stored key is deleted and scans stop; what was
+discovered stays until later scans retire it. On GitHub, uninstall the app under the organization's **Settings** >
+**GitHub Apps**, and delete it under **Developer settings** > **GitHub Apps**.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="See people and spend" icon="dollar-sign" href="/discover/people-and-spend">
+    See Copilot's bill, its seats, and whose use it was.
+  </Card>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    Find custom agents and MCP servers nobody has registered.
+  </Card>
+</CardGroup>
