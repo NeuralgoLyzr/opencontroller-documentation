@@ -208,16 +208,15 @@ The card follows the scan. After the next scan:
 OpenController calls only the organization's Lyzr service addresses. The key reads what its minter's role may read:
 a minter whose role cannot read tools gets the tools listing refused.
 
-| Call | What for |
+| The key | What for |
 |---|---|
-| `GET /v3/org-admin/members` | Sign in, and the members who own each asset. |
-| `GET /v3/org-admin/agents`, `/a2a-agents`, `/tools`, `/mcp-servers`, `/credentials`, `/providers` | Discovery. |
-| `GET /v3/rag/org-admin/` (RAG service) | Knowledge bases. |
-| `GET /v1/rai/org-admin/policies` (RAI service) | RAI policies. |
-| `PATCH /v3/agents/{id}/status` | **Block** and **Unblock**. |
-| `GET` and `PUT /v3/agents/{id}` | Tools off and on, and routing through the gateway. Lyzr replaces the whole agent, so it is read, changed and sent back. |
-| `POST`, `GET` and `DELETE /v3/providers/credentials` | The gateway's credential, and deleting credentials. |
-| `DELETE /v3/agents/{id}`, `/v3/tools/{id}` | Deleting agents and tools. |
+| Lists the organization's members | Sign in, and the members who own each asset. |
+| Lists agents, Agent2Agent agents, tools, MCP servers, credentials and providers | Discovery. |
+| Lists knowledge bases and RAI policies | Discovery. |
+| Turns an agent on or off | **Block** and **Unblock**. |
+| Reads and updates an agent | Tools off and on, and routing through the gateway. Lyzr replaces the whole agent, so it is read, changed and sent back. |
+| Creates, reads and deletes credentials | The gateway's credential, and deleting credentials. |
+| Deletes agents and tools | **Delete**. |
 
 OpenController stores members' IDs, emails and roles; each resource's name, description and owner; agents' models,
 providers and references; tools' and MCP servers' addresses without credentials. It never reads agent instructions,
