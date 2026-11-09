@@ -171,7 +171,8 @@
                 "group": "AI providers",
                 "pages": [
                   "integrations/anthropic",
-                  "integrations/openai"
+                  "integrations/openai",
+                  "integrations/lyzr"
                 ]
               },
               {

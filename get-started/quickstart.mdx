@@ -6,7 +6,7 @@ icon: "play"
 ---
 
 Start with whichever platform your organization uses most: **AWS**, **Microsoft**, **Google Cloud**,
-**Databricks**, **Snowflake**, **Anthropic** or **OpenAI**. The steps are the same for all of them; only the connection
+**Databricks**, **Snowflake**, **Anthropic**, **OpenAI** or **Lyzr**. The steps are the same for all of them; only the connection
 form changes.
 
 **What you need:**
@@ -129,6 +129,14 @@ Only the identity differs. Choose your platform:
     2. Select **OpenAI**, enter the organization ID and paste the key, then select **Connect**.
 
     Full steps and permissions: [OpenAI](/integrations/openai).
+  </Tab>
+  <Tab title="Lyzr">
+    OpenController reads a Lyzr organization with an **org admin API key**. The key is kept in your secrets manager.
+
+    1. In Lyzr Studio, as an owner or admin, go to **Account** > **Admin API Keys** and create a key.
+    2. Select **Lyzr**, enter the organization ID, paste the key and the day it expires, then select **Connect**.
+
+    Full steps and permissions: [Lyzr](/integrations/lyzr).
   </Tab>
 </Tabs>
 

@@ -34,6 +34,8 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | Deployment | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Pause**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | API key | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Disable**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | Member | — | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (remove from the organization) | — | — |
+| **Lyzr** | Agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> |
+| | OpenAPI tool, credential | — | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — |
 | **Databricks** | Any | — | — | — | — | — | — | — | — |
 
 Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**, **Block in Claude** for an MCP server and **Change role** for a member. See [Claude actions](#claude-actions).
@@ -42,7 +44,7 @@ Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**,
 
 <Steps>
   <Step title="Turn on control for the provider">
-    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
+    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace. For [Lyzr](/integrations/lyzr), control uses the org admin API key, copied: there is nothing to add.
   </Step>
   <Step title="Register the agent and get it approved">
     Where your deployment runs the registry, every action waits until the agent is registered **and an Admin has approved the registration**. This includes **Unblock**. A shadow or pending agent's controls show dimmed; selecting one opens **Register this agent first**. Assets your registry policy doesn't govern, such as Claude members, aren't held to this. See [Registry](/govern/registry) and [Approvals](/govern/approvals).
@@ -151,7 +153,9 @@ Removes the agent from its cloud for good. Type the agent's name to confirm. **D
 
 ## Route through gateway
 
-Sends an agent's model calls through the [LLM gateway](/secure/gateway-overview), where virtual keys, budgets, guardrails and logs apply. Today this works for **Microsoft Foundry prompt agents**, with the **LLM Gateway** module. On the **LLM gateway** card, select **Route through gateway**: OpenController makes a virtual key and publishes a new agent version that calls its model through the gateway. **Take off gateway** undoes it. Needs the **Admin** role.
+Sends an agent's model calls through the [LLM gateway](/secure/gateway-overview), where virtual keys, budgets, guardrails and logs apply. Today this works for **Microsoft Foundry prompt agents** and **Lyzr agents**, with the **LLM Gateway** module. On the **LLM gateway** card, select **Route through gateway**: OpenController makes a virtual key and has the agent call its model through the gateway (a new agent version for Foundry; a rekori credential and the agent changed in place for Lyzr, see [Lyzr](/integrations/lyzr#route-an-agent-through-the-gateway)). **Take off gateway** undoes it. Needs the **Admin** role.
+
+If the agent is changed in its own cloud afterwards, the card shows it after the next scan, with **Route again** and **Clean up**.
 
 For any other agent, point the agent's model address at the gateway and give it a [virtual key](/secure/virtual-keys).
 
@@ -175,6 +179,7 @@ Why some actions show — in the table:
 - **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
 - **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
 - **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
+- **Lyzr:** who may use a resource is its owner's to share in Lyzr Studio, which an org admin API key cannot change. Proxy agents' tools can't be turned off, and knowledge bases, MCP servers and RAI policies can't be changed yet.
 - **Databricks:** no actions yet.
 
 ## Next steps
