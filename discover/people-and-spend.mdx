@@ -21,14 +21,14 @@ Two pages show what your organization spends on AI:
 - Bills settle a day or two late, so the latest days run low.
 - **Unusual days** lists days a service cost at least three times its daily average over the week before, and $10 more. It shows only when there is one.
 - In **Top agents and models**, an agent that costs money and is not registered is the one to look at. **not in inventory** means a bill names it but discovery has not found it. Azure and Databricks bills do not name agents yet.
-- **One provider's spend:** pick it in **Provider**. Anthropic and OpenAI have a page of their own: select **Anthropic's own page** or **OpenAI's own page**. It breaks the bill down by workspace or project, API key, person and model, with every API key's share of it.
+- **One provider's spend:** pick it in **Provider**. Anthropic, OpenAI and Snowflake have a page of their own: select **Anthropic's own page**, **OpenAI's own page** or **Snowflake's own page**. Anthropic's and OpenAI's break the bill down by workspace or project, API key, person and model, with every API key's share of it. Snowflake's breaks the AI credits down by account, user, person and object, and shows each Cortex Agent's cost against its use.
 - **Licences:** licence APIs carry no prices, so an Admin sets each seat's monthly price with **Set prices**. **People** uses the same prices.
 
 ### Sources
 
 **Sources** shows whether each source of spend is read. A source that lacks a permission says **Needs a permission** and names it, instead of showing nothing spent. Grant it, then select **Refresh**.
 
-Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. GitHub Copilot, Snowflake and Salesforce Agentforce are not read yet.
+Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **estimated**: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. GitHub Copilot and Salesforce Agentforce are not read yet.
 
 {/* SCREENSHOT: spend-sources | crop | The Sources panel, stitched: Claude Code, Claude API bill and Azure AI costs Read, Databricks Failed, Google Cloud Not set up. The AWS rows (account ID in the error) left out; connection IDs blurred. */}
 <Frame caption="The Sources panel">
