@@ -253,7 +253,9 @@
   // An upgrade picker: the reader says which release a connection was made on, and the
   // steps for the releases after it stay; the rest hide. Each step carries data-release,
   // the release that added it, and the options are the ranges between them. Without the
-  // script every step shows, each saying its release.
+  // script every step shows, each saying its release. The console's in-app guides label
+  // their picker the same way (apps/console/src/lib/guide-upgrade.ts in the platform
+  // repository); change the two together.
   function release(r) { return r.split(".").map(Number); }
   function cmpRelease(a, b) {
     a = release(a); b = release(b);

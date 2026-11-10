@@ -196,20 +196,9 @@ is at the foot of the console's sidebar.
     **Nothing to run** for a connection made on this release. Run the setup script again after each upgrade anyway: it is safe, and brings the connection up to date.
   </div>
 
-  <div className="oc-upgrade-step" data-release="0.199.0">
-    **v0.199.0 added the Cortex AI Gateway**, and who sends what through it. On an account with the gateway:
-
-    ```sql
-    GRANT MONITOR ON AI GATEWAY SNOWFLAKE TO ROLE OPENCONTROLLER_READ;
-    ```
-
-    Without it, the gateway is listed and shows `usage_error`. An account without a gateway needs nothing: the script
-    wraps the grant so it does not stop there.
-  </div>
-
-  <div className="oc-upgrade-step" data-release="0.197.0">
-    **v0.197.0 and v0.198.0 added AI spend and usage**: what the account's AI credits cost and whose they were, and
-    how much each object is used. Two things:
+  <div className="oc-upgrade-step" data-release="0.204.1">
+    **v0.204.1 added AI spend and usage, and the Cortex AI Gateway**: what the account's AI credits cost and whose
+    they were, how much each object is used, and who sends what through the gateway. Three things:
 
     1. **A warehouse**, if the connection has none. Name one under **Usage and spend** on the account's row, then run the
        script again. It creates the warehouse and grants `USAGE` on it:
@@ -226,10 +215,17 @@ is at the foot of the console's sidebar.
        GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
        ```
 
+    3. **The gateway's use**, on an account with the Cortex AI Gateway:
+
+       ```sql
+       GRANT MONITOR ON AI GATEWAY SNOWFLAKE TO ROLE OPENCONTROLLER_READ;
+       ```
+
+       Without it, the gateway is listed and shows `usage_error`. An account without a gateway needs nothing: the
+       script wraps the grant so it does not stop there.
+
     The `SNOWFLAKE.USAGE_VIEWER` role the views need is in every release's setup script already.
   </div>
-
-</div>
 
 ## Permissions it uses
 
