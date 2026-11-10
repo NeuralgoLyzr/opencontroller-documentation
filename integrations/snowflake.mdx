@@ -208,8 +208,8 @@ is at the foot of the console's sidebar.
   </div>
 
   <div className="oc-upgrade-step" data-release="0.197.0">
-    **v0.197.0 added AI spend**: what the account's AI credits cost and whose they were, and how much each object is
-    used. Two things:
+    **v0.197.0 and v0.198.0 added AI spend and usage**: what the account's AI credits cost and whose they were, and
+    how much each object is used. Two things:
 
     1. **A warehouse**, if the connection has none. Name one under **Usage and spend** on the account's row, then run the
        script again. It creates the warehouse and grants `USAGE` on it:
@@ -226,26 +226,9 @@ is at the foot of the console's sidebar.
        GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
        ```
 
-    The `SNOWFLAKE.USAGE_VIEWER` role the views need has been in the script since v0.81.0.
+    The `SNOWFLAKE.USAGE_VIEWER` role the views need is in every release's setup script already.
   </div>
 
-  <div className="oc-upgrade-step" data-release="0.89.1">
-    **v0.89.1 made the script set the key on a user that exists already.** After **Generate a new key**, run the
-    script's `ALTER USER … SET RSA_PUBLIC_KEY` line. A script before v0.89.1 left an existing user's key as it was.
-  </div>
-
-  <div className="oc-upgrade-step" data-release="0.89.0">
-    **v0.89.0 split the connection into two users**, read and control, granted account-wide instead of schema by
-    schema, and keeps control's state in `OPENCONTROLLER.STATE`. The connection's one user becomes the read user at
-    the next start, with the same key. Run the whole script again:
-
-    ```sql
-    ALTER ACCOUNT SET FEATURE_RBAC_INHERITED_GRANTS = 'ENABLED';
-    -- then the script's GRANT INHERITED … IN ACCOUNT lines, which replace the schema-by-schema grants
-    ```
-
-    To turn control on, give the connection a control user (**Setup** on the row) and run the script's control lines.
-  </div>
 </div>
 
 ## Permissions it uses
