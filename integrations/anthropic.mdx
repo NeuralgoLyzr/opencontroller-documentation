@@ -28,8 +28,9 @@ To call Claude models through the [LLM gateway](/secure/gateway-overview), add A
     with `sk-ant-admin`, and the Console shows it once. Then copy the organization ID (a GUID) from **Settings** >
     **Organization**.
 
-    A workspace API key (`sk-ant-api…`) is refused at **Verify**: it cannot read the organization. A key linked to a
-    service account with the admin role (`sk-ant-svc…`) works too, and is the one that reads Managed Agents.
+    A workspace API key is refused at **Verify**: it cannot read the organization. A key linked to a service account
+    with the admin role works too, and is the one that reads Managed Agents. Both begin `sk-ant-api…`, so the prefix
+    does not tell them apart; the Console's API keys page names the key's owner.
   </Step>
   <Step title="Connect it">
     Go to **Integrations** > **Connect** > **Anthropic organization**. Fill in **Name**, **Organization ID** and **Admin
