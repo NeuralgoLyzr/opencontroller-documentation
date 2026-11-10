@@ -46,8 +46,8 @@ conversations, traces or files users upload to CoWork.
     |---|---|
     | **Name** | A name for the account, for example `analytics`. |
     | **Account identifier** | `orgname-account_name`, for example `myorg-myaccount`. In Snowsight: your name (bottom left) > **Account** > **View account details**. |
-    | **Warehouse** (optional) | A warehouse the account usage views are read on, for usage and spend, and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. |
-    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage. Without one, spend reads the organization's rate sheet. You can set it later, under **Spend** on the account's row. |
+    | **Warehouse** (optional) | A warehouse the account usage views are read on, for usage and spend, and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. You can add it later, under **Usage and spend** on the account's row. |
+    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage. Without one, spend reads the organization's rate sheet. You can set it later, under **Usage and spend** on the account's row. |
     | **Read user** | Keep `OPENCONTROLLER_READ`, or enter another name. |
     | **Read user: signs in with** | **Workload identity federation (recommended)** or **Key pair**. The form starts on **Key pair**. |
     | **Control user** | **None: discovery only** for now. See [Turn on control](#turn-on-control-optional). |
@@ -121,7 +121,9 @@ A block keeps what it took in your own account (`OPENCONTROLLER.STATE.BLOCK_SNAP
 
 With a warehouse on the connection, OpenController reads the account usage views on it. The read role needs `USAGE`
 on the warehouse and the `SNOWFLAKE.USAGE_VIEWER` database role, which the setup script grants. Without a warehouse,
-the `usage` scan source and spend both show **not set up**, and the objects are listed without their use.
+the `usage` scan source and spend both show **not set up**, and the objects are listed without their use. To add a
+warehouse to a connection that has none, name it under **Usage and spend** on the account's row, then run the setup
+script again (**Setup** on the row): it creates the warehouse and lets the read role use it.
 
 ### Usage
 
@@ -154,7 +156,7 @@ Snowflake meters AI in **credits**. The rows are priced one of two ways, and are
 the bill settles at month end:
 
 1. At the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the connect form,
-   or later under **Spend** on the account's row.
+   or later under **Usage and spend** on the account's row.
 2. Without one, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
    rate after contract discounts. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for
    it, which the setup script does not grant, or the connection must be the organization account.
@@ -173,6 +175,78 @@ suspending after 60 seconds. A longer interval under **Settings** > **Spend sche
 For a key-pair user, open the setup script (the **Setup** icon on the row) and select **Generate a new key for
 OPENCONTROLLER_READ** (or the control user), then **Generate**. The old key stops working at once: run the script's
 `ALTER USER … SET RSA_PUBLIC_KEY` line again before the next scan. A federation user has no key to rotate.
+
+## Upgrade an existing connection
+
+The setup script is written for the connection as it is now, and every statement in it can run again: `CREATE … IF
+NOT EXISTS`, `ALTER` and `GRANT` change nothing that is already so. After you upgrade OpenController, open **Setup** on
+the account's row, run the script again as **ACCOUNTADMIN**, and select **Verify**. That brings any connection up to
+date, whatever release it was connected on.
+
+If you grant by hand instead, pick the release the connection was made on. Each step below it says what that release
+added and the statements to run. The statements name the default users; use your connection's own. The release you run
+is at the foot of the console's sidebar.
+
+<div className="oc-upgrade">
+  <p className="oc-upgrade-pick">
+    <label>The connection was made on release <select aria-label="The release the connection was made on"></select></label>
+  </p>
+
+  <div className="oc-upgrade-done" hidden>
+    **Nothing to run** for a connection made on this release. Run the setup script again after each upgrade anyway: it is safe, and brings the connection up to date.
+  </div>
+
+  <div className="oc-upgrade-step" data-release="0.199.0">
+    **v0.199.0 added the Cortex AI Gateway**, and who sends what through it. On an account with the gateway:
+
+    ```sql
+    GRANT MONITOR ON AI GATEWAY SNOWFLAKE TO ROLE OPENCONTROLLER_READ;
+    ```
+
+    Without it, the gateway is listed and shows `usage_error`. An account without a gateway needs nothing: the script
+    wraps the grant so it does not stop there.
+  </div>
+
+  <div className="oc-upgrade-step" data-release="0.197.0">
+    **v0.197.0 added AI spend**: what the account's AI credits cost and whose they were, and how much each object is
+    used. Two things:
+
+    1. **A warehouse**, if the connection has none. Name one under **Usage and spend** on the account's row, then run the
+       script again. It creates the warehouse and grants `USAGE` on it:
+
+       ```sql
+       CREATE WAREHOUSE IF NOT EXISTS OPENCONTROLLER_WH WAREHOUSE_SIZE = XSMALL AUTO_SUSPEND = 60 AUTO_RESUME = TRUE INITIALLY_SUSPENDED = TRUE;
+       GRANT USAGE ON WAREHOUSE OPENCONTROLLER_WH TO ROLE OPENCONTROLLER_READ;
+       ```
+
+    2. **A price for the credits**: the **Credit price** under **Usage and spend**, or let spend read the organization's
+       rate sheet:
+
+       ```sql
+       GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
+       ```
+
+    The `SNOWFLAKE.USAGE_VIEWER` role the views need has been in the script since v0.81.0.
+  </div>
+
+  <div className="oc-upgrade-step" data-release="0.89.1">
+    **v0.89.1 made the script set the key on a user that exists already.** After **Generate a new key**, run the
+    script's `ALTER USER … SET RSA_PUBLIC_KEY` line. A script before v0.89.1 left an existing user's key as it was.
+  </div>
+
+  <div className="oc-upgrade-step" data-release="0.89.0">
+    **v0.89.0 split the connection into two users**, read and control, granted account-wide instead of schema by
+    schema, and keeps control's state in `OPENCONTROLLER.STATE`. The connection's one user becomes the read user at
+    the next start, with the same key. Run the whole script again:
+
+    ```sql
+    ALTER ACCOUNT SET FEATURE_RBAC_INHERITED_GRANTS = 'ENABLED';
+    -- then the script's GRANT INHERITED … IN ACCOUNT lines, which replace the schema-by-schema grants
+    ```
+
+    To turn control on, give the connection a control user (**Setup** on the row) and run the script's control lines.
+  </div>
+</div>
 
 ## Permissions it uses
 
