@@ -82,8 +82,8 @@ Enterprise** (or both) under what the organization uses.
   <Step title="Verify">
     Verify signs in with the key, confirms the organization where the API says whose key it is, and tries one read per
     scope: members, groups, plugins, Claude in Slack, analytics, usage and cost, compliance activity and spend limits.
-    A missing scope is named, with the scopes the key has. **Groups**, **Claude in Slack** and **Usage and cost** are
-    optional: a note says why a key may lack each, and the connection still verifies.
+    A missing scope is named, with the scopes the key has. **Groups**, **Claude in Slack**, **Usage and cost** and
+    **Compliance activity** are optional: a note says why a key may lack each, and the connection still verifies.
   </Step>
 </Steps>
 
@@ -95,7 +95,7 @@ Six sources, each a scope the key may lack on its own, so a key without groups s
 |---|---|
 | Members: email, name, role, when added | Identities (type `user`). |
 | Groups, made in claude.ai or by SCIM, with the custom roles they grant | Identities (type `group`) that **contain** their members. |
-| Plugins: description, marketplace, versions, components, reach, content scan, who made them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace is a registry that **contains** it. |
+| Plugins: description, marketplace, versions, components, reach, content scan, who made them, and how the organization and each group install them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone, and each group allowed it **can use** it. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace is a registry that **contains** it. |
 | Connectors and projects, as of the latest day the analytics have | MCP servers and knowledge bases, with that day and how many people used them. The analytics run a day or two behind; a scan reads the latest day the API has. |
 | Claude in Slack: each Slack workspace and channel it is set up in | Agents: on or off, who may talk to them (the guest policy), their model, and where each setting comes from. Instructions are not kept. |
 
@@ -117,7 +117,7 @@ An Admin API key reads the whole organization; there is no narrower one. OpenCon
 | `/v1/organizations/usage_report/claude_code` | Claude Code use by person or API key, one day per request. |
 
 With an Enterprise key, by its scopes: `/v1/organizations/users`, `/rbac_groups` (and each group's `/members`),
-`/rbac_roles`, `/plugins`, `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/projects`,
+`/rbac_roles`, `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/projects`,
 `/claude_tag/slack_workspaces` and `/claude_tag/slack_channels`, and for Verify one read each of
 `/analytics/summaries`, `/analytics/cost`, `/spend_limits/effective` and `/v1/compliance/activities`.
 
