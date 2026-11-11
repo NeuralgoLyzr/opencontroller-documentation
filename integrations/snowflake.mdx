@@ -47,7 +47,7 @@ conversations, traces or files users upload to CoWork.
     | **Name** | A name for the account, for example `analytics`. |
     | **Account identifier** | `orgname-account_name`, for example `myorg-myaccount`. In Snowsight: your name (bottom left) > **Account** > **View account details**. |
     | **Warehouse** (optional) | A warehouse the account usage views are read on, for usage and spend, and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. You can add it later, under **Usage and spend** on the account's row. |
-    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage. Without one, spend reads the organization's rate sheet. You can set it later, under **Usage and spend** on the account's row. |
+    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage where the read role cannot read the organization's bill. You can set it later, under **Usage and spend** on the account's row. |
     | **Read user** | Keep `OPENCONTROLLER_READ`, or enter another name. |
     | **Read user: signs in with** | **Workload identity federation (recommended)** or **Key pair**. The form starts on **Key pair**. |
     | **Control user** | **None: discovery only** for now. See [Turn on control](#turn-on-control-optional). |
@@ -152,17 +152,22 @@ Every 6 hours by default (**Settings** > **Spend schedule**), spend reads the la
   rows show on the agent's page, and the gateway's on the gateway's. Inference sent straight to the Cortex REST API,
   not through the gateway, is in the totals but is put down to no one: no view says whose it was.
 
-Snowflake meters AI in **credits**. The rows are priced one of two ways, and are **estimated** either way, because
-the bill settles at month end:
+Snowflake meters AI in **credits**. The rows are priced one of three ways:
 
-1. At the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the connect form,
-   or later under **Usage and spend** on the account's row.
-2. Without one, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
-   rate after contract discounts. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for
-   it, which the setup script does not grant, or the connection must be the organization account.
+1. At the organization's **bill** (`ORGANIZATION_USAGE.USAGE_IN_CURRENCY_DAILY`): what each day's credits of each
+   service were charged, in the bill's currency. Each day's total is then **billed**, and a person's share is priced at
+   that day's effective rate. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for it,
+   or the connection must be the organization account. The setup script carries the grant as a commented line: run it
+   to turn this on. The bill lags usage by up to three days, and a day can still change until the month closes; each
+   read takes the bill as it stands, so the last days of a month settle on a later read.
+2. Without it, at the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the
+   connect form, or later under **Usage and spend** on the account's row. The rows are **estimated**.
+3. Without either, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
+   rate after contract discounts, which the same database role reads. The rows are **estimated**.
 
-Without either, spend shows **not set up** and asks for a credit price. Refused the warehouse or the views, it shows
-**needs permission** and names the grant.
+With a bill and a credit price both, the price covers only what the bill has not reached yet. Without any of the
+three, spend shows **not set up** and asks for a credit price. Refused the warehouse or the views, it shows **needs
+permission** and names the grant.
 
 **Spend** > **Provider** > **Snowflake's own page** breaks the credits down by account, user, person and object (an
 agent, an AI function, the AI Gateway, Cortex Code), and shows each agent's cost against how much it was used.
@@ -196,6 +201,15 @@ is at the foot of the console's sidebar.
     **Nothing to run** for a connection made on this release. Run the setup script again after each upgrade anyway: it is safe, and brings the connection up to date.
   </div>
 
+  <div className="oc-upgrade-step" data-release="0.208.0">
+    **v0.208.0 prices AI spend at the organization's bill**, where the read role can read it. Optional: without it,
+    spend prices the credits as before. One grant, which the setup script now carries as a commented line:
+
+    ```sql
+    GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
+    ```
+  </div>
+
   <div className="oc-upgrade-step" data-release="0.204.1">
     **v0.204.1 added AI spend and usage, and the Cortex AI Gateway**: what the account's AI credits cost and whose
     they were, how much each object is used, and who sends what through the gateway. Three things:
@@ -209,7 +223,7 @@ is at the foot of the console's sidebar.
        ```
 
     2. **A price for the credits**: the **Credit price** under **Usage and spend**, or let spend read the organization's
-       rate sheet:
+       bill and rate sheet:
 
        ```sql
        GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
@@ -248,6 +262,7 @@ roles.
 | `DATABASE ROLE SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` | The account usage views: usage and spend. |
 | `APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER` | Trust Center findings (granted, not read yet). |
 | `USAGE` on the warehouse | Usage, spend and the **Account usage** check. The script creates the warehouse: `XSMALL`, suspends after 60 seconds. |
+| Optional: `DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` | The organization's bill and rate sheet, to price AI credits at what they were charged. A commented line in the script: uncomment it to grant. |
 | With a separate control user: `USAGE` on `OPENCONTROLLER` and `OPENCONTROLLER.STATE`, `SELECT` on `BLOCK_SNAPSHOTS` | Read the block records. |
 
 It never holds `OWNERSHIP`, `MODIFY`, `OPERATE`, `MANAGE GRANTS`, `APPLY`, `INSERT`, `UPDATE`, `DELETE`, any `CREATE`
