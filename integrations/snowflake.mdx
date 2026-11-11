@@ -194,7 +194,7 @@ account's agents, every 15 minutes, and keeps it with the traces your other agen
   the first time it is seen and named after it (`DB.SCHEMA.NAME`). The rest, CoWork, Cortex Code and agents the
   inventory has not seen yet, are read under no project.
 - **Feedback and evaluations** recorded on a turn ride with it: a user's thumbs up or down as an event on the
-  trace, an evaluation run's scores as span attributes.
+  trace, and an evaluation run's spans as evaluator spans, each metric's score on them.
 
 The read role needs the `SNOWFLAKE.AI_OBSERVABILITY_READER` application role, which the setup script grants, wrapped
 so an account without AI Observability notes it and runs on. Without the account privilege `READ UNREDACTED AI
@@ -229,8 +229,8 @@ is at the foot of the console's sidebar.
     **Nothing to run** for a connection made on this release. Run the setup script again after each upgrade anyway: it is safe, and brings the connection up to date.
   </div>
 
-  <div className="oc-upgrade-step" data-release="0.210.0">
-    **v0.210.0 reads the agents' traces from AI Observability**, into Observability, where the module is on. One
+  <div className="oc-upgrade-step" data-release="0.211.0">
+    **v0.211.0 reads the agents' traces from AI Observability**, into Observability, where the module is on. One
     grant, which the setup script now carries, wrapped so an account without AI Observability runs on:
 
     ```sql
