@@ -7,6 +7,9 @@
 // 4. [ and ] move to the previous and next page; the footer says so.
 // 5. A reading line under the navbar shows how far down the page you are.
 // 6. An upgrade picker (.oc-upgrade) keeps the steps for the releases after the one chosen.
+// 7. A "Download PDF" button at the top of every page prints it: the browser's own print
+//    dialog saves the page as a PDF, with the stylesheet's print rules keeping the page alone,
+//    so it works wherever the site runs, the customer's own cell included, with no service behind it.
 (function () {
   "use strict";
   if (window.__ocUi) return;
@@ -90,6 +93,20 @@
     line.style.transform = "scaleX(" + p.toFixed(4) + ")";
   }
 
+  // The page's PDF is the browser's print of it (style.css, @media print).
+  function pdfButton() {
+    var header = document.getElementById("header");
+    if (!header || header.querySelector(".oc-pdf")) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "oc-pdf";
+    b.title = "Save this page as a PDF";
+    b.setAttribute("aria-label", "Download this page as a PDF");
+    b.innerHTML = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Download PDF</span>';
+    b.addEventListener("click", function () { window.print(); });
+    header.appendChild(b);
+  }
+
   var pending;
   function decorate() {
     clearTimeout(pending);
@@ -99,6 +116,7 @@
       if (!root) return;
       methodTags(root);
       pageLinks();
+      pdfButton();
       readingLine();
     }, 60);
   }
