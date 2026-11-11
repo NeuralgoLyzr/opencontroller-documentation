@@ -37,6 +37,9 @@
   "icons": {
     "library": "lucide"
   },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
+  },
   "navigation": {
     "versions": [
       {

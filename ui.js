@@ -7,6 +7,9 @@
 // 4. [ and ] move to the previous and next page; the footer says so.
 // 5. A reading line under the navbar shows how far down the page you are.
 // 6. An upgrade picker (.oc-upgrade) keeps the steps for the releases after the one chosen.
+// 7. "Download PDF" in every page's menu, after Copy page and View as Markdown, prints it: the
+//    browser's own print dialog saves the page as a PDF, with the stylesheet's print rules keeping
+//    the page alone, so it works wherever the site runs, the customer's own cell included.
 (function () {
   "use strict";
   if (window.__ocUi) return;
@@ -90,6 +93,31 @@
     line.style.transform = "scaleX(" + p.toFixed(4) + ")";
   }
 
+  // The page's PDF is the browser's print of it (style.css, @media print): a "Download PDF"
+  // entry in the page's own menu, after Mintlify's Copy page and View as Markdown, made in
+  // their image when the menu opens.
+  function pdfMenuItem() {
+    var items = document.querySelectorAll('[role="menu"] [role="menuitem"]');
+    if (!items.length || items[0].parentElement.querySelector(".oc-pdf")) return;
+    var item = items[0].cloneNode(true);
+    item.className += " oc-pdf";
+    item.removeAttribute("id");
+    var icon = item.querySelector("svg");
+    if (icon) icon.outerHTML = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="' + icon.getAttribute("class") + '"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    var text = item.children[1];
+    if (text && text.children.length > 1) {
+      text.children[0].textContent = "Download PDF";
+      text.children[1].textContent = "Save this page as a PDF";
+    } else {
+      item.textContent = "Download PDF";
+    }
+    item.addEventListener("click", function () {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      setTimeout(function () { window.print(); }, 80);
+    });
+    items[0].parentElement.appendChild(item);
+  }
+
   var pending;
   function decorate() {
     clearTimeout(pending);
@@ -99,6 +127,7 @@
       if (!root) return;
       methodTags(root);
       pageLinks();
+      pdfMenuItem();
       readingLine();
     }, 60);
   }
