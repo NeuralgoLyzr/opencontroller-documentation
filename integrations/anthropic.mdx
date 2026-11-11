@@ -28,7 +28,9 @@ To call Claude models through the [LLM gateway](/secure/gateway-overview), add A
     with `sk-ant-admin`, and the Console shows it once. Then copy the organization ID (a GUID) from **Settings** >
     **Organization**.
 
-    A workspace API key (`sk-ant-api…`) is refused: the form and the API accept only `sk-ant-admin…`.
+    A workspace API key is refused at **Verify**: it cannot read the organization. A key linked to a service account
+    with the admin role works too, and is the one that reads Managed Agents. Both begin `sk-ant-api…`, so the prefix
+    does not tell them apart; the Console's API keys page names the key's owner.
   </Step>
   <Step title="Connect it">
     Go to **Integrations** > **Connect** > **Anthropic organization**. Fill in **Name**, **Organization ID** and **Admin
@@ -45,7 +47,13 @@ To call Claude models through the [LLM gateway](/secure/gateway-overview), add A
     | **Sign in** | The key is accepted and belongs to the organization you named. Shows its name and ID. |
     | **Members**, **Workspaces**, **API keys** | Each is listed; the check shows how many (active keys only). |
     | **Usage and cost** | Yesterday's usage and cost reports can be read. |
+    | **Managed Agents** | The key reads Managed Agents in every workspace. An Admin API key acts in no workspace and reads none, which the check says; a service account key reads them. |
     | **Claude Code analytics** | Yesterday's Claude Code report can be read. |
+
+    A connection can also hold **Claude Enterprise** keys (claude.ai), with or without the Console. Verify tries one
+    read per scope, and names a missing one with the scopes the key has. `read:rbac_groups` is optional: groups belong
+    to the parent organization, and a key made for one organization cannot take it. A connection with Enterprise keys
+    alone has nothing a scan reads yet: its scheduled scan ends **succeeded**, with one source **skipped** that says so.
 
     Scans run every 5 minutes by default, and read the last 30 days of usage; a model nobody called for 30 days is
     retired. Spend is read after a scan, at most every 6 hours, for the last 35 days.
