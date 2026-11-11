@@ -28,7 +28,7 @@ Two pages show what your organization spends on AI:
 
 **Sources** shows whether each source of spend is read. A source that lacks a permission says **Needs a permission** and names it, instead of showing nothing spent. Grant it, then select **Refresh**.
 
-Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **estimated**: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. GitHub Copilot and Salesforce Agentforce are not read yet.
+Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **billed** where the read role reads the organization's bill, and **estimated** otherwise: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. GitHub Copilot and Salesforce Agentforce are not read yet.
 
 {/* SCREENSHOT: spend-sources | crop | The Sources panel, stitched: Claude Code, Claude API bill and Azure AI costs Read, Databricks Failed, Google Cloud Not set up. The AWS rows (account ID in the error) left out; connection IDs blurred. */}
 <Frame caption="The Sources panel">

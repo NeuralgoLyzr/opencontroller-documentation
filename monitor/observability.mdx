@@ -11,6 +11,8 @@ A **project** is where traces are kept and read, usually one per agent, app or e
 
 An OpenTelemetry Collector writes the spans to the trace store, and OpenController only reads them there. It keeps no copy and does not change the store. If the page says **No trace store connected**, an Admin selects **Connect the trace store** and sets it in **Settings** > **Observability**.
 
+Traces come from the agents you instrument ([Send traces](/monitor/send-traces)), from the LLM gateway, and from the platforms OpenController is connected to that record their own: a connected Snowflake account's Cortex Agents, CoWork and Cortex Code arrive on their own, each agent under the project that stands for it. See [Snowflake](/integrations/snowflake#traces).
+
 {/* SCREENSHOT: obs-overview | full | Monitor > Observability > Overview, window Last 7 days: Resources counts, Cost by project, the metrics row, the Latency heatmap and the Activity chart. */}
 <Frame caption="The Observability overview, last 7 days">
   <img src="/images/observability/obs-overview.png" alt="The Observability overview with resource counts, cost by project, the main metrics and the latency heatmap." />

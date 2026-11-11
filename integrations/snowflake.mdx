@@ -27,6 +27,9 @@ Each user signs in one of two ways:
   the last 30 days, on the asset's page. See [Read usage and spend](#read-usage-and-spend-optional).
 - **[Spend](/discover/people-and-spend)**, with a warehouse: the AI credits the account was billed each day, priced,
   and whose they were, by user and by agent.
+- **[Observability](/monitor/observability)**, with a warehouse and the Observability module: each turn of a Cortex
+  Agent, CoWork or Cortex Code as a trace, from Snowflake's AI Observability, with the feedback and evaluations on it.
+  See [Traces](#traces).
 - **[Shadow AI](/discover/shadow-ai):** the owner role of each agent and MCP server, the roles and users that
   can use or edit it, and whether `PUBLIC` holds it (exposure to the whole account), and whether every user may send
   inference through the AI Gateway.
@@ -34,7 +37,8 @@ Each user signs in one of two ways:
   CoWork, and block an agent.
 
 Neither user ever reads your table data, calls an agent, a search service, an MCP tool or an AI function, or reads
-conversations, traces or files users upload to CoWork.
+conversations or files users upload to CoWork. Traces are read only from AI Observability's event table, which
+Snowflake redacts unless you grant otherwise; see [Traces](#traces).
 
 ## Connect a Snowflake account
 
@@ -47,7 +51,7 @@ conversations, traces or files users upload to CoWork.
     | **Name** | A name for the account, for example `analytics`. |
     | **Account identifier** | `orgname-account_name`, for example `myorg-myaccount`. In Snowsight: your name (bottom left) > **Account** > **View account details**. |
     | **Warehouse** (optional) | A warehouse the account usage views are read on, for usage and spend, and for blocking agents, for example `OPENCONTROLLER_WH`. The setup script creates it. Listing objects needs none. You can add it later, under **Usage and spend** on the account's row. |
-    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage. Without one, spend reads the organization's rate sheet. You can set it later, under **Usage and spend** on the account's row. |
+    | **Credit price** and **Currency** (optional) | What the account pays for one Snowflake credit, from your contract, to price AI usage where the read role cannot read the organization's bill. You can set it later, under **Usage and spend** on the account's row. |
     | **Read user** | Keep `OPENCONTROLLER_READ`, or enter another name. |
     | **Read user: signs in with** | **Workload identity federation (recommended)** or **Key pair**. The form starts on **Key pair**. |
     | **Control user** | **None: discovery only** for now. See [Turn on control](#turn-on-control-optional). |
@@ -152,23 +156,52 @@ Every 6 hours by default (**Settings** > **Spend schedule**), spend reads the la
   rows show on the agent's page, and the gateway's on the gateway's. Inference sent straight to the Cortex REST API,
   not through the gateway, is in the totals but is put down to no one: no view says whose it was.
 
-Snowflake meters AI in **credits**. The rows are priced one of two ways, and are **estimated** either way, because
-the bill settles at month end:
+Snowflake meters AI in **credits**. The rows are priced one of three ways:
 
-1. At the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the connect form,
-   or later under **Usage and spend** on the account's row.
-2. Without one, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
-   rate after contract discounts. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for
-   it, which the setup script does not grant, or the connection must be the organization account.
+1. At the organization's **bill** (`ORGANIZATION_USAGE.USAGE_IN_CURRENCY_DAILY`): what each day's credits of each
+   service were charged, in the bill's currency. Each day's total is then **billed**, one row per balance that paid
+   it (capacity, rollover, free usage, overage or a rebate, on the row's tier), so what cost nothing is told from what
+   cost money, and a person's share is priced at that day's effective rate. The read role needs the `SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` database role for it,
+   or the connection must be the organization account. The setup script carries the grant as a commented line: run it
+   to turn this on. The bill lags usage by up to three days, and a day can still change until the month closes; each
+   read takes the bill as it stands, so the last days of a month settle on a later read.
+2. Without it, at the **Credit price** on the connection, in its **Currency** (US dollars unless set). Set it on the
+   connect form, or later under **Usage and spend** on the account's row. The rows are **estimated**.
+3. Without either, at the organization's **rate sheet** (`ORGANIZATION_USAGE.RATE_SHEET_DAILY`): each day's effective
+   rate after contract discounts, which the same database role reads. The rows are **estimated**.
 
-Without either, spend shows **not set up** and asks for a credit price. Refused the warehouse or the views, it shows
-**needs permission** and names the grant.
+With a bill and a credit price both, the price covers only what the bill has not reached yet. Without any of the
+three, spend shows **not set up** and asks for a credit price. Refused the warehouse or the views, it shows **needs
+permission** and names the grant.
 
 **Spend** > **Provider** > **Snowflake's own page** breaks the credits down by account, user, person and object (an
 agent, an AI function, the AI Gateway, Cortex Code), and shows each agent's cost against how much it was used.
 
 Reading usage and spend spends the warehouse's credits each time. The script creates the warehouse as `XSMALL`,
 suspending after 60 seconds. A longer interval under **Settings** > **Spend schedule** spends fewer.
+
+### Traces
+
+With a warehouse, the **Observability** module on and a trace store connected, OpenController reads what Snowflake's
+[AI Observability](https://docs.snowflake.com/en/user-guide/snowflake-cortex/ai-observability) recorded of the
+account's agents, every 15 minutes, and keeps it with the traces your other agents send:
+
+- **Each turn** of a Cortex Agent, of CoWork and of Cortex Code is a trace: its planning, each tool it called, the
+  SQL it ran, the search it made and the answer, as spans with their models, tokens, latency and errors. The spans
+  are OpenTelemetry already; they are written in the GenAI and OpenInference names the trace store reads, beside
+  Snowflake's own.
+- **Each agent's traces are its project.** An agent in the AI Inventory gets the project that stands for it, made
+  the first time it is seen and named after it (`DB.SCHEMA.NAME`). The rest, CoWork, Cortex Code and agents the
+  inventory has not seen yet, are read under no project.
+- **Feedback and evaluations** recorded on a turn ride with it: a user's thumbs up or down as an event on the
+  trace, and an evaluation run's spans as evaluator spans, each metric's score on them.
+
+The read role needs the `SNOWFLAKE.AI_OBSERVABILITY_READER` application role, which the setup script grants, wrapped
+so an account without AI Observability notes it and runs on. Without the account privilege `READ UNREDACTED AI
+OBSERVABILITY EVENTS TABLE`, which the script never grants, Snowflake redacts what was asked and answered, and only
+the shape of each turn is read. The **AI observability** check on **Verify** says how many spans the last day
+recorded, or what is missing; it is a note, never a failure. Snowflake delivers the event table best effort, so a span
+can be late or missing. Reading the traces spends the warehouse's credits each time, as usage and spend do.
 
 ## Rotate a key
 
@@ -196,6 +229,24 @@ is at the foot of the console's sidebar.
     **Nothing to run** for a connection made on this release. Run the setup script again after each upgrade anyway: it is safe, and brings the connection up to date.
   </div>
 
+  <div className="oc-upgrade-step" data-release="0.211.0">
+    **v0.211.0 reads the agents' traces from AI Observability**, into Observability, where the module is on. One
+    grant, which the setup script now carries, wrapped so an account without AI Observability runs on:
+
+    ```sql
+    GRANT APPLICATION ROLE SNOWFLAKE.AI_OBSERVABILITY_READER TO ROLE OPENCONTROLLER_READ;
+    ```
+  </div>
+
+  <div className="oc-upgrade-step" data-release="0.208.0">
+    **v0.208.0 prices AI spend at the organization's bill**, where the read role can read it. Optional: without it,
+    spend prices the credits as before. One grant, which the setup script now carries as a commented line:
+
+    ```sql
+    GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
+    ```
+  </div>
+
   <div className="oc-upgrade-step" data-release="0.204.1">
     **v0.204.1 added AI spend and usage, and the Cortex AI Gateway**: what the account's AI credits cost and whose
     they were, how much each object is used, and who sends what through the gateway. Three things:
@@ -209,7 +260,7 @@ is at the foot of the console's sidebar.
        ```
 
     2. **A price for the credits**: the **Credit price** under **Usage and spend**, or let spend read the organization's
-       rate sheet:
+       bill and rate sheet:
 
        ```sql
        GRANT DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER TO ROLE OPENCONTROLLER_READ;
@@ -248,6 +299,8 @@ roles.
 | `DATABASE ROLE SNOWFLAKE.USAGE_VIEWER`, `OBJECT_VIEWER`, `SECURITY_VIEWER`, `GOVERNANCE_VIEWER` | The account usage views: usage and spend. |
 | `APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER` | Trust Center findings (granted, not read yet). |
 | `USAGE` on the warehouse | Usage, spend and the **Account usage** check. The script creates the warehouse: `XSMALL`, suspends after 60 seconds. |
+| `APPLICATION ROLE SNOWFLAKE.AI_OBSERVABILITY_READER` | The agents' traces in AI Observability's event table, redacted of what was asked and answered. The script runs it inside a block that returns a note on an account without AI Observability. |
+| Optional: `DATABASE ROLE SNOWFLAKE.ORGANIZATION_BILLING_VIEWER` | The organization's bill and rate sheet, to price AI credits at what they were charged. A commented line in the script: uncomment it to grant. |
 | With a separate control user: `USAGE` on `OPENCONTROLLER` and `OPENCONTROLLER.STATE`, `SELECT` on `BLOCK_SNAPSHOTS` | Read the block records. |
 
 It never holds `OWNERSHIP`, `MODIFY`, `OPERATE`, `MANAGE GRANTS`, `APPLY`, `INSERT`, `UPDATE`, `DELETE`, any `CREATE`
