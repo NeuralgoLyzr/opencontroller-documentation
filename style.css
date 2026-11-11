@@ -291,31 +291,11 @@ code.oc-method { padding: 0.05em 0.4em !important; border: 0 !important; color: 
   .oc-keys { display: none; }
 }
 
-/* The page's PDF (ui.js, 7): a button in the page header, and the print rules that keep the
-   page alone: the navbar, the sidebar, the table of contents, the assistant and the
-   pagination go, the content takes the sheet, and a link says where it goes. */
-#header { position: relative; }
-.oc-pdf {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--oc-border);
-  border-radius: var(--oc-radius);
-  background: var(--oc-paper);
-  color: var(--oc-muted-foreground);
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-}
-.oc-pdf:hover { color: var(--oc-foreground); border-color: var(--oc-muted-foreground); }
-.dark .oc-pdf { background: transparent; }
+/* The page's PDF (ui.js, 7): the print rules that keep the page alone when the menu's
+   Download PDF prints it. The navbar, the sidebar, the table of contents, the assistant and
+   the pagination go, the content takes the sheet, and a link says where it goes. */
 @media print {
-  #navbar, #sidebar, #table-of-contents, #pagination, .oc-pdf, .oc-reading, .oc-keys,
+  #navbar, #sidebar, #table-of-contents, #pagination, #header button, .oc-reading, .oc-keys,
   .chat-assistant-floating-input, [class*="chat-assistant"] { display: none !important; }
   #content-container, #content-area, #content-side-layout { max-width: none !important; margin: 0 !important; padding: 0 !important; }
   html, body { background: #fff !important; color: #141311 !important; }

@@ -51,6 +51,9 @@ to it.
 
 It loads nothing from anywhere else: the export bundles its assets, JetBrains Mono is kept in `fonts/` (Open Font
 License), a build fails if a page names a font elsewhere, and nginx's Content-Security-Policy holds the browser to it.
+A page's menu works there as on the hosted site: Copy page and View as Markdown read the page as Markdown, which
+`docker/markdown.sh` writes beside each exported page (Mintlify serves it, the export leaves it out), and Download
+PDF prints the page with the browser (`ui.js`, `style.css`), with no service behind it.
 
 It is held to the cell's license: with `LICENSE_API_URL`, which the chart sets, each page asks the cell's API first, and a
 locked cell shows a locked page. An API that is down or restarting does not stop the pages. `/healthz` is for probes.

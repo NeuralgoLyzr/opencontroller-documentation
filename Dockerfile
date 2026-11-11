@@ -14,6 +14,8 @@ COPY . .
 # the result does not.
 RUN mint export --base-path /docs --output /tmp/docs.zip && mkdir /out && unzip -q /tmp/docs.zip -d /out \
     && rm -rf /out/serve.js "/out/Start Docs.command" "/out/Start Docs.bat" /out/docker
+# Each page as Markdown, for the page menu's Copy page and View as Markdown.
+RUN sh docker/markdown.sh /site /out
 # A cell serves the site under /docs on the console's own address: --base-path
 # moves the site's links, and these are the two it does not. style.css names its
 # font from the root, and the sidebar's "Open the console" is the console here.
