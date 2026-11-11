@@ -95,9 +95,9 @@ Six sources, each a scope the key may lack on its own, so a key without groups s
 |---|---|
 | Members: email, name, role, when added | Identities (type `user`). |
 | Groups, made in claude.ai or by SCIM, with the custom roles they grant | Identities (type `group`) that **contain** their members. |
-| Plugins: description, marketplace, versions, components, reach, content scan, who made them, and how the organization and each group install them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone, and each group allowed it **can use** it. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace is a registry that **contains** it. |
-| Connectors and projects, as of the latest day the analytics have | MCP servers and knowledge bases, with that day and how many people used them. The analytics run a day or two behind; a scan reads the latest day the API has. |
-| Claude in Slack: each Slack workspace and channel it is set up in | Agents: on or off, who may talk to them (the guest policy), their model, and where each setting comes from. Instructions are not kept. |
+| Plugins: description, version, marketplace, served and latest version, components, reach, content scan, who made them (a member or an Admin API key), and how the organization and each group install them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone, and each group allowed it **can use** it. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace, the organization's or a member's personal one, is a registry that **contains** it, with how its last synchronization from its repository went. |
+| Connectors and projects, as of the latest day the analytics have | MCP servers and knowledge bases, with that day and how many people used them. The analytics run a day or two behind; a scan reads one day, the latest the API has. A count the analytics cannot state (a breakdown not enabled for the organization) is left out, not written as 0. |
+| Claude in Slack: each Slack workspace and channel it is set up in | Agents: on or off, what they do while a Slack guest is in the channel (the guest policy: `allow`, `channel_only` or `restrict`, which applies when none is set), how they take part in a channel (the reply mode), their model, their environment, and the level each setting comes from. Instructions are not kept. |
 
 Seats and their bill are read in a later release. To change the keys, remove the connection and connect it again.
 
@@ -117,7 +117,7 @@ An Admin API key reads the whole organization; there is no narrower one. OpenCon
 | `/v1/organizations/usage_report/claude_code` | Claude Code use by person or API key, one day per request. |
 
 With an Enterprise key, by its scopes: `/v1/organizations/users`, `/rbac_groups` (and each group's `/members`),
-`/rbac_roles`, `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/projects`,
+`/rbac_roles`, `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/apps/chat/projects`,
 `/claude_tag/slack_workspaces` and `/claude_tag/slack_channels`, and for Verify one read each of
 `/analytics/summaries`, `/analytics/cost`, `/spend_limits/effective` and `/v1/compliance/activities`.
 
