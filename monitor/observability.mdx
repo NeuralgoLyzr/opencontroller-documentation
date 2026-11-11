@@ -18,11 +18,13 @@ An OpenTelemetry Collector writes the spans to the trace store, and OpenControll
 
 **Overview** opens on the shortest window that holds your latest trace. **Through the gateway** is the share of model calls that went through the LLM gateway (Rekori).
 
+Under **Resources**, the agents, models, providers, teams, users, customers and gateway keys tiles are distinct counts over the window. **Tools**, **MCP servers** and **Issues** are totals, and the lists beneath say how many of the total they show. A chart draws the bucket still filling (the current hour or day) lighter, and its tooltip says **so far**.
+
 ## Pick the time range
 
 The button at the top right says what the page reads over: a preset such as **Last 7 days**, or two times. Open it to choose:
 
-- A preset: **Last hour**, **Last 6 hours**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The page follows the clock.
+- A preset: **Last hour**, **Last 6 hours**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The page follows the clock: on **Overview** and **Cost**, the window moves every minute.
 - Any two days on the calendar, with a time on each, then **Apply**. A range can reach back 180 days.
 
 The same picker is on every page that reads over time: **Cost**, a project's **Issues**, the trace explorer, the LLM gateway's **Overview** and **Logs**, **Spend** (where **This month** and **Last month** come first), **Evals** and **Guardrail Violations**. In the trace explorer it also sets the time zone the times are shown in: your own, or UTC. A page that sums up whole days, such as **Guardrail Violations**, offers only its presets.
