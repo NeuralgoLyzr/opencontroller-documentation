@@ -6,6 +6,7 @@
 // 3. HTTP methods in the API tables and lists become method tags.
 // 4. [ and ] move to the previous and next page; the footer says so.
 // 5. A reading line under the navbar shows how far down the page you are.
+// 6. An upgrade picker (.oc-upgrade) keeps the steps for the releases after the one chosen.
 (function () {
   "use strict";
   if (window.__ocUi) return;
@@ -249,10 +250,68 @@
     }
   }
 
+  // An upgrade picker: the reader says which release a connection was made on, and the
+  // steps for the releases after it stay; the rest hide. Each step carries data-release,
+  // the release that added it, and the options are the ranges between them. Without the
+  // script every step shows, each saying its release. The console's in-app guides label
+  // their picker the same way (apps/console/src/lib/guide-upgrade.ts in the platform
+  // repository); change the two together.
+  function release(r) { return r.split(".").map(Number); }
+  function cmpRelease(a, b) {
+    a = release(a); b = release(b);
+    for (var i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) - (b[i] || 0);
+    return 0;
+  }
+  // The release just under r, as a range's end: 0.89.1 → v0.89.0, 0.197.0 → v0.196.x.
+  function under(r) {
+    var p = release(r);
+    return p[2] > 0 ? "v" + p[0] + "." + p[1] + "." + (p[2] - 1) : "v" + p[0] + "." + (p[1] - 1) + ".x";
+  }
+  function showUpgrade(block, from) {
+    var steps = block.querySelectorAll("[data-release]"), shown = 0;
+    for (var i = 0; i < steps.length; i++) {
+      var hide = from !== "" && cmpRelease(steps[i].getAttribute("data-release"), from) <= 0;
+      steps[i].hidden = hide;
+      if (!hide) shown++;
+    }
+    var done = block.querySelector(".oc-upgrade-done");
+    if (done) done.hidden = shown > 0;
+  }
+  function upgradePickers() {
+    var blocks = document.querySelectorAll(".oc-upgrade:not(.oc-ready)");
+    for (var b = 0; b < blocks.length; b++) {
+      var block = blocks[b], select = block.querySelector("select");
+      if (!select) continue;
+      var rels = [];
+      Array.prototype.forEach.call(block.querySelectorAll("[data-release]"), function (s) {
+        var r = s.getAttribute("data-release");
+        if (rels.indexOf(r) < 0) rels.push(r);
+      });
+      rels.sort(cmpRelease);
+      select.textContent = "";
+      var opts = [["", "before v" + rels[0]]];
+      for (var i = 0; i < rels.length; i++) {
+        var end = i + 1 < rels.length ? under(rels[i + 1]) : null;
+        opts.push([rels[i], "v" + rels[i] + (end === null ? " or later" : end === "v" + rels[i] ? "" : " to " + end)]);
+      }
+      opts.forEach(function (o) {
+        var el = document.createElement("option");
+        el.value = o[0]; el.textContent = o[1];
+        select.appendChild(el);
+      });
+      block.classList.add("oc-ready");
+      showUpgrade(block, select.value);
+    }
+  }
+  document.addEventListener("change", function (e) {
+    var s = e.target.closest && e.target.closest(".oc-upgrade select");
+    if (s) showUpgrade(s.closest(".oc-upgrade"), s.value);
+  });
+
   var pending;
   function run() {
     clearTimeout(pending);
-    pending = setTimeout(function () { bindNodes(); stepper(); liveDiagrams(); pickFromUrl(); }, 120);
+    pending = setTimeout(function () { bindNodes(); stepper(); liveDiagrams(); pickFromUrl(); upgradePickers(); }, 120);
   }
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   run();
