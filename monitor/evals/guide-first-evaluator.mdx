@@ -49,7 +49,7 @@ A judge with no source of truth cannot tell a right fact from a wrong one. To ju
 Under **Configuration**:
 
 1. **Pick a data source**: the trace store and the project. {/* TODO verify: what a "project" is in a ClickHouse trace store here (the service name the spans carry, e.g. support-bot, or the Observability project) */}
-2. **Filter spans** to the ones the judge reads, for example `"status" != 'Error'`. **Matching spans** samples the **Last 7 days** by default.
+2. **Filter spans** to the ones the judge reads, for example `"status" != 'Error'`. **Matching spans** samples the **Last 7 days** by default; the [time range picker](/monitor/observability#pick-the-time-range) takes any preset, or two times.
 3. **Map variables to data**: point `{input}` and `{output}` at the fields holding the user's message and the agent's answer.
 4. Under **Task configuration**, set the **Sampling rate (%)**: each span judged costs a model call. **Run continuously** judges each new span as it arrives. **One-time backfill** also judges spans already recorded, from a time you choose.
 5. Optionally, **Advanced** > **Token budget** stops the task once judging has spent this many tokens.

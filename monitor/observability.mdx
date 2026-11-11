@@ -18,6 +18,15 @@ An OpenTelemetry Collector writes the spans to the trace store, and OpenControll
 
 **Overview** opens on the shortest window that holds your latest trace. **Through the gateway** is the share of model calls that went through the LLM gateway (Rekori).
 
+## Pick the time range
+
+The button at the top right says what the page reads over: a preset such as **Last 7 days**, or two times. Open it to choose:
+
+- A preset: **Last hour**, **Last 6 hours**, **Last 24 hours**, **Last 7 days** or **Last 30 days**. The page follows the clock.
+- Any two days on the calendar, with a time on each, then **Apply**. A range can reach back 180 days.
+
+The same picker is on every page that reads over time: **Cost**, a project's **Issues**, the trace explorer, the LLM gateway's **Overview** and **Logs**, **Spend** (where **This month** and **Last month** come first), **Evals** and **Guardrail Violations**. In the trace explorer it also sets the time zone the times are shown in: your own, or UTC. A page that sums up whole days, such as **Guardrail Violations**, offers only its presets.
+
 ## Find a project
 
 {/* SCREENSHOT: obs-projects | crop | The Projects table only (no sidebar), Last 7 days, Show set to All: support-bot, billing-agent, a project with a red error rate, Unassigned, and one project showing "Set up" under Last trace. */}
