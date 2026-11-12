@@ -98,7 +98,8 @@
   // their image when the menu opens.
   function pdfMenuItem() {
     var items = document.querySelectorAll('[role="menu"] [role="menuitem"]');
-    if (!items.length || items[0].parentElement.querySelector(".oc-pdf")) return;
+    // Only the page's menu, which opens with Copy page: the version switcher is a menu too.
+    if (!items.length || items[0].textContent.indexOf("Copy page") !== 0 || items[0].parentElement.querySelector(".oc-pdf")) return;
     var item = items[0].cloneNode(true);
     item.className += " oc-pdf";
     item.removeAttribute("id");
