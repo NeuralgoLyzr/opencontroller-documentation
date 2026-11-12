@@ -17,9 +17,9 @@ calls a model. Individual accounts have no Admin API.
 - **[Spend](/discover/people-and-spend):** what each workspace was billed each day, by line item (tokens, web search,
   code execution, session usage), and each person's Claude Code use.
 - **For Claude Enterprise, the [AI Inventory](/discover/ai-inventory)** too: members and groups; plugins, their MCP
-  servers and marketplaces, with how each is installed and its content scan; the connectors and projects people used;
-  the models called in the last 30 days, and who called them; and Claude in Slack, workspace by workspace and channel
-  by channel. **[Spend](/discover/people-and-spend)** reads the organization's bill by day, surface (chat, Claude Code,
+  servers and marketplaces, with how each is installed and its content scan; the custom roles and what each grants, by
+  feature, admin permission and connector; the connectors and projects people used; the models called in the last 30
+  days, and who called them; and Claude in Slack, workspace by workspace and channel by channel. **[Spend](/discover/people-and-spend)** reads the organization's bill by day, surface (chat, Claude Code,
   Cowork, Claude in Slack), model and line, each member's share of it, and a seat per member with when they last used
   Claude. See [Connect Claude Enterprise](#connect-claude-enterprise).
 
@@ -91,12 +91,13 @@ Enterprise** (or both) under what the organization uses.
 
 ### What a scan reads
 
-Seven sources, each a scope the key may lack on its own, so a key without groups still leaves the members reported.
+Eight sources, each a scope the key may lack on its own, so a key without groups still leaves the members reported.
 
 | In Claude Enterprise | In the inventory |
 |---|---|
 | Members: email, name, role, when added | Identities (type `user`). |
-| Groups, made in claude.ai or by SCIM, with the custom roles they grant | Identities (type `group`) that **contain** their members. |
+| Groups, made in claude.ai or by SCIM, with the custom roles they grant | Identities (type `group`) that **contain** their members and **grant** their roles. A group whose roles the API could not read for the moment is read again before it is reported. |
+| Custom roles, made in claude.ai or by Anthropic, and what each grants | Identities (type `role`): the product features its holders may use (`chat`, `claude_code`…), or a blanket grant of every feature (`all`) or every generally available one (`all_ga`); the admin-panel permissions (`permission_…`); and what may be done with connectors, each connector tool with its action, and how many of a connector's OAuth scopes the role may be given. A `managed` member's permissions are those of the roles their groups grant. Roles are read with `read:members`, so a key made for one organization reads them, where it cannot read groups. |
 | Plugins: description, version, marketplace, served and latest version, components, reach, content scan, who made them (a member or an Admin API key), and how the organization and each group install them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone, and each group allowed it **can use** it. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace, the organization's or a member's personal one, is a registry that **contains** it, with how its last synchronization from its repository went. |
 | Connectors and projects, as of the latest day the analytics have | MCP servers and knowledge bases, with that day and how many people used them. The analytics run a day or two behind; a scan reads one day, the latest the API has. A count the analytics cannot state (a breakdown not enabled for the organization) is left out, not written as 0. |
 | The models called over the last 30 days, from the usage analytics | Models, with their tokens and requests over the window, the surfaces they were called from (`chat`, `claude_code`, `cowork`, `claude_tag`…), how many members called them, and each member who did, who **uses** them. Claude Code run through Amazon Bedrock is not in the analytics. |
@@ -134,8 +135,8 @@ An Admin API key reads the whole organization; there is no narrower one. OpenCon
 | `/v1/organizations/cost_report` | The bill by day, workspace and line item. |
 | `/v1/organizations/usage_report/claude_code` | Claude Code use by person or API key, one day per request. |
 
-With an Enterprise key, by its scopes: `/v1/organizations/users`, `/rbac_groups` (and each group's `/members`),
-`/rbac_roles`, `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/apps/chat/projects`,
+With an Enterprise key, by its scopes: `/v1/organizations/users`, `/rbac_groups` (each group's `/members`, and a group
+again when its roles were not available), `/rbac_roles` (and each role's `/permissions`), `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/apps/chat/projects`,
 `/claude_tag/slack_workspaces` and `/claude_tag/slack_channels`, `/analytics/usage` and `/analytics/cost` (the bill, the
 seats' activity and the models in use), and for Verify one read each of `/analytics/summaries`,
 `/spend_limits/effective` and `/v1/compliance/activities`.
