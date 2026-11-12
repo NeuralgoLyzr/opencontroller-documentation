@@ -39,7 +39,7 @@ telemetry:
   gateway: true                      # the LLM gateway's metrics as well
 ```
 
-Outside the chart, the API and the control plane read the standard variables: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`, `OTEL_METRIC_EXPORT_INTERVAL` and `OTEL_TRACES_SAMPLER`. Only `http/protobuf` is spoken: another `OTEL_EXPORTER_OTLP_PROTOCOL` stops the start.
+Outside the chart, the API and the control plane read the standard variables: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`, `OTEL_METRIC_EXPORT_INTERVAL` and `OTEL_TRACES_SAMPLER`. To send one signal somewhere else, `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` names that signal's full URL. Only `http/protobuf` is spoken: another `OTEL_EXPORTER_OTLP_PROTOCOL` stops the start.
 
 <Info>Leave `logs` off when your agent already tails the pods' stdout, as the Datadog Agent and most log shippers do. On, every line would arrive twice.</Info>
 
@@ -91,8 +91,8 @@ Without OTLP, scrape `/metrics` on the API's and the control plane's port 8080. 
 
 <Badge>Admin</Badge>
 
-**Settings** > **Monitoring** shows where the cell reports, as what, and how each signal's last exports went: **Exporting** while the last one succeeded, **Failing** with what the endpoint answered while it does not, and **Waiting for the first export** right after a start. It changes nothing: the destination is set as above.
+**Settings** > **Monitoring** shows where each signal goes, as what, and how its last exports went: **Exporting** while the last one succeeded, **Failing** with what the endpoint answered while it does not, and **Waiting for the first export** right after a start. It changes nothing: the destination is set as above.
 
-{/* SCREENSHOT: settings-monitoring | crop | Settings > Monitoring on a cell exporting to a Datadog Agent: Service, Endpoint, Environment and Traces of reads, then Traces, Metrics and Logs each with an Exporting badge and "last export 12 seconds ago". Crop to the section. */}
+{/* SCREENSHOT: settings-monitoring | crop | Settings > Monitoring on a cell exporting to a Datadog Agent: Service, Endpoint, Environment and Traces of reads, then Traces, Metrics and Logs each with an Exporting badge, "last export 12 seconds ago" and its URL. Crop to the section. */}
 
 In the tool, look for the API's spans within a minute, and for `go.goroutine.count` (`go_goroutine_count` in Prometheus) among the metrics. A log line `opentelemetry` at level warning from the API says the same as a **Failing** signal: the endpoint is not taking what it sends, because of the address, the port, or a missing header.
