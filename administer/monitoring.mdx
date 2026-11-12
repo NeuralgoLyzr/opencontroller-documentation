@@ -1,0 +1,92 @@
+---
+title: "Monitor OpenController itself"
+description: "Send what OpenController reports about its own health, requests, latency, database calls and memory, to the monitoring tool you already run, over OpenTelemetry."
+sidebarTitle: "Monitoring"
+icon: "activity"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+OpenController reports on itself: every request and how long it took, every database and secrets-manager call, memory, goroutines and garbage collection, and its log lines. [Observability](/monitor/observability) is about your agents. This page is about the platform's own health, which the people who run it watch in the tool they already use.
+
+Everything goes out as **OpenTelemetry over OTLP/HTTP** to one endpoint you choose. Datadog, New Relic, Grafana, Elastic, Splunk, ClickHouse and most others take OTLP, directly or through an OpenTelemetry Collector. Nothing of any one tool is in OpenController, and it never holds a tool's key: a key, where an endpoint needs one, lives in a Kubernetes Secret you make.
+
+## What is reported
+
+| Signal | What it holds | Where it goes |
+|---|---|---|
+| Traces | A span per request that changes something, with its database commands and outbound calls as children. Reads (GET) are left out unless you ask for them | `<endpoint>/v1/traces` |
+| Metrics | Request count, duration and size by route and status; the Go runtime's memory, goroutines, GC and scheduler latency; the process's CPU | `<endpoint>/v1/metrics`, and `/metrics` on the API for a Prometheus scrape |
+| Logs | The same lines as stdout, with the trace id of the request they belong to | `<endpoint>/v1/logs`, only when turned on |
+
+Every signal carries `service.name` (`opencontroller-discover` for the API, `opencontroller-controlplane` for the control plane, `rekori` for the LLM gateway), `service.version`, `service.namespace` (your organization) and, when you name it, `deployment.environment.name`.
+
+The LLM gateway reports its own metrics to the same endpoint: requests, upstream latency, tokens and cost by provider and model. Its model calls as traces stay with [Observability](/monitor/observability).
+
+## Turn it on
+
+In the cell's Helm values:
+
+```yaml
+telemetry:
+  enabled: true
+  endpoint: http://$(HOST_IP):4318   # where OTLP goes; $(HOST_IP) is the node
+  environment: prod                  # deployment.environment.name
+  logs: false                        # log lines over OTLP too
+  temporality: ""                    # "delta" for Datadog
+  traceReads: false                  # trace GET requests too
+  headersSecret: ""                  # a Secret with OTEL_EXPORTER_OTLP_HEADERS
+  gateway: true                      # the LLM gateway's metrics as well
+```
+
+Outside the chart, the API and the control plane read the standard variables: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`, `OTEL_METRIC_EXPORT_INTERVAL` and `OTEL_TRACES_SAMPLER`. Only `http/protobuf` is spoken: another `OTEL_EXPORTER_OTLP_PROTOCOL` stops the start.
+
+<Info>Leave `logs` off when your agent already tails the pods' stdout, as the Datadog Agent and most log shippers do. On, every line would arrive twice.</Info>
+
+## Datadog
+
+Run the Datadog Agent in the cluster with its OTLP receiver on. In the Agent's Helm values:
+
+```yaml
+datadog:
+  otlp:
+    receiver:
+      protocols:
+        http:
+          enabled: true   # port 4318 on every node
+```
+
+Then turn the cell's telemetry on with the defaults, `temporality: delta`, and your environment. Spans appear under APM as the services named above, metrics keep their OpenTelemetry names with the resource attributes as tags, and `env`, `service` and `version` follow Datadog's unified tagging from `deployment.environment.name`, `service.name` and `service.version` (Agent 7.58 or later for the environment).
+
+For logs, the Agent's log collection from the pods' stdout is enough; the lines are JSON with `trace_id` and `span_id`, so the Agent links them to the spans. Keep `logs` off.
+
+## New Relic, Grafana Cloud, and other endpoints with a key
+
+Point `endpoint` at the tool's OTLP address and put the key in a Secret:
+
+```sh
+kubectl -n <namespace> create secret generic opencontroller-telemetry \
+  --from-literal=OTEL_EXPORTER_OTLP_HEADERS='api-key=<your key>'
+```
+
+```yaml
+telemetry:
+  enabled: true
+  endpoint: https://otlp.nr-data.net:4318
+  headersSecret: opencontroller-telemetry
+  gateway: false   # the gateway sends no headers; see below
+```
+
+The header's name is the tool's: `api-key` for New Relic, `Authorization=Basic <token>` for Grafana Cloud. The LLM gateway's metrics-only profile sends no headers, so for an endpoint that needs one, keep `gateway: false`, or run a Collector in the cluster that adds the header and point the cell at it.
+
+## An OpenTelemetry Collector
+
+For a tool with no OTLP endpoint, or to keep one pipeline for everything, run an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) in the cluster with an `otlp` receiver and the exporter of your choice (`datadog`, `otlphttp` to New Relic, `clickhouse`, `prometheusremotewrite`, `elasticsearch`, `splunk_hec`, ...), and set `endpoint` to the Collector's address, for example `http://otel-collector.monitoring:4318`. The Collector holds the tool's key, not the cell.
+
+## Prometheus
+
+Without OTLP, scrape `/metrics` on the API's and the control plane's port 8080. The endpoint needs no sign-in, so keep it inside the cluster. The LLM gateway serves its own `/metrics` too, behind its administrator's sign-in when its authentication is on.
+
+## Check it
+
+After a change, look for the API's spans in the tool within a minute, and for `go.goroutine.count` (`go_goroutine_count` in Prometheus) among the metrics. A log line `opentelemetry` at level warning from the API means the endpoint is not taking what it sends: the address, the port, or a missing header.
