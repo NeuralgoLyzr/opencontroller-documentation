@@ -18,8 +18,10 @@ calls a model. Individual accounts have no Admin API.
   code execution, session usage), and each person's Claude Code use.
 - **For Claude Enterprise, the [AI Inventory](/discover/ai-inventory)** too: members and groups; plugins, their MCP
   servers and marketplaces, with how each is installed and its content scan; the connectors and projects people used;
-  and Claude in Slack, workspace by workspace and channel by channel. See
-  [Connect Claude Enterprise](#connect-claude-enterprise).
+  the models called in the last 30 days, and who called them; and Claude in Slack, workspace by workspace and channel
+  by channel. **[Spend](/discover/people-and-spend)** reads the organization's bill by day, surface (chat, Claude Code,
+  Cowork, Claude in Slack), model and line, each member's share of it, and a seat per member with when they last used
+  Claude. See [Connect Claude Enterprise](#connect-claude-enterprise).
 
 To call Claude models through the [LLM gateway](/secure/gateway-overview), add Anthropic as a gateway provider instead
 ([Providers and routing](/secure/routing-and-mcp)).
@@ -89,7 +91,7 @@ Enterprise** (or both) under what the organization uses.
 
 ### What a scan reads
 
-Six sources, each a scope the key may lack on its own, so a key without groups still leaves the members reported.
+Seven sources, each a scope the key may lack on its own, so a key without groups still leaves the members reported.
 
 | In Claude Enterprise | In the inventory |
 |---|---|
@@ -97,9 +99,25 @@ Six sources, each a scope the key may lack on its own, so a key without groups s
 | Groups, made in claude.ai or by SCIM, with the custom roles they grant | Identities (type `group`) that **contain** their members. |
 | Plugins: description, version, marketplace, served and latest version, components, reach, content scan, who made them (a member or an Admin API key), and how the organization and each group install them | Skills. How the organization installs one is its status (`required`, `auto_install`, `available`, `not_available`); only `not_available` keeps it from everyone, and each group allowed it **can use** it. Each MCP server among its components is an MCP server the plugin **contains**; its marketplace, the organization's or a member's personal one, is a registry that **contains** it, with how its last synchronization from its repository went. |
 | Connectors and projects, as of the latest day the analytics have | MCP servers and knowledge bases, with that day and how many people used them. The analytics run a day or two behind; a scan reads one day, the latest the API has. A count the analytics cannot state (a breakdown not enabled for the organization) is left out, not written as 0. |
+| The models called over the last 30 days, from the usage analytics | Models, with their tokens and requests over the window, the surfaces they were called from (`chat`, `claude_code`, `cowork`, `claude_tag`…), how many members called them, and each member who did, who **uses** them. Claude Code run through Amazon Bedrock is not in the analytics. |
 | Claude in Slack: each Slack workspace and channel it is set up in | Agents: on or off, what they do while a Slack guest is in the channel (the guest policy: `allow`, `channel_only` or `restrict`, which applies when none is set), how they take part in a channel (the reply mode), their model, their environment, and the level each setting comes from. Instructions are not kept. |
 
-Seats and their bill are read in a later release. To change the keys, remove the connection and connect it again.
+### What Spend reads
+
+Three sources, with `read:analytics` and the Analytics API enabled for the organization, and `read:members` for the
+seats:
+
+| Source | What it reads |
+|---|---|
+| **Claude Enterprise bill** | Each day's cost by surface, model and line, from the cost analytics. The service is the surface (Claude chat, Claude Code, Cowork, Claude in Slack…) and the meter the line: a token type, web searches, code execution or session usage. The amounts are the cost after discounts and before any credits, in US dollars: on a plan that buys credits up front, what the credits were spent on. **Billed** rows, under the account `Claude Enterprise`. |
+| **Claude Enterprise bill by person** | Each member's cost by day, surface and model. **Attributed** rows: already in the bill, they never add to a total, and they put it down to the member by email. Cost no member is behind stays the organization's; a member who has left is named by address. |
+| **Claude Enterprise seats** | One seat per member (SKU `claude_enterprise`, "Claude Enterprise seat"), with when they last used Claude in any surface, from the usage analytics. Set the seat's monthly price in Spend, as for other licences; **People** then shows each member's seat, their use, and who has been idle for 30 days. |
+
+The analytics begin on 2026-01-01, run a few hours behind, and can be revised for about a week after a month ends.
+A plan bought through AWS Marketplace is billed by AWS, monthly in arrears, at the same rates: the bill read here is
+what that invoice adds up.
+
+To change the keys, remove the connection and connect it again.
 
 ## Permissions it uses
 
@@ -118,8 +136,9 @@ An Admin API key reads the whole organization; there is no narrower one. OpenCon
 
 With an Enterprise key, by its scopes: `/v1/organizations/users`, `/rbac_groups` (and each group's `/members`),
 `/rbac_roles`, `/plugins` (and each plugin's `/installation_settings`), `/plugin_marketplaces`, `/analytics/connectors`, `/analytics/apps/chat/projects`,
-`/claude_tag/slack_workspaces` and `/claude_tag/slack_channels`, and for Verify one read each of
-`/analytics/summaries`, `/analytics/cost`, `/spend_limits/effective` and `/v1/compliance/activities`.
+`/claude_tag/slack_workspaces` and `/claude_tag/slack_channels`, `/analytics/usage` and `/analytics/cost` (the bill, the
+seats' activity and the models in use), and for Verify one read each of `/analytics/summaries`,
+`/spend_limits/effective` and `/v1/compliance/activities`.
 
 <Warning>
 An Admin API key can also change the organization: invite and remove members, create workspaces, change API keys.
