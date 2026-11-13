@@ -1,11 +1,11 @@
 ---
 title: "MCP server"
-description: "Connect Claude Code, Cursor, Codex or any other MCP client to OpenController, so it reads your AI estate with an API key of its own, and turn that access on or off."
+description: "Connect Claude, Claude Code, Cursor, Codex, Microsoft Copilot Studio or any other MCP client to OpenController, so it reads your AI estate with an API key of its own, and turn that access on or off."
 sidebarTitle: "MCP server"
 icon: "plug"
 ---
 
-OpenController is an MCP server. An agent outside it, such as Claude Code, Cursor, VS Code with Copilot, Codex, Claude Desktop, Windsurf or Gemini CLI, connects with an API key. It then reads your AI estate with the tools [Ask Ctrl](/get-started/ask-ctrl) uses. It only reads: nothing changes through it.
+OpenController is an MCP server. An agent outside it, such as Claude Code, Cursor, VS Code with Copilot, Codex, Claude Desktop, claude.ai, Windsurf, Gemini CLI or a Copilot Studio agent, connects with an API key. It then reads your AI estate with the tools [Ask Ctrl](/get-started/ask-ctrl) uses. It only reads: nothing changes through it.
 
 <Info>This is OpenController's own MCP server, for agents to read OpenController. The MCP servers your agents reach through the LLM gateway are a different thing: see [MCP servers](/secure/routing-and-mcp#mcp-servers).</Info>
 
@@ -135,7 +135,9 @@ These are the settings the console writes. Replace `https://console.example.com`
     Check it with `codex mcp list`, or `/mcp` in Codex.
   </Tab>
   <Tab title="Claude Desktop">
-    Open `claude_desktop_config.json` from Claude Desktop with **Settings** > **Developer** > **Edit Config**. Merge this in, then restart Claude Desktop.
+    There are two ways. Prefer [Claude's connector](#claude-desktop-claudeai-and-cowork) when your organization has it: it needs nothing on each computer, and it also works on claude.ai and in Cowork. Use this file when the connector is not available to you, or when your console is reachable only from your own network.
+
+    Open `claude_desktop_config.json` from Claude Desktop with **Settings** > **Developer** > **Edit Config**. Merge this in, then quit Claude Desktop completely and open it again.
 
     ```json
     {
@@ -146,6 +148,8 @@ These are the settings the console writes. Replace `https://console.example.com`
             "-y",
             "mcp-remote",
             "https://console.example.com/v1/mcp",
+            "--transport",
+            "http-only",
             "--header",
             "Authorization:${AUTH_HEADER}"
           ],
@@ -157,7 +161,10 @@ These are the settings the console writes. Replace `https://console.example.com`
     }
     ```
 
-    It runs `mcp-remote` with `npx`, so it needs Node.js. Claude Desktop's connectors sign in only with OAuth, which OpenController's MCP server does not offer yet.
+    - **It needs Node.js** on the computer: `npx` runs `mcp-remote`, which relays Claude Desktop's calls to OpenController over HTTP. The first start downloads it.
+    - **`--transport http-only`** keeps `mcp-remote` on Streamable HTTP, the only transport OpenController speaks. Without it, a first request that fails makes `mcp-remote` try an older transport, and the server's `405` hides the real error.
+    - **The key is in `AUTH_HEADER`**, with no space after `Authorization:` in the arguments, so it passes intact on Windows too.
+    - **It connects from the computer**, so it reaches a console that is only on your network. A server set up in this file is not available in Cowork or on claude.ai.
   </Tab>
   <Tab title="Windsurf">
     Merge this into `~/.codeium/windsurf/mcp_config.json`, beside any servers already there:
@@ -209,7 +216,80 @@ These are the settings the console writes. Replace `https://console.example.com`
 
 <Warning>Most of these files hold the key. Keep them out of source control: prefer your own user-level file to a project's.</Warning>
 
-<Note>claude.ai and ChatGPT connectors sign in only with OAuth, which OpenController's MCP server does not offer yet.</Note>
+<Note>ChatGPT connectors sign in only with OAuth, which OpenController's MCP server does not offer yet. For Claude, see the next section.</Note>
+
+## Claude Desktop, claude.ai and Cowork
+
+Claude reaches OpenController as a custom connector, sending the API key in a request header. One connector works in Claude Desktop, on claude.ai and in Cowork.
+
+<Warning>Request headers on Claude's custom connectors are in beta, and only some organizations have them. If **Request headers** is not in the **Add custom connector** dialog, use the [Claude Desktop file](#settings-for-each-agent) instead.</Warning>
+
+Before you start:
+
+- **Claude connects from Anthropic's cloud**, not from each person's computer. Your console's address must be reachable from the internet. If it accepts only your network, allow [Anthropic's IP addresses](https://platform.claude.com/docs/en/api/ip-addresses), or use the Claude Desktop file.
+- **Everyone who connects shares one key**, so they read as one service account. Give that account the **Viewer** role, and name it for the connector, so its calls are told apart in the audit log.
+- **On Team and Enterprise plans, an Owner adds the connector** for the organization. On Enterprise, so can a custom role that manages the organization's libraries.
+
+<Steps>
+  <Step title="Get an API key">
+    Follow [Get an API key](#connect-an-agent) above, with a **Viewer** service account made for Claude.
+  </Step>
+  <Step title="Add the connector">
+    In Claude, go to **Organization settings** > **Connectors**, select **Add**, then **Custom**. On a Free, Pro or Max plan, go to **Customize** > **Connectors** and select **Add custom connector** instead.
+
+    | Field | Value |
+    |---|---|
+    | Name | `OpenController` |
+    | Remote MCP server URL | `https://console.example.com/v1/mcp` |
+    | Authentication | **No sign-in** |
+    | Request headers | `authorization`, with the value `Bearer <YOUR_API_KEY>`, marked **Required** |
+
+    Enter `Bearer `, with its space, before the key: Claude sends the value exactly as written. Select **Add**.
+  </Step>
+  <Step title="Connect">
+    Each person goes to **Customize** > **Connectors**, finds **OpenController** with the **Custom** label, and selects **Connect**. In a chat, turn it on from **+** > **Connectors**.
+  </Step>
+</Steps>
+
+To change the key later, remove the connector and add it again: Claude does not let you edit its headers.
+
+## Microsoft Copilot
+
+### Copilot Studio
+
+A Copilot Studio agent uses OpenController's tools through Copilot Studio's MCP wizard.
+
+<Steps>
+  <Step title="Get an API key">
+    Follow [Get an API key](#connect-an-agent) above, with a **Viewer** service account made for the agent.
+  </Step>
+  <Step title="Add the MCP server">
+    In Copilot Studio, open your agent, go to **Tools**, and select **Add a tool** > **New tool** > **Model Context Protocol**.
+
+    | Field | Value |
+    |---|---|
+    | Server name | `OpenController` |
+    | Server description | `Reads the organization's AI estate: agents, models, keys, findings, spend and traces.` The agent decides from this when to call it. |
+    | Server URL | `https://console.example.com/v1/mcp` |
+    | Authentication | **API key** |
+    | Type | **Header** |
+    | Header name | `X-API-Key` |
+
+    Select **Create**.
+  </Step>
+  <Step title="Connect it">
+    In **Add tool**, select **Create a new connection**, and enter the API key alone, with no `Bearer`. Select **Add to agent**.
+  </Step>
+</Steps>
+
+- **Use `X-API-Key`**, not `Authorization`: OpenController takes the key as it is in that header, so there is no prefix to get wrong.
+- **Copilot Studio connects from Microsoft's cloud.** Your console's address must be reachable from the internet, as for Claude's connector.
+- **Your Power Platform data policies apply.** Copilot Studio reaches MCP servers through connectors, so a data policy that blocks custom connectors blocks this one.
+
+### Copilot Cowork
+
+Not yet. Microsoft 365 Copilot Cowork adds MCP servers through plugins, and its plugins do not take an API key yet: they need OAuth, which OpenController's MCP server does not offer yet.
+
 
 ## Agent platforms that run MCP servers as a command
 
@@ -266,6 +346,9 @@ As on [Ask Ctrl settings](/administer/ask-ctrl-settings#change-a-setting), **Con
 | `403` for another reason | The key's role does not hold `chat:ask`. Every built-in role holds it; a custom role may not. | Add `chat:ask` to the custom role, or use a key with a built-in role. |
 | Connected, but "It offers no tools" | Neither the key's role nor Ask Ctrl's role allows a read. With Ask Ctrl's role set to **None (turned off)**, agents get no tools. | Use a key whose role reads, or give Ask Ctrl a role in [Ask Ctrl settings](/administer/ask-ctrl-settings#limit-what-ask-ctrl-may-do). |
 | `405` on `GET` | The agent asked for a stream. The server answers each `POST` with JSON, with no session and no stream. | Choose Streamable HTTP in the agent, not SSE. With `mcp-remote`, add `--transport http-only`. |
+| Claude Desktop shows the server as failed, and its log says `unable to get local issuer certificate` or `self-signed certificate` | Your network inspects HTTPS with its own certificate, which Node.js does not trust. | Add `"NODE_EXTRA_CA_CERTS": "<path to your organization's root certificate, PEM>"` to the server's `env` in `claude_desktop_config.json`, beside `AUTH_HEADER`. Or use [Claude's connector](#claude-desktop-claudeai-and-cowork). |
+| `mcp-remote` opens a browser to sign in | The key was refused, and `mcp-remote` then tries OAuth, which OpenController does not offer. | Check the key and the `Bearer ` before it in `AUTH_HEADER`. |
+| Claude's connector says it couldn't reach the server | Anthropic's cloud cannot reach your console's address. | Allow [Anthropic's IP addresses](https://platform.claude.com/docs/en/api/ip-addresses), or use the Claude Desktop file. |
 
 ## Who can use it
 
