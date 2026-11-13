@@ -90,7 +90,7 @@ To make a guardrail, select **New guardrail**. See [Make and edit a guardrail](/
 
 ## In the LLM gateway
 
-Every guardrail is put in the LLM gateway (Rekori) when you save it, or within 5 minutes if the gateway did not answer. There it is a guardrail provider named "*name* (OpenController)". It does nothing in the gateway until a content rule uses it.
+Every guardrail is put in the LLM gateway (Rekori) when you save it, or within 5 minutes if the gateway did not answer. There it is a guardrail provider named "*name* (OpenController)". A guardrail's name is its own: a name another guardrail has is refused when you save. It does nothing in the gateway until a content rule uses it.
 
 To use it, an **Operator** makes a content rule in **LLM Gateway** > **Content Rules**:
 
