@@ -25,7 +25,7 @@ apps) has admin keys of its own and is not supported yet.
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
     tools, and its **knowledge bases** (vector stores).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
-  key it was called with and the member who holds that key. OpenAI reports this, so nothing is estimated.
+  key it was called with. OpenAI reports this, so nothing is estimated.
 - **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
   turn its tools off, and delete API keys, service accounts, agents and knowledge bases. See
   [Turn on control](#turn-on-control-optional).
@@ -205,10 +205,11 @@ organization's cost report with the read Admin key. Two sources appear under **S
 | Source | What it is |
 |---|---|
 | **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`flex`, `priority`, `fast mode`). Web search calls show as the service **Web search**. Spend outside every project is the **Organization**'s. These rows are **billed**. |
-| **OpenAI bill by key and person** | The same bill by the API key it was called with, and the member who holds that key. A service account's key names no person. These rows are **attributed**: they say whose the spend was, and never add to a total. |
+| **OpenAI bill by key and person** | The same bill by the API key it was called with. A key's spend is the key's, never the member's who holds it: a service's spend is no person's usage. These rows are **attributed**: they say whose the spend was, and never add to a total. |
 
 On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
-organization, project, API key, person and model, and lists every API key with its share of the bill. A key opens its
+organization, project, API key and model, and lists every API key with its share of the bill. Each project and key
+is listed by its name, and told apart by its id: two keys of one name are two lines. A key opens its
 own page, with how to rotate it.
 
 OpenController does not read usage without dollars yet (tokens by tier, web searches, embeddings), nor spend per agent
@@ -226,7 +227,7 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 | `/v1/organization/projects/{project}/api_keys` | Each project's API keys. |
 | `/v1/organization/projects/{project}/hosted_tool_permissions`, `/model_permissions` | What each project allows. |
 | `/v1/organization/projects/{project}/users`, `/service_accounts` | Each project's members and service accounts. |
-| `/v1/organization/users` | Members' names, emails and roles, to name who owns each key. |
+| `/v1/organization/users` | Members' names, emails and roles, for the inventory's projects and control. |
 | `/v1/organization/admin_api_keys` | Admin keys. |
 | `/v1/organization/usage/completions` | Tokens by day, model, project and API key: the models in use. |
 | `/v1/organization/costs` | The bill by day, project, line item and API key. |

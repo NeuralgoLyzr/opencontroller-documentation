@@ -14,11 +14,13 @@ Every governed asset is in one of three places: **Shadow AI** (nobody has regist
 
 ## Register an agent
 
-1. **Request it** (Operator). Select **Register** on the agent in [Shadow AI](/discover/shadow-ai), or on its **Registration** card in [Asset details](/discover/asset-details). Give an **Owner** and a **Purpose**. When the platform names an owner, it is fixed.
+1. **Request it** (Operator). Select **Register** on the agent in [Shadow AI](/discover/shadow-ai), or on its **Registration** card in [Asset details](/discover/asset-details). Give an **Owner** and a **Purpose**. When the platform names an owner, it is fixed. Who created the asset is not taken as its owner: when the platform names only a creator, you give the owner.
 2. **Approve it** (Admin). The request waits under [Approvals](/govern/approvals). With **Separation of duties** on, the requester cannot approve it.
 3. **It is registered.** The asset is listed here with **Registered**. An Admin can **Revoke** it from its registration panel, which asks why and makes the asset shadow again.
 
 Each step is kept in the registration's **History** and in the [audit log](/administer/audit-log).
+
+An agent you register by hand (an A2A agent or an endpoint outside every connected cloud) is one asset per address. Asking again for one already pending or registered is refused, and the asset stays as the first request read it. Two agents behind one path, told apart by a query parameter such as `?agent=sales`, are two assets; a parameter that carries a secret (a token, a key, a signature) is never kept.
 
 When registered assets are no longer reported by their cloud, a line above the list says how many ("*N* registered assets are gone from their clouds") and offers to **Show them**. They stay registered, but are not counted as part of the estate: the **Registered** figures on **Overview** and **AI Inventory** count live assets only.
 
