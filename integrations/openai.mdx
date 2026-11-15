@@ -25,7 +25,7 @@ apps) has admin keys of its own and is not supported yet.
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
     tools, and its **knowledge bases** (vector stores).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
-  key it was called with. OpenAI reports this, so nothing is estimated.
+  key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
 - **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
   turn its tools off, and delete API keys, service accounts, agents and knowledge bases. See
   [Turn on control](#turn-on-control-optional).
@@ -205,7 +205,7 @@ organization's cost report with the read Admin key. Two sources appear under **S
 | Source | What it is |
 |---|---|
 | **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`flex`, `priority`, `fast mode`). Web search calls show as the service **Web search**. Spend outside every project is the **Organization**'s. These rows are **billed**. |
-| **OpenAI bill by key and person** | The same bill by the API key it was called with. A key's spend is the key's, never the member's who holds it: a service's spend is no person's usage. These rows are **attributed**: they say whose the spend was, and never add to a total. |
+| **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs: its spend shows on them on **People**, still under the key. A service account's key, and a key deleted since, belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. |
 
 On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
 organization, project, API key and model, and lists every API key with its share of the bill. Each project and key
