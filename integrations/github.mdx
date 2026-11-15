@@ -108,6 +108,8 @@ data residency, are not supported yet.
     | **Installed apps** | Only with that switch on. The installed apps can be listed. |
     | **Copilot usage metrics** | Optional. The latest usage report can be read. Fails, saying so, while the policy is off. |
     | **Copilot bill** | Optional. This month's bill can be read. |
+    | **Seat holders' names** | Optional. GitHub's GraphQL API answers, so each seat's holder is listed by the name on their GitHub profile. |
+    | **Seat holders' work emails** | Optional. Shows how many of the first hundred seats' holders have an address verified at a domain your organization has verified, or what GitHub needs to give any. No address is shown or kept. |
     | **SAML identities** | Optional. The members' SAML identities can be read. Shows how many members, or none when the organization has no SAML single sign-on. |
 
     Scans run every 5 minutes. Copilot and its agents appear in [AI Inventory](/discover/ai-inventory) after the first
@@ -182,6 +184,10 @@ their SAML identity when it is an address, else its primary email. That is how *
 accounts, such as their Microsoft 365 licence. Without SAML single sign-on, or without **Members** (`read:org`), they
 are put down to the GitHub login, and the source says which permission to grant. A GitHub profile's email is never
 used: people set it themselves.
+
+Each holder is also listed by the name on their GitHub profile, and known by any address they have verified at a domain
+your organization has verified as its own (**Verified and approved domains**, on GitHub Enterprise Cloud): an account at
+one of those addresses, at another provider, is theirs too. GitHub gives those addresses only to **Members** (`read:org`).
 
 GitHub bills a seat a day at a time: a seat taken today shows a thirtieth of the plan's monthly price, and adds up to
 it over the month.
