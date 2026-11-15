@@ -31,6 +31,14 @@ Two pages show what your organization spends on AI:
 
 Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **billed** where the read role reads the organization's bill, and **estimated** otherwise: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. GitHub Copilot and Salesforce Agentforce are not read yet.
 
+### Read a connection back
+
+A refresh reads the last 35 days. An integration added in place of another holds nothing older, and what the one
+removed read goes with it. An Admin can read one integration back further, as far as a year, once: under **Sources**,
+pick it and the day, then select **Read back**. Each of its sources reads only the days before the first it holds, so
+nothing read already is read over, and its status says how it went. Where reading a bill costs money, as with
+Snowflake, reading back costs what reading those days does. Each read back is in the audit log.
+
 ### Each cost counted once
 
 Several integrations can read the same money. Spend keeps each cost once:
@@ -100,7 +108,7 @@ Who holds which licence is personal data, so the person-by-person views (**Peopl
 |---|---|
 | **Viewer** | Read **Spend**, except the person-by-person panels. |
 | **Operator** | Also select **Refresh**. |
-| **Admin** | Also set prices, and see **People**, **Top spenders** and **Spend by department**. |
+| **Admin** | Also set prices, read an integration back, and see **People**, **Top spenders** and **Spend by department**. |
 | **Owner** | The same as Admin. |
 
 ## Next steps
