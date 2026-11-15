@@ -56,6 +56,7 @@ data residency, are not supported yet.
     | **Organization permissions** | **Copilot agent settings** | Where the cloud agent may work. |
     | **Organization permissions** | **Organization Copilot metrics** | What people use with Copilot. |
     | **Organization permissions** | **Administration** | Copilot's bill, for Spend. Optional. |
+    | **Organization permissions** | **Members** | Who holds each Copilot seat, by the address your identity provider signs them in with, for People. Optional. |
     | **Repository permissions** | **Contents** | The custom agents' files. |
 
     <Warning>
@@ -107,6 +108,9 @@ data residency, are not supported yet.
     | **Installed apps** | Only with that switch on. The installed apps can be listed. |
     | **Copilot usage metrics** | Optional. The latest usage report can be read. Fails, saying so, while the policy is off. |
     | **Copilot bill** | Optional. This month's bill can be read. |
+    | **Seat holders' names** | Optional. GitHub's GraphQL API answers, so each seat's holder is listed by the name on their GitHub profile. |
+    | **Seat holders' work emails** | Optional. Shows how many of the first hundred seats' holders have an address verified at a domain your organization has verified, or what GitHub needs to give any. No address is shown or kept. |
+    | **SAML identities** | Optional. The members' SAML identities can be read. Shows how many members, or none when the organization has no SAML single sign-on. |
 
     Scans run every 5 minutes. Copilot and its agents appear in [AI Inventory](/discover/ai-inventory) after the first
     scan.
@@ -122,11 +126,14 @@ data residency, are not supported yet.
     permissions as the app above, and copy it (`github_pat_…`). If the organization approves tokens, an owner approves
     it under the organization's **Settings** > **Personal access tokens** > **Pending requests**.
 
+    GitHub shows members' SAML identities to no fine-grained token, so with one, Copilot seats are matched to people
+    by their GitHub login only.
+
     In the connect form, choose **Sign in** > **With a personal access token**, and paste it.
   </Tab>
   <Tab title="Classic token">
-    As an organization owner, create a classic token with `read:org` (Copilot, the cloud agent, usage metrics and
-    installed apps) and `repo` (custom agents in private repositories, and the bill). If the organization uses SAML
+    As an organization owner, create a classic token with `read:org` (Copilot, the cloud agent, usage metrics,
+    installed apps and the members' SAML identities) and `repo` (custom agents in private repositories, and the bill). If the organization uses SAML
     single sign-on, select **Configure SSO** > **Authorize** for it on the token's row.
 
     A classic token reaches every repository its owner can. Prefer the GitHub App or a fine-grained token.
@@ -150,6 +157,10 @@ Inventory:
 | An agent app people started, such as Claude or Codex | **Agent app in Copilot** |
 | A model Copilot called for them | **Model used by Copilot**, with its maker |
 
+The report names a custom agent by its name alone. A custom agent a repository defines shows how many people ran it.
+When two that OpenController reads share a name, such as the organization's `reviewer` and a repository's, whose runs
+the report counts cannot be told: neither shows them, and each says how many agents share the name.
+
 The Copilot agent also counts how many people used agent mode, the Copilot CLI, the Copilot app, the cloud agent, and
 models of their own. People are counted, never named.
 
@@ -165,8 +176,18 @@ Every 6 hours, and on **Refresh**, three sources appear under **Spend** > **Sour
 | Source | What it is |
 |---|---|
 | **GitHub Copilot bill** | Copilot's lines of the organization's bill each day, at what is charged after discounts, in US dollars: seats, AI credits and anything else GitHub bills as Copilot. These rows are **billed**. |
-| **GitHub Copilot seats** | Each seat, the GitHub login that holds it, its plan, and when they last used Copilot. |
+| **GitHub Copilot seats** | Each seat, who holds it, its plan, when it was given, and when they last used Copilot. |
 | **GitHub Copilot bill by model and person** | The metered use of models each day, put down to each model and to the people who called it. These rows are **attributed**: they never add to a total. It needs Copilot's usage metrics. |
+
+A seat and a person's use are put down to the address your identity provider signs them in with: the NameID of
+their SAML identity when it is an address, else its primary email. That is how **People** finds their other
+accounts, such as their Microsoft 365 licence. Without SAML single sign-on, or without **Members** (`read:org`), they
+are put down to the GitHub login, and the source says which permission to grant. A GitHub profile's email is never
+used: people set it themselves.
+
+Each holder is also listed by the name on their GitHub profile, and known by any address they have verified at a domain
+your organization has verified as its own (**Verified and approved domains**, on GitHub Enterprise Cloud): an account at
+one of those addresses, at another provider, is theirs too. GitHub gives those addresses only to **Members** (`read:org`).
 
 GitHub bills a seat a day at a time: a seat taken today shows a thirtieth of the plan's monthly price, and adds up to
 it over the month.
@@ -245,6 +266,7 @@ header values.
 | **Copilot usage metrics** off | Turn on the **Copilot usage metrics** policy. |
 | Calls refused although permissions are right | Your organization's IP allow list. Add OpenController's egress IP. |
 | Spend shows no Copilot | No seats are assigned, or the bill was read before. Select **Refresh** on **Spend**. |
+| **GitHub Copilot seats** needs a permission | Grant **Members** (or `read:org` on a classic token), so seats and use are put down to the address people sign in with. Until then they are put down to the GitHub login. |
 
 ## Remove the integration
 

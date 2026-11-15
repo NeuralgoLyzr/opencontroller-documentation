@@ -95,7 +95,7 @@ A team links your identity provider's groups to the assets the team owns. Everyo
 
 - **Groups**: each linked group gets **Viewer**, **Operator** or **Admin** in the team. A person in several groups gets the highest role. Microsoft Entra ID sends groups by id, so pick them from the provisioned list or type the id.
 - **Also people added by hand**: adds local accounts, or someone not yet in a group.
-- **Assets**: the accounts or environments the team owns. You can also give a single asset to a team from its own page.
+- **Assets**: the accounts or environments the team owns. You can also give a single asset to a team from its own page. An environment is picked by its own id, its name only shown: two environments with one name in one tenant, such as two called **Dev**, are two picks. A Unity Catalog object is its metastore's, which several Databricks workspaces can share, so it is owned by a rule on the metastore, not on one workspace.
 - **LLM gateway team** (optional): the id of the gateway's team whose virtual keys and budget belong to this team.
 
 {/* SCREENSHOT: org-team-dialog | crop | Settings > Teams with the New team button. */}

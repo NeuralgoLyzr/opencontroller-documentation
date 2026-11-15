@@ -48,6 +48,8 @@ The **LLM gateway** card, also on **Identity & access**, puts an agent's model c
 - **Owner** answers for the asset technically: how it is built and what it can reach. **Sponsor** answers for it to the business: why it exists and whether it should go on.
 - The owner is the one an Admin names, or the one its platform gives, with a confidence. A suggested person can say **This is mine** or **Not mine**; an Admin confirms.
 - The team is the one an Admin pins, or the one a team's asset rule covers.
+- Each person shows what your directories say of them. **left the organization** means your identity provider (Okta's directory) deactivated them or no longer lists them; posture raises GOV-3. **no longer has access** means SCIM deactivated or removed them, so they no longer have OpenController, though they may still work here; posture raises GOV-6, a lower finding.
+- **Dropped and created again.** Some clouds, such as Snowflake, give an object created again under the same name the same asset. When a scan finds the object's own creation time moved forward, what was decided of the old one is retired: its owner, sponsor and team pin, its registration (revoked, or a request rejected, saying why), and its findings. The **Ownership** card says when, and the new object is registered again like any shadow asset.
 
 ## Configuration
 
