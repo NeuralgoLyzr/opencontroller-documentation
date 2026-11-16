@@ -75,7 +75,7 @@ Okta offers no SCIM on the Single-Page Application from step 1. Provisioning use
 2. Check the user sees only what their group's role allows.
 3. In your own session, **Settings** > **Audit log** > **Identity & access**, with **Show** set to `sign_in`, lists the sign-in.
 
-<Info>Once single sign-on works, whoever runs your OpenController can turn email-and-password sign-in off (`DISCOVERY_PASSWORD_LOGIN=false`). Keep it on until you are sure you will not need the local **Owner** account.</Info>
+<Info>Once single sign-on works, an **Owner** signed in with Okta can turn email-and-password sign-in off in **Settings** > **Authentication** > **Ways in**. Keep it on until you are sure you will not need the local **Owner** account. To sign in to the LLM gateway with the same Okta app, see [One Okta sign-in for the console and the LLM gateway](/administer/guide-gateway-sso-okta).</Info>
 
 ## Step 7 (optional): Change roles from the console
 
