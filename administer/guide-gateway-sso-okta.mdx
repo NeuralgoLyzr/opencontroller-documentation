@@ -109,17 +109,44 @@ environment for gateways deployed from code.</Warning>
 without a credential. Apps that call models through the gateway with a virtual key are not affected.
 OpenController keeps managing the gateway with its own credential.</Note>
 
-## Step 4: Test it
+## Step 4: Give people roles in each console
+
+Each console gives roles on its own, from the same Okta groups. Okta sends each person's groups in the access
+token (the `groups` claim from [the Okta guide](/administer/guide-sso-okta)), and each console reads them.
+
+**In OpenController:**
+
+1. Go to **Settings** > **Role mappings**.
+2. Map each Okta group to a role, for example `oc-admins` to **Admin** and `oc-viewers` to **Viewer**. Map
+   **Owner** only to a small group.
+3. Check the result in **Settings** > **Members**: each person shows their groups and the role they get.
+
+See [Map groups to roles](/administer/sso#map-groups-to-roles).
+
+**In the gateway:**
+
+1. In the gateway's console, go to **Access** > **Roles**.
+2. Open a role, or select **New role** and choose its permissions.
+3. Under **Granted automatically to these groups**, type the Okta group name, for example `oc-admins`, and press
+   Enter. Okta sends group names, so type the name exactly as in Okta.
+4. Save.
+
+The first time someone from a mapped group signs in to the gateway, it creates their account with that role.
+
+<Note>The two mappings are separate. Someone can be **Admin** in OpenController and have a narrower role in the
+gateway, or the reverse. Changing a person's Okta groups changes both on their next sign-in.</Note>
+
+## Step 5: Test it
 
 1. In a **private browser window**, open `https://gateway.example.com`.
 2. Select the Okta sign-in, and sign in as your test user.
-3. You land in the gateway's workspace.
+3. You land in the gateway's workspace, with the role from step 4.
 4. In the same window, open `https://console.example.com` and select **Sign in with Okta**. Okta signs you in
    without asking for your password again.
 
 The gateway administrator's username and password still work, as the way in if Okta fails.
 
-## Step 5 (optional): Turn off password sign-in in OpenController
+## Step 6 (optional): Turn off password sign-in in OpenController
 
 Once everyone signs in through Okta, you can stop OpenController from accepting email and password, and stop the
 sign-in page from offering a service-account key.
