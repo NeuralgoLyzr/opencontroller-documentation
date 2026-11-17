@@ -1,0 +1,146 @@
+---
+title: "Remove OpenController"
+description: "Remove an OpenController installation from your AWS account, in the order that leaves nothing behind."
+sidebarTitle: "Remove"
+icon: "trash-2"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Removing deletes the application, its databases and its data. Some things are kept on purpose until you delete them
+yourself: the data volumes, the DNS records, the secrets and the backups. Follow the steps in this order: removing
+everything at once can leave the load balancer behind, which then stops the network from being deleted.
+
+Run each command in `infra/tofu/customer/aws` unless the step says `foundation`. `<name>` is `opencontroller`, unless
+you changed `name` in File A and File C.
+
+<Warning>This cannot be undone, except from the final database snapshots step 5 leaves. Keep them until you are sure.</Warning>
+
+<Steps>
+  <Step title="Tell Lyzr">
+    Tell Lyzr that `<account-id>` is being removed. Lyzr then removes its access to Lyzr's registry.
+  </Step>
+  <Step title="Turn deletion protection off">
+    - File A: `deletion_protection = false` inside `cluster`.
+    - File C: `deletion_protection = false` inside both `document_database` and `gateway_database`.
+
+    Then apply in both folders:
+
+    ```bash
+    cd foundation && tofu apply && cd ..      # type: yes
+    tofu apply                                # type: yes
+    ```
+  </Step>
+  <Step title="Remove the application first">
+    Wait until its load balancer is gone:
+
+    ```bash
+    tofu destroy -target='helm_release.application[0]'     # type: yes
+    kubectl -n argocd get application opencontroller       # repeat until: NotFound
+    kubectl -n opencontroller get ingress                  # repeat until: No resources found
+    ```
+  </Step>
+  <Step title="Delete what the application keeps on purpose">
+    **Its data volumes** (ClickHouse's, OPA's), kept so that data is never lost by accident:
+
+    ```bash
+    kubectl -n opencontroller delete pvc --all
+    for v in $(aws ec2 describe-volumes --region <region> --filters Name=tag:kubernetes.io/created-for/pvc/namespace,Values=opencontroller --query 'Volumes[].VolumeId' --output text); do
+      aws ec2 wait volume-available --volume-ids "$v" --region <region>      # until it has left its node
+      aws ec2 delete-volume --volume-id "$v" --region <region>
+    done
+    ```
+
+    **Its DNS records** for `<app-host>`, `<gateway-host>` and any aliases. ExternalDNS writes them but never deletes
+    them, and left behind they stop a private zone from being deleted. Private mode uses the private zone (`true`
+    below), public mode the public one (`false`). List every host in `HOSTS`, separated by spaces:
+
+    ```bash
+    HOSTS="<app-host> <gateway-host>"
+    ZONE=$(aws route53 list-hosted-zones-by-name --dns-name <domain> --query "HostedZones[?Name=='<domain>.' && Config.PrivateZone==\`true\`].Id" --output text)
+    aws route53 list-resource-record-sets --hosted-zone-id $ZONE --output json \
+      | jq --arg hosts "$HOSTS" '($hosts | split(" ") | map(. + ".")) as $h | {Changes: [.ResourceRecordSets[] | select(.Name as $n | any($h[]; . as $x | $n == $x or ($n | endswith("-" + $x)))) | {Action: "DELETE", ResourceRecordSet: .}]}' > dns-delete.json
+    aws route53 change-resource-record-sets --hosted-zone-id $ZONE --change-batch file://dns-delete.json
+    ```
+  </Step>
+  <Step title="Remove the platform">
+    DocumentDB and PostgreSQL leave final snapshots, `<name>-docdb-final` and `<name>-rekori-final`:
+
+    ```bash
+    tofu destroy                                           # type: yes
+    ```
+  </Step>
+  <Step title="Delete the secrets">
+    The platform's, and the ones the application made itself under `<name>/app/`. Deleting them at once lets a
+    reinstall use the same names:
+
+    ```bash
+    for s in $(aws secretsmanager list-secrets --include-planned-deletion --region <region> --query "SecretList[?starts_with(Name,'<name>/')].Name" --output text); do
+      aws secretsmanager delete-secret --secret-id "$s" --force-delete-without-recovery --region <region>
+    done
+    ```
+  </Step>
+  <Step title="Empty the backup vault">
+    A vault that holds backups cannot be deleted:
+
+    ```bash
+    for arn in $(aws backup list-recovery-points-by-backup-vault --backup-vault-name <name> --region <region> --query 'RecoveryPoints[].RecoveryPointArn' --output text); do
+      aws backup delete-recovery-point --backup-vault-name <name> --recovery-point-arn "$arn" --region <region>
+    done
+    ```
+  </Step>
+  <Step title="Remove the foundation">
+    ```bash
+    cd foundation && tofu destroy                          # type: yes
+    ```
+
+    If it stops at `DeleteFlowLogs ... explicit deny in a service control policy`, your organization forbids deleting
+    VPC flow logs. Ask your AWS administrators to delete the flow log of the `<name>` VPC, then run `tofu destroy`
+    again.
+  </Step>
+  <Step title="Clean up what is left">
+    The final snapshots, unless you keep them:
+
+    ```bash
+    aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier <name>-docdb-final --region <region>
+    aws rds delete-db-snapshot --db-snapshot-identifier <name>-rekori-final --region <region>
+    ```
+
+    Any snapshot you took before an upgrade, for example `<name>-before-v0-7-0`, the same way.
+
+    The alarms and the topic, if you made them:
+
+    ```bash
+    aws cloudwatch delete-alarms --alarm-names $(aws cloudwatch describe-alarms --alarm-name-prefix <name>- --query 'MetricAlarms[].AlarmName' --output text) --region <region>
+    aws sns delete-topic --topic-arn arn:aws:sns:<region>:<account-id>:<name>-alarms --region <region>
+    ```
+
+    The `NS` record at your DNS provider, if you added one for `public_zone`, then any public zone you made yourself
+    for `<domain>`. A zone made by `public_zone` went with the foundation. Delete the `NS` record first, so nothing
+    points at a zone you no longer hold.
+
+    A security group you made for the load balancer yourself, if any.
+
+    The state bucket, last. It keeps every version of its files, so delete them all, then the bucket:
+
+    ```bash
+    aws s3api list-object-versions --bucket <state-bucket> --output json \
+      | jq '{Objects: ([.Versions[]?, .DeleteMarkers[]?] | map({Key, VersionId}))}' > versions.json
+    aws s3api delete-objects --bucket <state-bucket> --delete file://versions.json
+    aws s3api delete-bucket --bucket <state-bucket> --region <region>
+    ```
+  </Step>
+</Steps>
+
+The KMS key is scheduled for deletion and goes after 30 days. Until then, you can cancel its deletion.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Troubleshooting" icon="life-buoy" href="/self-host/troubleshooting#removal">
+    Messages you may see while removing.
+  </Card>
+  <Card title="Install on AWS" icon="download" href="/self-host/install">
+    Install again, from an empty account.
+  </Card>
+</CardGroup>

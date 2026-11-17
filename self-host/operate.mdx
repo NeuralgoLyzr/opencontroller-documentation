@@ -1,0 +1,269 @@
+---
+title: "Run and change your installation"
+description: "Limit who can reach OpenController, make single sign-on the only way in, add your own chart settings, rotate secrets and renew the license."
+sidebarTitle: "Operate"
+icon: "sliders-horizontal"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Everything here is a change to your own files followed by `tofu apply`. Run each command in
+`infra/tofu/customer/aws` unless it says `foundation`. Argo CD rolls each change out by itself.
+
+## Change a setting
+
+1. Edit the file the setting is in: File A (`foundation/terraform.tfvars`) or File C (`terraform.tfvars`).
+2. Run `tofu apply` in that file's folder. Read the plan before you type `yes`.
+
+For example, to change the nodes, edit `nodes = { ... }` in File A (`instance_types`, `min_size`, `desired_size`,
+`max_size`, `disk_gb`). To give more people cluster access, add their IAM role ARNs to `cluster.admins` in File A.
+To turn an optional part on or off, edit `parts = { ... }` in File C.
+
+## Limit who can reach the application
+
+`alb_inbound_cidrs` in File C is the allow list of the load balancer. Only addresses in it reach the application and
+the LLM gateway's address.
+
+| Mode | What to list | Example |
+|---|---|---|
+| Private (internal load balancer) | The VPC's range, and your offices' and VPNs' ranges | `["10.0.0.0/8"]` |
+| Public (internet-facing load balancer) | The **public** IPs your offices and VPN leave from | `["203.0.113.0/28", "198.51.100.7/32"]` |
+
+`[]` leaves the load balancer open to every address. Change the list, then run `tofu apply`. The change takes effect
+with no downtime.
+
+- **Callers from outside your network** must be in the list too. Claude's custom connector and Microsoft Copilot
+  Studio, for example, reach the MCP server from Anthropic's and Microsoft's clouds.
+- **Only the LLM gateway's address:** to let fewer addresses reach `<gateway-host>` than the application, list them
+  in `overrides.yaml` (up to five). Others get the load balancer's 404; the application's address is not affected.
+
+  ```yaml
+  ingress:
+    gatewayUI:
+      sourceCIDRs: ["203.0.113.0/28"]
+  ```
+
+<Warning>Never edit the load balancer's security group in the AWS console. The AWS Load Balancer Controller made it
+and keeps it as the settings say: it reverts your change to what `alb_inbound_cidrs` says. Change
+`alb_inbound_cidrs`, or use a security group of your own as below.</Warning>
+
+### Manage access with your own security group
+
+If your team manages access rules in a security group of its own, the load balancer can use it in place of the one the
+controller makes. Needs a pack from v0.6.0 on.
+
+<Steps>
+  <Step title="Make the security group">
+    Make it in the cluster's VPC, and allow TCP 443 and 80 (80 redirects to HTTPS) from your ranges:
+
+    ```bash
+    VPC=$(cd foundation && tofu output -raw vpc_id)
+    SG=$(aws ec2 create-security-group --region <region> --vpc-id "$VPC" \
+      --group-name opencontroller-alb-access --description "Who may reach OpenController" \
+      --query GroupId --output text)
+    aws ec2 authorize-security-group-ingress --region <region> --group-id "$SG" --protocol tcp --port 443 --cidr 203.0.113.0/28
+    aws ec2 authorize-security-group-ingress --region <region> --group-id "$SG" --protocol tcp --port 80 --cidr 203.0.113.0/28
+    echo "$SG"
+    ```
+  </Step>
+  <Step title="Give it to the load balancer">
+    In `overrides.yaml` (see [Your own chart settings](#your-own-chart-settings)):
+
+    ```yaml
+    ingress:
+      annotations:
+        alb.ingress.kubernetes.io/security-groups: sg-0123456789abcdef0
+        alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
+    ```
+
+    The second line lets the controller keep the rules that let the load balancer reach the pods.
+  </Step>
+  <Step title="Empty the allow list, and apply">
+    In File C, set `alb_inbound_cidrs = []`: your security group decides now. Then run `tofu apply`.
+  </Step>
+</Steps>
+
+From then on, change the rules in your security group. It is not in OpenTofu's state: delete it yourself when you
+remove the installation.
+
+## Single sign-on as the only way in
+
+Once single sign-on works, you can turn sign-in with an email and a password off.
+
+1. Connect your identity provider, and map one of your groups to **Owner** under **Settings** > **Role mappings**.
+   See [Single sign-on and role mappings](/administer/sso).
+2. Sign in through single sign-on as a member of that group.
+3. Go to **Settings** > **Authentication** > **Ways in**, and switch off **Email and password**. Every password
+   session ends.
+
+Keep single sign-on connected from then on. Who can reach the address at all is still `alb_inbound_cidrs`.
+
+`password_login` in File C overrides the switch. Leave it out, so **Settings** decides.
+
+| `password_login` | Effect |
+|---|---|
+| Left out (default) | **Settings** > **Authentication** > **Ways in** decides. |
+| `true` | Password sign-in is on, whatever **Settings** says. The switch is locked. |
+| `false` | Password sign-in is off. The switch is locked. |
+
+### If single sign-on fails
+
+Get back in with a password:
+
+1. In File C, add `password_login = true`, then run `tofu apply`.
+2. Sign in with an email and a password, and fix single sign-on.
+3. Remove the line, and run `tofu apply` again, so **Settings** decides once more.
+
+## Your own chart settings
+
+The application's chart settings are made for you from File C. For anything more, such as a proxy, more console
+copies, or CPU and memory, add your own in `overrides.yaml`. Needs a pack from v0.6.0 on: before, any setting in the
+file replaced all the others.
+
+1. Make the file from its example, and edit it. Each setting is explained there.
+   ```bash
+   cp overrides.yaml.example overrides.yaml
+   ```
+2. In File C, remove the `#` from `overrides_file = "overrides.yaml"`.
+3. Run `tofu apply`.
+
+Your settings are merged over the ones made for you. A map is merged key by key. Anything else you set, a list
+included, replaces what was made. Every setting you leave out stays as made.
+
+See the settings made for you:
+
+```bash
+tofu output -raw helm_values
+```
+
+See every setting the chart has (needs Helm; `<chart-version>` is in the pack's `CHANGES.txt`):
+
+```bash
+aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin <lyzr-artifactory-account-id>.dkr.ecr.us-east-1.amazonaws.com
+helm show values oci://<lyzr-artifactory-account-id>.dkr.ecr.us-east-1.amazonaws.com/opencontroller/charts/opencontroller --version <chart-version>
+```
+
+### More console copies
+
+Two copies keep the console up while a node is replaced:
+
+```yaml
+console:
+  replicas: 2
+```
+
+### Give the API more memory
+
+On a large estate, the API can run out of memory: its pod restarts, shows `OOMKilled`, then `CrashLoopBackOff`.
+Raise its memory limit:
+
+```yaml
+api:
+  resources:
+    limits: {memory: 2Gi}
+```
+
+Check the reason the pod last stopped:
+
+```bash
+kubectl -n opencontroller describe pod -l app.kubernetes.io/component=api | grep -A3 'Last State'
+```
+
+### Use a proxy
+
+In private mode nothing reaches the internet. If your network has an HTTP(S) proxy, the application uses it for model
+providers other than Amazon Bedrock, other clouds and identity providers:
+
+```yaml
+proxy:
+  http: http://proxy.corp.example.com:3128
+  noProxy: [10.0.0.0/8, .amazonaws.com]
+```
+
+`noProxy` lists the addresses that must not go through it, such as your network's range and AWS's APIs. The chart
+keeps the cluster's own names and the pods' AWS credentials off the proxy by itself.
+
+With a proxy, the LLM gateway can download its catalogs. Set `gateway_catalogs = "internet"` in File C, and let
+`getbifrost.ai` through the proxy.
+
+<Note>The Okta integration is refused through a proxy for now. It needs a NAT gateway.</Note>
+
+## Rotate secrets
+
+Every password and key is generated for you and kept in AWS Secrets Manager, under `<name>/deploy/`. To make new
+values for a group:
+
+1. In File C, remove the `#` from `secret_versions`, and raise that group's number by 1:
+   ```hcl
+   secret_versions = { database = 2, gateway = 1, observability = 1, evals = 1, guardrails = 1 }
+   ```
+2. Run `tofu apply`. It writes the new values to Secrets Manager, to the cluster's Secret and, for `database` and
+   `gateway`, to the database.
+3. Restart the pods:
+   ```bash
+   kubectl -n opencontroller rollout restart deploy
+   ```
+
+| Group | What it holds |
+|---|---|
+| `database` | DocumentDB's password |
+| `gateway` | The LLM gateway's PostgreSQL password, its `admin` password and its encryption key |
+| `observability` | ClickHouse's passwords and the trace collector's token |
+| `evals` | The evals service's API key and its secret key |
+| `guardrails` | The guardrail engine's tokens |
+
+The core secrets are never rotated this way: the key that seals what the API stores, and the first administrator's
+password. Ask Ctrl's keys on computeragent are not rotated this way either.
+
+<Warning>The `gateway` and `evals` groups each also hold a key that encrypts stored data (`BIFROST_ENCRYPTION_KEY`,
+`EVALS_SECRET_KEY`). From pack v0.8.0, a rotation keeps those keys and changes only the passwords. On v0.7.0 or
+earlier, do not rotate either group: it would make a new key, and the gateway's provider keys and evals' sealed data
+could no longer be read. Upgrade first, or ask Lyzr.</Warning>
+
+After you rotate `gateway`, `observability` or `evals`, the console still holds the old credential for that module.
+Go to **Settings**, select the module under **Modules**, type the new credential, select **Save**, then **Check
+connection**. Read the new value in your own terminal, for example the gateway's:
+
+```bash
+kubectl -n opencontroller get secret opencontroller-rekori-env \
+  -o jsonpath="{.data.BIFROST_ADMIN_PASSWORD}" | base64 -d; echo
+```
+
+| Module | Username | The credential, in Secret |
+|---|---|---|
+| **LLM Gateway** | `admin` | `BIFROST_ADMIN_PASSWORD` in `opencontroller-rekori-env` |
+| **Observability** | `opencontroller` | `OC_CLICKHOUSE_READER_PASSWORD` in `opencontroller-observability-env` |
+| **Evals** | none (a token) | `EVALS_API_KEY` in `opencontroller-evals-env` |
+
+## Renew the license
+
+From 60 days before the license ends, the console shows a banner. Ask Lyzr for a renewal then.
+
+1. Replace `license.ocl` with the new file from Lyzr.
+2. Run `tofu apply`. The application restarts on the new license by itself.
+
+See how many days are left:
+
+```bash
+kubectl -n opencontroller logs deploy/opencontroller-api --tail=2000 | grep -m1 'license: '   # "valid, N days left"
+```
+
+## Open Argo CD's screen
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+kubectl -n argocd port-forward svc/argocd-server 8443:443
+```
+
+Open `https://localhost:8443` and sign in as `admin` with the password the first command printed.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Alarms, logs and backups" icon="heart-pulse" href="/self-host/monitor-and-recover">
+    CloudWatch alarms, the logs, and how to restore the databases.
+  </Card>
+  <Card title="Upgrade to a new pack" icon="circle-arrow-up" href="/self-host/upgrade">
+    Install a new release over this one.
+  </Card>
+</CardGroup>

@@ -1,0 +1,358 @@
+---
+title: "Troubleshooting"
+description: "What to do when an install, an upgrade or a running OpenController on AWS stops, signs in wrongly or cannot be reached."
+icon: "life-buoy"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Find the message or the symptom you see. Commands run in `infra/tofu/customer/aws` unless they say `foundation`, with
+`kubectl` connected to the cluster. `opencontroller` is `name` in File A and File C; if you changed it, use yours.
+
+## The plan stops
+
+<AccordionGroup>
+  <Accordion title="“With a private zone, say who reaches the load balancer: alb_scheme …”">
+    File C has `private_zone = true` but no `alb_scheme`. Left out, the load balancer would be internet-facing in a
+    network with no way in, so the plan stops and asks. Add the line, then apply again:
+
+    ```hcl
+    alb_scheme = "internal"            # private mode; "internet-facing" only in public mode
+    ```
+  </Accordion>
+  <Accordion title="“The LLM gateway starts on empty catalogs here … set gateway_host”">
+    The VPC has no way to the internet, so the gateway would start with no catalogs and could not route a call. You
+    upload the catalogs in the gateway's own console, which only `gateway_host` serves. Do one of these in File C,
+    then apply again:
+
+    - Set `gateway_host`, for example `"gateway.corp.example.com"`, in the same zone as `host`. Then upload the
+      catalogs, as in [Install](/self-host/install#install).
+    - Set `gateway_catalogs` to a catalog mirror's `https://` address.
+    - Turn the gateway off with `parts = { gateway = false }`.
+  </Accordion>
+  <Accordion title="“The zone is private, and ACM cannot validate a certificate in it”">
+    ACM proves certificates in public DNS, which cannot see a private zone. In File C, set `validation_zone` to a
+    **public** Route 53 zone in this account, or bring your own certificate in `certificate_arns`. See
+    [Domain and certificate](/self-host/requirements#domain-and-certificate).
+  </Accordion>
+  <Accordion title="“S3 bucket does not exist”">
+    The bucket or its region in File B or File D is wrong. Fix it, then:
+
+    ```bash
+    tofu init -backend-config=backend.hcl -reconfigure
+    ```
+  </Accordion>
+  <Accordion title="“Error acquiring the state lock”">
+    An earlier run stopped while holding the lock. In the same folder, release it with the lock ID the message prints,
+    then repeat the command:
+
+    ```bash
+    tofu force-unlock -force <lock-id>
+    ```
+  </Accordion>
+  <Accordion title="“license_file: no such file”">
+    The license is not in `infra/tofu/customer/aws`. Copy it there, then apply again:
+
+    ```bash
+    cp <your license file> license.ocl
+    ```
+  </Accordion>
+  <Accordion title="ImageNotFoundException, RepositoryNotFoundException, or AccessDenied on an image">
+    Lyzr has not let your account in yet, an SCP blocks pulling from `<lyzr-artifactory-account-id>`, or
+    `release.auto.tfvars` was changed. Put the pack's `release.auto.tfvars` back. If it matches, send Lyzr your account
+    ID and ask them to let it in.
+  </Accordion>
+  <Accordion title="Timeout or “connection refused” reaching the cluster">
+    The cluster's API endpoint is private, and this machine cannot reach it. Run from inside the VPC or over your VPN,
+    or put this machine's public IP in File A and apply the foundation:
+
+    ```hcl
+    cluster = {
+      public_access_cidrs = ["<your-ip>/32"]
+      ...
+    }
+    ```
+  </Accordion>
+  <Accordion title="“pods is forbidden”, or the EKS console shows no pods">
+    Your role has no access entry on the cluster. In `foundation`:
+
+    ```bash
+    tofu apply -target=module.eks.aws_eks_access_entry.this \
+      -target=module.eks.aws_eks_access_policy_association.this
+    ```
+
+    To give other roles access, list them in `cluster.admins` in File A.
+  </Accordion>
+  <Accordion title="The platform's apply waits a long time on the certificate">
+    ACM cannot prove the certificate in public DNS. Check that `validation_zone` in File C is a **public** zone in
+    this account. If you set `public_zone` in File A, check that the `NS` record for it is in place at your DNS
+    provider. Or bring your own certificate in `certificate_arns`.
+  </Accordion>
+</AccordionGroup>
+
+## The foundation waits at the node group
+
+If the foundation's apply waits at the node group for more than 20 minutes:
+
+<Steps>
+  <Step title="Stop the apply">
+    Press **Ctrl+C** once, and wait for the prompt. It can take a few minutes. Do not press it twice.
+  </Step>
+  <Step title="See the node group's state">
+    ```bash
+    REGION=<region>
+    NG=$(aws eks list-nodegroups --cluster-name opencontroller --region $REGION --query 'nodegroups[0]' --output text)
+    aws eks describe-nodegroup --cluster-name opencontroller --nodegroup-name $NG --region $REGION \
+      --query 'nodegroup.[status,health.issues]'
+    ```
+  </Step>
+  <Step title="Act on the status">
+    - **CREATING:** wait, and check again every 5 minutes until it changes.
+    - **ACTIVE:** go to the next step.
+    - **Any other status:** delete the node group (about 5 minutes):
+
+      ```bash
+      aws eks delete-nodegroup --cluster-name opencontroller --nodegroup-name $NG --region $REGION
+      aws eks wait nodegroup-deleted --cluster-name opencontroller --nodegroup-name $NG --region $REGION
+      ```
+  </Step>
+  <Step title="Move to the newest pack">
+    Follow [Upgrade to a new pack](/self-host/upgrade). The newest packs put the nodes' disks on your own KMS key.
+    That fixes nodes that end at launch because of the account's default EBS encryption key.
+  </Step>
+  <Step title="Still stuck">
+    Send Lyzr the output of these, with the `Error:` lines from `tofu`:
+
+    ```bash
+    NG=$(aws eks list-nodegroups --cluster-name opencontroller --region $REGION --query 'nodegroups[0]' --output text)
+    aws eks describe-nodegroup --cluster-name opencontroller --nodegroup-name $NG --region $REGION --query 'nodegroup.health.issues'
+    ASG=$(aws eks describe-nodegroup --cluster-name opencontroller --nodegroup-name $NG --region $REGION \
+      --query 'nodegroup.resources.autoScalingGroups[0].name' --output text)
+    aws autoscaling describe-scaling-activities --auto-scaling-group-name $ASG --region $REGION --max-items 5 \
+      --query 'Activities[].[StatusCode,StatusMessage]' --output text
+    aws ec2 get-ebs-default-kms-key-id --region $REGION
+    aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A --region $REGION --query Quota.Value
+    ```
+  </Step>
+</Steps>
+
+## The application does not start
+
+<AccordionGroup>
+  <Accordion title="Argo CD shows OutOfSync, Unknown or Degraded">
+    Argo CD cannot read the chart, most often because of registry access. The job that signs Argo CD in to Lyzr's
+    registry names the problem:
+
+    ```bash
+    kubectl -n argocd logs job/registry-login-first
+    kubectl -n argocd get application opencontroller -o jsonpath='{.status.conditions}'
+    ```
+
+    Check with Lyzr that your account is let in.
+  </Accordion>
+  <Accordion title="Pods stay Pending">
+    There are not enough nodes. Wait 3 minutes: the cluster autoscaler adds nodes. If they are still **Pending**, the
+    node group may be at `max_size`. Raise it in File A, inside `nodes = { ... }`, then run `tofu apply` in
+    `foundation`. To see why one pod waits:
+
+    ```bash
+    kubectl -n opencontroller describe pod <pod>
+    ```
+  </Accordion>
+  <Accordion title="opencontroller-api is not READY, and its log mentions the license">
+    ```bash
+    kubectl -n opencontroller logs deploy/opencontroller-api | grep -i license
+    ```
+
+    If it says **another Kubernetes cluster**, the license is bound to a different cluster. Send Lyzr your cluster's
+    ID, put the new file in `license.ocl`, then run `tofu apply`:
+
+    ```bash
+    kubectl get namespace kube-system -o jsonpath='{.metadata.uid}'; echo
+    ```
+
+    After a renewal, the pods from before keep serving until the new ones are ready. If the new file is damaged or for
+    another cluster, ask Lyzr for the right one.
+  </Accordion>
+  <Accordion title="The API pod is OOMKilled, or in CrashLoopBackOff, on a large estate">
+    The API needs more memory than its limit. Raise it in `overrides.yaml`, then run `tofu apply`. See
+    [Give the API more memory](/self-host/operate#give-the-api-more-memory).
+  </Accordion>
+  <Accordion title="opencontroller-rekori restarts, and its log ends at “initializing model catalog”">
+    The LLM gateway tries to download its catalogs with no way to the internet. In File C, remove the `#` from
+    `gateway_catalogs = "upload"`, run `tofu apply`, then upload the catalogs as in
+    [Install](/self-host/install#install).
+  </Accordion>
+  <Accordion title="The console shows “opencontroller is locked”">
+    The license has ended, or Lyzr revoked it. The page says which. Ask Lyzr for a new license, then
+    [renew it](/self-host/operate#renew-the-license).
+  </Accordion>
+  <Accordion title="Ask Ctrl does not answer">
+    Ask Ctrl answers with a model in the LLM gateway. Add a provider the gateway can reach: Amazon Bedrock through its
+    VPC endpoint (`bedrock-runtime` in `endpoint_services`), or another provider through your proxy.
+  </Accordion>
+</AccordionGroup>
+
+## Network and DNS
+
+<AccordionGroup>
+  <Accordion title="The Ingress ADDRESS stays empty">
+    The load balancer could not be made. The AWS Load Balancer Controller names the problem:
+
+    ```bash
+    kubectl -n kube-system logs deploy/aws-load-balancer-controller
+    ```
+  </Accordion>
+  <Accordion title="The address does not resolve, though the Ingress has an ADDRESS">
+    The DNS record was not written. ExternalDNS names the problem:
+
+    ```bash
+    kubectl -n kube-system logs deploy/external-dns
+    ```
+
+    In private mode outside `us-east-1`, ExternalDNS cannot reach Route 53. Set `external_dns = false` and
+    `dns = true` in File C, then run `tofu apply`. See
+    [ExternalDNS outside us-east-1](/self-host/choose-your-setup#externaldns-outside-us-east-1).
+  </Accordion>
+  <Accordion title="Private mode: the site works inside the VPC but not from the office">
+    The private zone resolves only inside the VPC. Check, from an office machine:
+
+    1. **DNS:** `nslookup <app-host>` must answer with the load balancer's private addresses. If it does not, your
+       DNS servers must forward `<domain>` to the VPC, for example through a Route 53 Resolver inbound endpoint. See
+       [DNS in private mode](/self-host/choose-your-setup#dns-in-private-mode).
+    2. **Route:** your network reaches the VPC's range, over a VPN, AWS Direct Connect or a transit gateway.
+    3. **Allow list:** your office's range is in `alb_inbound_cidrs` in File C.
+  </Accordion>
+  <Accordion title="Public mode: some people or services cannot reach the site">
+    Their address is not in `alb_inbound_cidrs`. For an internet-facing load balancer, list the **public** IPs they
+    leave from, not internal ranges. Services that call in from their own clouds, such as Claude's custom connector
+    and Microsoft Copilot Studio, need their addresses in the list too.
+  </Accordion>
+  <Accordion title="A change to the load balancer's security group keeps going away">
+    The AWS Load Balancer Controller owns that security group and reverts changes made by hand. Change
+    `alb_inbound_cidrs`, or give the load balancer a security group of your own. See
+    [Limit who can reach the application](/self-host/operate#limit-who-can-reach-the-application).
+  </Accordion>
+  <Accordion title="The browser shows a certificate warning">
+    The certificate does not cover the name in the address bar. With certificates ACM makes, each name gets its own.
+    With your own (`certificate_arns`), the certificates must cover `host`, `gateway_host` and any `aliases`. A
+    wildcard covers one level of names only.
+  </Accordion>
+  <Accordion title="The Okta integration fails in private mode">
+    The Okta integration needs a NAT gateway. Through a proxy it is refused for now.
+  </Accordion>
+</AccordionGroup>
+
+## Sign-in
+
+<AccordionGroup>
+  <Accordion title="Okta sign-in returns 502">
+    The session cookie is too large, because Okta sends every group the person is in. Keep Okta's group filter: in
+    the Okta app's `groups` claim or group attribute statement, send only the groups you map to roles, for example
+    **Starts with** `opencontroller-` (your groups' prefix) rather than **Matches regex** `.*`. See [Okta](/integrations/identity/okta).
+  </Accordion>
+  <Accordion title="People show “No group” and the default role, such as Viewer">
+    Okta has not sent their group memberships. Before v0.7.0, members Okta pushed to a group at the same moment could
+    be lost. After upgrading, in Okta, open the provisioning app, go to **Push Groups**, select your groups, and
+    select **Push now**. If nothing changes, check that the app pushes those groups and that its provisioning is on.
+  </Accordion>
+  <Accordion title="Nobody can sign in after single sign-on broke">
+    Get back in with a password: `password_login = true` in File C, then `tofu apply`. Remove the line and apply
+    again once single sign-on works. See [If single sign-on fails](/self-host/operate#if-single-sign-on-fails).
+  </Accordion>
+  <Accordion title="The first administrator's password is lost">
+    It is kept in Secrets Manager. Print it in your own terminal:
+
+    ```bash
+    aws secretsmanager get-secret-value --secret-id opencontroller/deploy/core \
+      --query SecretString --output text | jq -r .DISCOVERY_ADMIN_PASSWORD
+    ```
+
+    This is the first password only. Once changed in the console, it is not kept here.
+  </Accordion>
+</AccordionGroup>
+
+## The LLM gateway
+
+<AccordionGroup>
+  <Accordion title="The gateway's console answers 401">
+    The gateway's console has its own sign-in, not your OpenController account. Sign in as `admin` with
+    `BIFROST_ADMIN_PASSWORD`. Read it in your own terminal, and never share it:
+
+    ```bash
+    kubectl -n opencontroller get secret opencontroller-rekori-env \
+      -o jsonpath="{.data.BIFROST_ADMIN_PASSWORD}" | base64 -d; echo
+    ```
+  </Accordion>
+  <Accordion title="The gateway's sign-in loops in a normal window but works in a private window">
+    The browser holds old data for the gateway's address. Clear the site data for `https://<gateway-host>` in the
+    browser's settings, then sign in again.
+  </Accordion>
+  <Accordion title="Which Base URL to use in Settings > LLM Gateway">
+    The install connects the gateway for you. Keep its values:
+
+    - **Base URL:** `http://opencontroller-rekori:8080`, the gateway's address inside the cluster.
+    - **Its console is at another address**, with **Console address** `https://<gateway-host>`.
+
+    Put the public address in **Console address** only. As the **Base URL**, the API's calls would leave the cluster
+    and come back through the load balancer, and `alb_inbound_cidrs` would refuse them unless it lists the address
+    they leave from.
+  </Accordion>
+  <Accordion title="Calls to the gateway's models work without a virtual key">
+    The gateway is not locked yet. Go to **LLM Gateway** > **System** > **Security**, turn on **Calls to models must
+    bring a virtual key**, keep **Let calls bring a provider's own key** off, and save.
+  </Accordion>
+  <Accordion title="The gateway shows no model prices, or no MCP servers">
+    In private mode the catalogs start empty. Upload them, as in [Install](/self-host/install#install).
+  </Accordion>
+</AccordionGroup>
+
+## Upgrades
+
+<AccordionGroup>
+  <Accordion title="The plan wants to destroy or replace something">
+    Type `no`. Send the plan to Lyzr, with what [What to send Lyzr](#what-to-send-lyzr) lists.
+  </Accordion>
+  <Accordion title="The plan differs from the CHANGELOG">
+    Type `no`, check you copied your files into the new folder (Files A to D, `license.ocl`, `overrides.yaml`), and
+    that `release.auto.tfvars` is the new pack's. If it still differs, send the plan to Lyzr.
+  </Accordion>
+  <Accordion title="The application stopped working after adding overrides.yaml">
+    Before v0.6.0, any setting in `overrides.yaml` replaced every setting made for you, and the application could not
+    run. Use `overrides.yaml` with a pack from v0.6.0 on, or turn it off: put the `#` back on `overrides_file` in
+    File C, and run `tofu apply`.
+  </Accordion>
+</AccordionGroup>
+
+## Removal
+
+<AccordionGroup>
+  <Accordion title="“deletion protection” error">
+    Turn deletion protection off in File A and File C, and apply in both folders. See
+    [Remove OpenController](/self-host/remove).
+  </Accordion>
+  <Accordion title="The foundation's destroy stops at DeleteFlowLogs … explicit deny in a service control policy">
+    Your organization forbids deleting VPC flow logs. Ask your AWS administrators to delete the flow log of the
+    `opencontroller` VPC, then run `tofu destroy` again.
+  </Accordion>
+  <Accordion title="The private zone or the VPC cannot be deleted">
+    Something made by the application is still there. ExternalDNS's records stay in the zone, and a load balancer
+    left behind keeps the network. Remove the application first and delete its DNS records, as in
+    [Remove OpenController](/self-host/remove).
+  </Accordion>
+</AccordionGroup>
+
+## What to send Lyzr
+
+When you ask Lyzr for help, send:
+
+- The first lines of `CHANGES.txt`, which name your release.
+- The `Error:` lines from `tofu`, or the plan that surprised you.
+- The output of:
+
+  ```bash
+  kubectl -n opencontroller get pods
+  kubectl -n opencontroller logs <the failing pod> --tail=200
+  ```
+
+Never send a password, a key or your license file.

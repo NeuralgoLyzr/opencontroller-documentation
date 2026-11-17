@@ -1,0 +1,156 @@
+---
+title: "Upgrade to a new pack"
+description: "Install a new pack from Lyzr over your running installation, or carry on an install that stopped part-way, and go back if you need to."
+sidebarTitle: "Upgrade"
+icon: "circle-arrow-up"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Every release comes as a new pack. Installing it takes about 20 minutes. Nothing already built is rebuilt: your state
+is in your S3 bucket, and your files carry over unchanged. The same steps carry on an install that stopped part-way.
+
+| Whose | Files | A new pack |
+|---|---|---|
+| Yours | Files A to D, `license.ocl`, `overrides.yaml` | Never contains or changes them |
+| Lyzr's | Everything else, the release (`release.auto.tfvars`) included | Replaces them |
+
+At the top of each pack:
+
+- `CHANGELOG.md` says what changed, what to do, and what each plan should show.
+- `CHANGES.txt` names the release, and the files added, changed or removed since the previous pack.
+
+<Note>
+Before you start:
+- You have the new pack, and the folder of the pack you run now.
+- Your terminal is connected to the cluster (`KUBECONFIG`, as in [Install](/self-host/install)).
+- No one changes settings in the console while the new version rolls out.
+</Note>
+
+## Upgrade
+
+<Steps>
+  <Step title="Read the newest entry of the new pack's CHANGELOG.md">
+    Its **What to do** says what this pack needs besides the steps below, and what each plan should show. A typical
+    entry expects:
+
+    - **Foundation:** no changes.
+    - **Platform:** 0 to add, 1 to change (the application), 0 to destroy.
+
+    If your install skipped uploading the gateway's catalogs or locking the gateway, do those steps after this
+    upgrade. See [Install](/self-host/install).
+  </Step>
+  <Step title="Take a snapshot of DocumentDB">
+    A release can change stored data at its first start, and some changes cannot be undone. Going back then means
+    restoring this snapshot. Take one before every upgrade; the CHANGELOG says when a release requires it.
+
+    ```bash
+    aws docdb create-db-cluster-snapshot --region <region> \
+      --db-cluster-identifier opencontroller-docdb \
+      --db-cluster-snapshot-identifier opencontroller-before-<new-version>
+    ```
+
+    `<new-version>` uses dashes only, for example `v0-7-0`. Wait until the snapshot is `available`:
+
+    ```bash
+    aws docdb describe-db-cluster-snapshots --region <region> \
+      --db-cluster-snapshot-identifier opencontroller-before-<new-version> \
+      --query 'DBClusterSnapshots[0].Status'
+    ```
+
+    A manual snapshot is kept until you delete it.
+  </Step>
+  <Step title="Put the new pack's files in place, with yours">
+    <Tabs>
+      <Tab title="A folder for each pack">
+        The simplest way. Unpack the new pack beside the old one, and copy your files into it:
+
+        ```bash
+        mkdir ~/oc-new && tar -xzf <new pack>.tar.gz -C ~/oc-new
+        OLD=<your current pack folder>/infra/tofu/customer/aws
+        NEW=~/oc-new/opencontroller/infra/tofu/customer/aws
+        for f in foundation/terraform.tfvars foundation/backend.hcl terraform.tfvars backend.hcl license.ocl overrides.yaml; do
+          [ -f "$OLD/$f" ] && cp "$OLD/$f" "$NEW/$f"
+        done
+        ```
+
+        Keep the old folder until the new release runs well. It is how you go back.
+      </Tab>
+      <Tab title="The pack in your own repository">
+        Copy over your copy the files `CHANGES.txt` lists as added or changed, delete the ones it lists as removed,
+        and commit. `NEW` is then your copy's `infra/tofu/customer/aws`:
+
+        ```bash
+        NEW=<your repository>/infra/tofu/customer/aws
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Only from a pack before v0.5.0: remove File C's old release lines">
+    Until v0.5.0, File C held the release (`image_tags = { ... }` and `chart_version`). It is no longer read, since
+    `release.auto.tfvars` wins. Remove it, so nobody edits it by mistake:
+
+    ```bash
+    cd "$NEW" && awk '/^image_tags *= *[{]/{skip=1} !skip && !/^chart_version *=/{print} skip && /^[}]/{skip=0}' \
+      terraform.tfvars > tfvars.new && mv tfvars.new terraform.tfvars
+    grep -cE '^(image_tags|chart_version) *=' terraform.tfvars      # shows: 0
+    ```
+  </Step>
+  <Step title="Apply the foundation">
+    ```bash
+    cd "$NEW/foundation" && tofu init -backend-config=backend.hcl && tofu apply
+    ```
+
+    Type `yes` only if the plan matches the CHANGELOG. If the install had not reached the platform yet (there was no
+    File C before), carry on from [Connect to the cluster](/self-host/install#install) in the new folder.
+  </Step>
+  <Step title="Apply the platform">
+    ```bash
+    cd "$NEW"
+    grep -q '^gateway_host' terraform.tfvars || echo 'Add gateway_host to File C'
+    tofu init -backend-config=backend.hcl && tofu apply
+    ```
+
+    Type `yes` only if the plan matches the CHANGELOG. In private mode File C needs `gateway_host`; see
+    [Choose your setup](/self-host/choose-your-setup#the-settings-for-each-mode).
+  </Step>
+  <Step title="Check the rollout">
+    Argo CD rolls the release out, one pod at a time:
+
+    ```bash
+    kubectl -n argocd get application opencontroller    # Synced, Healthy
+    kubectl -n opencontroller get pods                  # every pod Running, READY 1/1 (ClickHouse 2/2)
+    kubectl -n opencontroller get ingress               # ADDRESS filled
+    ```
+
+    Work in the new folder from now on.
+  </Step>
+</Steps>
+
+<Warning>If a plan wants to destroy or replace anything, or differs from the CHANGELOG, type `no` and send the plan to
+Lyzr. See [What to send Lyzr](/self-host/troubleshooting#what-to-send-lyzr).</Warning>
+
+## Go back
+
+To return to the previous release, put the previous pack's `release.auto.tfvars` back, then apply the platform.
+Argo CD rolls the previous release out.
+
+```bash
+cp "$OLD/release.auto.tfvars" "$NEW/release.auto.tfvars"
+cd "$NEW" && tofu apply
+```
+
+If the new release changed stored data at its first start, as its CHANGELOG says, the previous release needs the data
+as it was. Restore the snapshot you took, and ask Lyzr before you point the application at a restored database. See
+[Restore a database](/self-host/monitor-and-recover#restore-a-database).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Troubleshooting" icon="life-buoy" href="/self-host/troubleshooting">
+    Messages you may see during an upgrade, and what to do.
+  </Card>
+  <Card title="Run and change your installation" icon="sliders-horizontal" href="/self-host/operate">
+    Settings, secrets and the license after the upgrade.
+  </Card>
+</CardGroup>

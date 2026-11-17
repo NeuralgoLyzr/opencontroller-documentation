@@ -10,6 +10,10 @@ WORKDIR /site
 # Pinned with the preview's and CI's (README).
 RUN npm i -g mint@4.2.1184
 COPY . .
+# Installing OpenController is for the hosted site alone: a cell's copy drops self-host/ and its tab.
+RUN rm -rf self-host && node -e 'const fs = require("fs"); const d = JSON.parse(fs.readFileSync("docs.json", "utf8")); \
+      for (const v of d.navigation.versions) v.tabs = v.tabs.filter((t) => t.tab !== "Self-host"); \
+      fs.writeFileSync("docs.json", JSON.stringify(d, null, 2) + "\n")'
 # The export reaches Mintlify to render, so the build needs the network;
 # the result does not.
 RUN mint export --base-path /docs --output /tmp/docs.zip && mkdir /out && unzip -q /tmp/docs.zip -d /out \
