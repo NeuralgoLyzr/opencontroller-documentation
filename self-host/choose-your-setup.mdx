@@ -1,0 +1,154 @@
+---
+title: "Choose your setup"
+description: "Pick private mode or public mode, see what each builds and which lines in File A and File C it sets, and make the other choices before you install."
+sidebarTitle: "Choose your setup"
+icon: "network"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Decide who can reach OpenController before you build the foundation. **Private mode** is the default: only your
+network reaches the application, and nothing in the VPC reaches the internet. **Public mode** makes the application
+reachable from the internet.
+
+<Warning>Choose before the foundation's first apply. Changing `network.mode` later rebuilds the network.</Warning>
+
+## Private mode or public mode
+
+| | Private mode (default) | Public mode |
+|---|---|---|
+| Who reaches the application | Only the VPC, and your offices or VPNs joined to it | The internet, limited to the addresses in `alb_inbound_cidrs` |
+| Subnets | A private subnet in each zone | A private and a public subnet in each zone |
+| Internet gateway and NAT | None | An internet gateway, and a NAT gateway (one, or one per zone) |
+| VPC endpoints | Made, and the only way to AWS's APIs | Made too, so images and secrets stay on AWS's network |
+| Load balancer | `internal`, in the private subnets | `internet-facing`, in the public subnets |
+| DNS zone | A private zone the foundation makes for your domain | Your existing public Route 53 zone |
+| Certificate | Proved in a public zone (`validation_zone`), or your own | Proved in your public zone, or your own |
+| The LLM gateway's catalogs | Uploaded once in the console | Downloaded by the gateway |
+| Model providers other than Bedrock, other clouds, identity providers | Through your HTTP(S) proxy | Through the NAT gateway |
+| Extra cost | None for internet access | NAT gateway hours and data, and an Elastic IP per NAT gateway |
+| Extra work | DNS forwarding from your network, the catalog upload, a proxy if you need the internet | Keep `alb_inbound_cidrs` to your own addresses |
+
+## The settings for each mode
+
+File A is `infra/tofu/customer/aws/foundation/terraform.tfvars`. File C is `infra/tofu/customer/aws/terraform.tfvars`.
+Change only these lines; leave the others as the example has them.
+
+<Tabs>
+  <Tab title="Private mode">
+    **File A:**
+
+    ```hcl
+    network = {
+      mode = "private"
+      ...
+    }
+    private_zone = "<domain>"                    # e.g. "corp.example.com": a private zone is made for it
+    ```
+
+    **File C:**
+
+    ```hcl
+    host         = "<app-host>"                  # e.g. "opencontroller.corp.example.com"
+    zone         = "<domain>"                    # the same as private_zone in File A
+    private_zone = true
+    gateway_host = "<gateway-host>"              # e.g. "gateway.corp.example.com"
+    alb_scheme        = "internal"
+    alb_inbound_cidrs = ["<your-network-cidr>"]  # the VPC's range and your offices' and VPNs', e.g. ["10.0.0.0/8"]
+    validation_zone   = "<public-zone>"          # a PUBLIC zone of the same domain, e.g. "example.com"
+    ```
+
+    Leave `gateway_catalogs` out. With no NAT gateway in the VPC, it is `"upload"`: the LLM gateway starts with empty
+    catalogs, and you upload them once in its console at `gateway_host`. Set `gateway_catalogs = "internet"` only
+    when you add a proxy, or give it a catalog mirror's `https://` address.
+  </Tab>
+  <Tab title="Public mode">
+    **File A:**
+
+    ```hcl
+    network = {
+      mode = "public"
+      # nat_per_zone = true                      # one NAT gateway per zone; one shared without it
+      ...
+    }
+    private_zone = ""
+    ```
+
+    **File C:**
+
+    ```hcl
+    host         = "<app-host>"                  # e.g. "opencontroller.example.com"
+    zone         = "<your-public-zone>"          # e.g. "example.com"
+    private_zone = false
+    alb_scheme        = "internet-facing"
+    alb_inbound_cidrs = ["203.0.113.0/28"]       # your offices' and VPN's public IPs; [] lets everyone in
+    ```
+
+    Delete the `validation_zone` line: the certificate is proved in your public zone. `gateway_host` is optional in
+    public mode; delete the line if unsure.
+  </Tab>
+</Tabs>
+
+<Note>With a private zone, `alb_scheme` must be set. Left out, the plan stops and asks for it, so that no load
+balancer is made internet-facing in a network it cannot run in.</Note>
+
+## DNS in private mode
+
+The private zone is associated with the VPC. Inside the VPC, `<app-host>` resolves at once. Your offices and VPNs
+resolve it only if your DNS servers send questions for `<domain>` to the VPC. The install does not set this up: your
+network team does. A common way:
+
+1. Make a **Route 53 Resolver inbound endpoint** in the VPC. It gives the VPC's resolver addresses your network can
+   reach.
+2. On your corporate DNS servers, add a **conditional forwarder** for `<domain>` to those addresses.
+
+Your network also needs a route to the VPC, for example a VPN, AWS Direct Connect or a transit gateway, and its
+ranges in `alb_inbound_cidrs`.
+
+<Tip>Pick a VPC range (`network.cidr` in File A, `10.40.0.0/16` by default) that does not overlap any network you
+will join to the VPC. It must be a /16 or larger.</Tip>
+
+### ExternalDNS outside us-east-1
+
+ExternalDNS writes the application's records in the zone as soon as the load balancer exists. In private mode it
+reaches Route 53 through a VPC endpoint that AWS offers in `us-east-1` only. In another region, in private mode:
+
+1. In File C, set `external_dns = false` before the platform's first apply.
+2. After the application is installed and its load balancer exists, set `dns = true` in File C, and run `tofu apply`
+   again. OpenTofu then writes the records.
+
+## Other choices
+
+The default needs no change. To pick the other option, change the lines in the last column.
+
+| Choice | Default | Other option | Change |
+|---|---|---|---|
+| Where passwords are kept | AWS Secrets Manager | HashiCorp Vault | Not covered here. Keep the default unless your security team requires Vault, and then contact Lyzr. |
+| Where the LLM gateway keeps provider and MCP keys | Encrypted in its own database | AWS Secrets Manager, beside the application's | File C: remove the `#` from `gateway_secrets_manager = true` |
+| Optional parts | All on: LLM gateway, observability, evals, Ask Ctrl | Turn one off | File C: remove the `#` from `parts = { ... }`, and set that part to `false` |
+| Documentation inside your network | On, under `/docs` on the application's address | Off | File C: add `docs = false` to `parts` |
+| Ask Ctrl's runtime | computeragent, as Lyzr runs it | Ask Ctrl's own | File C: remove the `#` from `ask_ctrl_runtime = "agui"` |
+| Guardrail engine | Off | On | File A: `instance_types = ["m6i.2xlarge"]`. File C: `guardrails = true` |
+| Size | Production: two DocumentDB instances, a standby PostgreSQL, three nodes | Trial, cheaper | File C: `instance_class = "db.t4g.medium"` and `instances = 1` in `document_database`, `high_availability = false` in `gateway_database` |
+| Amazon Bedrock models in private mode | Not reachable | Reachable | File A: remove the `#` from the `endpoint_services` line, which includes `"bedrock-runtime"` |
+| HTTPS certificate | Made by ACM, proved in a public zone | Your own | File C: `certificate_arns`, and delete `validation_zone`. See [Domain and certificate](/self-host/requirements#domain-and-certificate). |
+| Where you run the steps from | Inside the VPC or over a VPN into it | One machine on the internet | File A: `public_access_cidrs = ["<your-ip>/32"]` inside `cluster` |
+| Tags on everything made | `managed-by` and Lyzr's AWS Partner tag `aws-apn-id` | Yours as well | File A and File C: the same `tags = { ... }` in both |
+
+## Change your mind later
+
+- **Most settings:** edit File A or File C, then run `tofu apply` in that file's folder.
+- **`network.mode`:** rebuilds the network. Plan it as a new install.
+- **`alb_scheme`:** the AWS Load Balancer Controller replaces the load balancer, so its address changes. In private
+  mode, your network must reach the VPC before you move to `internal`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Install on AWS" icon="download" href="/self-host/install">
+    The steps, from the state bucket to the first sign-in.
+  </Card>
+  <Card title="Limit who can reach it" icon="shield" href="/self-host/operate#limit-who-can-reach-the-application">
+    `alb_inbound_cidrs`, and your own security group.
+  </Card>
+</CardGroup>

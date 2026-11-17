@@ -209,6 +209,26 @@
                 ]
               }
             ]
+          },
+          {
+            "tab": "Self-host",
+            "icon": "server",
+            "groups": [
+              {
+                "group": "AWS",
+                "pages": [
+                  "self-host/overview",
+                  "self-host/requirements",
+                  "self-host/choose-your-setup",
+                  "self-host/install",
+                  "self-host/upgrade",
+                  "self-host/operate",
+                  "self-host/monitor-and-recover",
+                  "self-host/remove",
+                  "self-host/troubleshooting"
+                ]
+              }
+            ]
           }
         ]
       }

@@ -1,0 +1,162 @@
+---
+title: "Alarms, logs and backups"
+description: "Watch your OpenController installation with CloudWatch alarms, find its logs, and restore its databases from their backups."
+sidebarTitle: "Alarms and backups"
+icon: "heart-pulse"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+The install keeps logs and backups for you. It makes no alarms: you choose where they go, and set them up once with
+the commands below. `<name>` is `opencontroller`, unless you changed `name` in File A and File C.
+
+## What to watch
+
+| What | CloudWatch metric (namespace) | Alarm when | Why |
+|---|---|---|---|
+| Server errors from the application | `HTTPCode_Target_5XX_Count` (AWS/ApplicationELB) | 10 or more in 5 min | The application returns errors |
+| Errors at the load balancer | `HTTPCode_ELB_5XX_Count` (AWS/ApplicationELB) | 10 or more in 5 min | No healthy pod behind the load balancer |
+| Slow responses | `TargetResponseTime`, p95 (AWS/ApplicationELB) | Over 2 s for 10 min | The application is overloaded |
+| Unhealthy targets | `UnHealthyHostCount` (AWS/ApplicationELB) | 1 or more for 5 min | A console pod fails its health check. Watch it in CloudWatch: the commands below do not make this alarm. |
+| Node CPU | `CPUUtilization` by Auto Scaling group (AWS/EC2) | Over 80 % for 15 min | The cluster needs more or bigger nodes |
+| DocumentDB CPU | `CPUUtilization` (AWS/DocDB) | Over 80 % for 15 min | The database is overloaded |
+| DocumentDB memory | `FreeableMemory` (AWS/DocDB) | Under 500 MB for 15 min | The instance is too small |
+| PostgreSQL CPU (LLM gateway) | `CPUUtilization` (AWS/RDS) | Over 80 % for 15 min | The database is overloaded |
+| PostgreSQL storage | `FreeStorageSpace` (AWS/RDS) | Under 2 GB | The disk is filling |
+| HTTPS certificate | `DaysToExpiry` (AWS/CertificateManager) | Under 30 days | Renewal is failing |
+| Backups | `NumberOfBackupJobsFailed` (AWS/Backup) | 1 or more | A nightly backup failed |
+
+## Set up the alarms
+
+<Steps>
+  <Step title="Choose where alarms go">
+    Make a topic and subscribe your operations mailbox, then confirm the email AWS sends:
+
+    ```bash
+    TOPIC=$(aws sns create-topic --name <name>-alarms --region <region> --query TopicArn --output text)
+    aws sns subscribe --topic-arn $TOPIC --protocol email --notification-endpoint <alert-email> --region <region>
+    ```
+  </Step>
+  <Step title="Find the resources">
+    ```bash
+    LB_DNS=$(kubectl -n opencontroller get ingress -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+    LB=$(aws elbv2 describe-load-balancers --region <region> --query "LoadBalancers[?DNSName=='$LB_DNS'].LoadBalancerArn" --output text | sed 's#.*:loadbalancer/##')
+    NG=$(aws eks list-nodegroups --cluster-name <name> --region <region> --query 'nodegroups[0]' --output text)
+    ASG=$(aws eks describe-nodegroup --cluster-name <name> --nodegroup-name $NG --region <region> --query 'nodegroup.resources.autoScalingGroups[0].name' --output text)
+    CERT=$(aws acm list-certificates --region <region> --query "CertificateSummaryList[?DomainName=='<app-host>'].CertificateArn" --output text)
+    echo "$LB | $ASG | $CERT"          # all three must be filled
+    ```
+
+    With your own certificate (`certificate_arns`), set `CERT` to its ARN.
+  </Step>
+  <Step title="Create the alarms">
+    Each line makes one alarm:
+
+    ```bash
+    A="aws cloudwatch put-metric-alarm --region <region> --alarm-actions $TOPIC --ok-actions $TOPIC"
+
+    $A --alarm-name <name>-target-5xx   --namespace AWS/ApplicationELB --metric-name HTTPCode_Target_5XX_Count --dimensions Name=LoadBalancer,Value=$LB --statistic Sum --period 300 --evaluation-periods 1 --threshold 10 --comparison-operator GreaterThanOrEqualToThreshold --treat-missing-data notBreaching
+    $A --alarm-name <name>-elb-5xx      --namespace AWS/ApplicationELB --metric-name HTTPCode_ELB_5XX_Count --dimensions Name=LoadBalancer,Value=$LB --statistic Sum --period 300 --evaluation-periods 1 --threshold 10 --comparison-operator GreaterThanOrEqualToThreshold --treat-missing-data notBreaching
+    $A --alarm-name <name>-latency-p95  --namespace AWS/ApplicationELB --metric-name TargetResponseTime --dimensions Name=LoadBalancer,Value=$LB --extended-statistic p95 --period 300 --evaluation-periods 2 --threshold 2 --comparison-operator GreaterThanThreshold --treat-missing-data notBreaching
+    $A --alarm-name <name>-node-cpu     --namespace AWS/EC2 --metric-name CPUUtilization --dimensions Name=AutoScalingGroupName,Value=$ASG --statistic Average --period 300 --evaluation-periods 3 --threshold 80 --comparison-operator GreaterThanThreshold
+    $A --alarm-name <name>-docdb-cpu    --namespace AWS/DocDB --metric-name CPUUtilization --dimensions Name=DBClusterIdentifier,Value=<name>-docdb --statistic Average --period 300 --evaluation-periods 3 --threshold 80 --comparison-operator GreaterThanThreshold
+    $A --alarm-name <name>-docdb-memory --namespace AWS/DocDB --metric-name FreeableMemory --dimensions Name=DBClusterIdentifier,Value=<name>-docdb --statistic Average --period 300 --evaluation-periods 3 --threshold 500000000 --comparison-operator LessThanThreshold
+    $A --alarm-name <name>-pg-cpu       --namespace AWS/RDS --metric-name CPUUtilization --dimensions Name=DBInstanceIdentifier,Value=<name>-rekori --statistic Average --period 300 --evaluation-periods 3 --threshold 80 --comparison-operator GreaterThanThreshold
+    $A --alarm-name <name>-pg-storage   --namespace AWS/RDS --metric-name FreeStorageSpace --dimensions Name=DBInstanceIdentifier,Value=<name>-rekori --statistic Minimum --period 300 --evaluation-periods 1 --threshold 2000000000 --comparison-operator LessThanThreshold
+    $A --alarm-name <name>-cert-expiry  --namespace AWS/CertificateManager --metric-name DaysToExpiry --dimensions Name=CertificateArn,Value=$CERT --statistic Minimum --period 86400 --evaluation-periods 1 --threshold 30 --comparison-operator LessThanThreshold
+    $A --alarm-name <name>-backup-failed --namespace AWS/Backup --metric-name NumberOfBackupJobsFailed --dimensions Name=BackupVaultName,Value=<name> --statistic Sum --period 86400 --evaluation-periods 1 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --treat-missing-data notBreaching
+    ```
+  </Step>
+  <Step title="Check them">
+    ```bash
+    aws cloudwatch describe-alarms --alarm-name-prefix <name>- --region <region> \
+      --query 'MetricAlarms[].[AlarmName,StateValue]' --output table
+    ```
+  </Step>
+</Steps>
+
+### Pod and node memory, restarts and pod logs (optional)
+
+CloudWatch Container Insights adds them. In private mode, first add `"monitoring"` to `network.endpoint_services` in
+File A, and run `tofu apply` in `foundation`. Then:
+
+```bash
+aws iam create-role --role-name <name>-cloudwatch-agent --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"pods.eks.amazonaws.com"},"Action":["sts:AssumeRole","sts:TagSession"]}]}'
+aws iam attach-role-policy --role-name <name>-cloudwatch-agent --policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+aws eks create-addon --cluster-name <name> --addon-name amazon-cloudwatch-observability --region <region> \
+  --pod-identity-associations serviceAccount=cloudwatch-agent,roleArn=arn:aws:iam::<account-id>:role/<name>-cloudwatch-agent
+```
+
+### The platform's own metrics, traces and logs
+
+OpenController can also report its own requests, latency, database calls and memory over OpenTelemetry, to the tool
+you already run. See [Monitor OpenController itself](/administer/monitoring).
+
+## Weekly checks
+
+```bash
+kubectl -n argocd get application opencontroller                   # Synced, Healthy
+kubectl -n opencontroller get pods                                 # RESTARTS not growing
+kubectl top nodes                                                  # CPU and memory per node
+kubectl -n opencontroller logs deploy/opencontroller-api --tail=2000 | grep -m1 'license: '   # "valid, N days left"
+aws backup list-recovery-points-by-backup-vault --backup-vault-name <name> --region <region> --query 'length(RecoveryPoints)'
+```
+
+## Logs
+
+Everything below is in CloudWatch Logs, encrypted with your KMS key.
+
+| Log | Log group | Kept |
+|---|---|---|
+| The cluster's control plane: API server, audit, authenticator, controller manager, scheduler | `/aws/eks/<name>/cluster` | `log_retention_days` in File A, 365 days by default |
+| VPC flow logs, every flow | Made by the VPC module | `log_retention_days` in File A |
+| DocumentDB's audit log: connections, authentication, schema changes | `/aws/docdb/<name>-docdb/audit` | 365 days |
+| PostgreSQL's log and upgrade log | `/aws/rds/instance/<name>-rekori/postgresql`, `/aws/rds/instance/<name>-rekori/upgrade` | 365 days |
+
+The pods' own logs stay on the cluster unless you add Container Insights. Read them with `kubectl`:
+
+```bash
+kubectl -n opencontroller logs deploy/opencontroller-api --tail=200
+```
+
+## Backups
+
+| What | How | Kept | Setting |
+|---|---|---|---|
+| DocumentDB | Daily automated backups, with point-in-time restore | 14 days | `backup_retention_days` in `document_database`, File C (1 to 35) |
+| PostgreSQL (LLM gateway) | Daily automated backups, with point-in-time restore | 14 days | `backup_retention_days` in `gateway_database`, File C |
+| The volumes on the cluster (ClickHouse's traces, OPA's policies) | AWS Backup, a snapshot every day at 03:00 UTC, in the vault `<name>` | 35 days | `backup = { retention_days = 35 }` in File A |
+
+The volumes are kept when the application is removed, so data is never lost by a mistaken uninstall. Both databases
+have deletion protection, and leave a final snapshot when they are removed.
+
+## Restore a database
+
+A restore makes a new database next to the running one. Ask Lyzr before you point the application at a restored
+database.
+
+<Tabs>
+  <Tab title="DocumentDB, to a point in time">
+    ```bash
+    aws docdb restore-db-cluster-to-point-in-time --region <region> --source-db-cluster-identifier <name>-docdb \
+      --db-cluster-identifier <name>-docdb-restored --restore-to-time <YYYY-MM-DDTHH:MM:SSZ>
+    ```
+  </Tab>
+  <Tab title="PostgreSQL, to a point in time">
+    ```bash
+    aws rds restore-db-instance-to-point-in-time --region <region> --source-db-instance-identifier <name>-rekori \
+      --target-db-instance-identifier <name>-rekori-restored --restore-time <YYYY-MM-DDTHH:MM:SSZ>
+    ```
+  </Tab>
+</Tabs>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Troubleshooting" icon="life-buoy" href="/self-host/troubleshooting">
+    What an alarm or a message means, and what to do.
+  </Card>
+  <Card title="Remove OpenController" icon="trash-2" href="/self-host/remove">
+    Remove everything, in order.
+  </Card>
+</CardGroup>

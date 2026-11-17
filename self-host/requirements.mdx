@@ -1,0 +1,258 @@
+---
+title: "Requirements"
+description: "The tools, AWS access, quotas, domain, certificate and network access you need before you install OpenController on AWS, and the IAM roles the install makes."
+icon: "list-checks"
+---
+
+<Badge>Whoever runs your OpenController</Badge>
+
+Check each item before you start. Most install problems come from one of them: missing registry access, a quota, or a DNS
+zone in the wrong place.
+
+## Checklist
+
+- [ ] The tools below are installed.
+- [ ] You are signed in to the right AWS account, as an administrator:
+  ```bash
+  aws sts get-caller-identity --query Account --output text
+  ```
+- [ ] Lyzr has let this account pull from its registry. Send Lyzr the account ID the command above prints.
+- [ ] Your organization's service control policies (SCPs) let this account pull container images from Lyzr's
+  registry account, `<lyzr-artifactory-account-id>`, and launch EC2 instances. Ask your AWS administrators if unsure.
+- [ ] There is room for 12 vCPUs of On-Demand instances in the region (see [Quotas](#quotas)).
+- [ ] You have a public Route 53 zone in this account for your domain, let the foundation make one, or bring your
+  own certificate (see [Domain and certificate](#domain-and-certificate)).
+- [ ] You have your license file from Lyzr. It ends in `.ocl`.
+- [ ] You know your setup: private mode or public mode. See [Choose your setup](/self-host/choose-your-setup).
+- [ ] If you run the steps from outside the VPC, you know this machine's public IP:
+  ```bash
+  curl https://checkip.amazonaws.com
+  ```
+
+## Region
+
+Lyzr's registry is in `us-east-1`, and `us-east-1` is the region supported today. Ask Lyzr before you install in
+another region.
+
+## Tools
+
+Run every command in bash. On a Mac, type `bash` first. On Windows, use WSL (Ubuntu) and run everything there.
+
+| Tool | Version | Check |
+|---|---|---|
+| OpenTofu | 1.11 or newer | `tofu version` |
+| AWS CLI | v2 | `aws --version` |
+| kubectl | any | `kubectl version --client` |
+| jq | any | `jq --version` |
+| Helm | any, optional | Only to list the chart's settings. See [Your own chart settings](/self-host/operate#your-own-chart-settings). |
+
+On a Mac with Homebrew:
+
+```bash
+brew install opentofu awscli kubectl jq
+brew install helm        # optional
+```
+
+On Ubuntu or Debian, and in WSL:
+
+```bash
+sudo apt-get update && sudo apt-get install -y curl unzip jq
+curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh
+chmod +x install-opentofu.sh && ./install-opentofu.sh --install-method deb && rm install-opentofu.sh
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+unzip -q awscliv2.zip && sudo ./aws/install && rm -rf aws awscliv2.zip
+curl -fsSLO "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl
+```
+
+### The machine you run the steps from
+
+- **It reaches the cluster's API.** The cluster's API endpoint is private. Run the steps from inside the VPC or over a
+  VPN into it, or list this machine's public IP in `public_access_cidrs` (File A).
+- **It reaches the internet.** OpenTofu downloads its providers, and the platform part downloads the add-ons' Helm
+  charts from their public repositories: `aws.github.io/eks-charts`, `kedacore.github.io/charts`,
+  `kubernetes-sigs.github.io/external-dns`, `kubernetes.github.io/autoscaler` and `argoproj.github.io/argo-helm`.
+  The add-ons' images do not come from there: the cluster pulls them from Lyzr's registry.
+- **It is signed in to AWS** as an administrator of the account, for example with `aws configure sso`. If you use a
+  named profile, run `export AWS_PROFILE=<profile>` first.
+
+## AWS permissions
+
+Sign in as an administrator of the target account. The install creates VPC, EC2, EKS, IAM, KMS, DocumentDB, RDS,
+Route 53, ACM, Secrets Manager, AWS Backup and CloudWatch Logs resources. Lyzr publishes no narrower policy for the
+person who installs.
+
+Check your organization's SCPs for these:
+
+- **Pulling images from another account.** The cluster pulls every image and the chart from
+  `<lyzr-artifactory-account-id>`. An SCP that blocks cross-account ECR pulls stops the install.
+- **Launching EC2 instances** of the node type, `m6i.xlarge` by default.
+- **Deleting VPC flow logs.** If an SCP forbids it, removing the installation later needs an administrator to delete
+  the VPC's flow log. See [Remove OpenController](/self-host/remove).
+
+## Quotas
+
+Check these in the region you install in.
+
+| Quota | What the install needs | Check |
+|---|---|---|
+| Running On-Demand Standard instances (vCPUs) | 12 for the three default `m6i.xlarge` nodes. Up to 24 if the cluster autoscaler reaches six nodes. With the guardrail engine (`m6i.2xlarge`), twice that. | `aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A --region <region> --query Quota.Value` |
+| VPCs per region | One more VPC | `aws service-quotas get-service-quota --service-code vpc --quota-code L-F678F1CE --region <region> --query Quota.Value` |
+| Elastic IP addresses | Public mode only: one per NAT gateway. One by default, or one per zone (up to 3) with `nat_per_zone = true` | `aws service-quotas get-service-quota --service-code ec2 --quota-code L-0263D0A3 --region <region> --query Quota.Value` |
+
+If a node group cannot start for lack of vCPUs, the foundation's apply waits at the node group. See
+[The foundation waits at the node group](/self-host/troubleshooting#the-foundation-waits-at-the-node-group).
+
+## Domain and certificate
+
+OpenController needs an address, for example `opencontroller.corp.example.com`, and, in private mode, a second one
+for the LLM gateway's console, for example `gateway.corp.example.com`. Both are in one Route 53 zone:
+
+- **Private mode:** the foundation makes a private zone for your domain (`private_zone` in File A). Only the VPC, and
+  networks whose DNS forwards to it, can resolve it.
+- **Public mode:** your existing public Route 53 zone for the domain.
+
+The HTTPS certificate is one of these:
+
+<Tabs>
+  <Tab title="A public zone in this account">
+    The platform part asks ACM for a certificate for each address and proves them in DNS. ACM checks in public DNS,
+    so the proof goes to a **public** Route 53 zone in this account:
+
+    - **Public mode:** your zone is public. Nothing more to set.
+    - **Private mode:** set `validation_zone` in File C to the public zone of the same domain, for example
+      `example.com`. ACM only adds validation records there; the application stays private.
+
+    List the public zones in the account:
+
+    ```bash
+    aws route53 list-hosted-zones --query 'HostedZones[?Config.PrivateZone==`false`].Name' --output text
+    ```
+  </Tab>
+  <Tab title="No public zone yet">
+    The foundation can make one. In File A, remove the `#` from `public_zone` and put the name in, for example
+    `corp.example.com`. After the foundation's apply, print its four name servers:
+
+    ```bash
+    tofu output public_zone_name_servers
+    ```
+
+    Give them to whoever runs your domain's DNS, as an `NS` record for that name. ACM can only prove the certificate
+    once that record is in place.
+  </Tab>
+  <Tab title="Your own certificate">
+    Bring a certificate you imported into ACM, or one from AWS Private CA, in the same region as the installation. In
+    File C, remove the `#` from `certificate_arns`, put its ARN there, and delete the `validation_zone` line:
+
+    ```hcl
+    certificate_arns = ["arn:aws:acm:<region>:<account-id>:certificate/<certificate-id>"]
+    ```
+
+    The certificates must cover `host`, `gateway_host`, and any `aliases`: each name, or a wildcard such as
+    `*.corp.example.com`.
+
+    <Warning>A wildcard covers one level of names only. `*.corp.example.com` covers
+    `opencontroller.corp.example.com` and `gateway.corp.example.com`, but not `corp.example.com` itself or
+    `app.eu.corp.example.com`. A browser shows a certificate warning for any name it does not cover.</Warning>
+  </Tab>
+</Tabs>
+
+## Outbound access
+
+<Tabs>
+  <Tab title="Private mode">
+    Nothing in the cluster reaches the internet. There is no NAT gateway and no internet gateway. AWS's APIs are
+    reached through VPC endpoints, which the foundation makes:
+
+    | Endpoint | What uses it |
+    |---|---|
+    | `ecr.api`, `ecr.dkr`, and an S3 gateway endpoint | Pulling images and the chart from Lyzr's registry |
+    | `sts`, `eks-auth` | The pods' AWS identities (EKS Pod Identity) |
+    | `ec2`, `eks`, `autoscaling` | Nodes, volumes and the cluster autoscaler |
+    | `elasticloadbalancing` | The AWS Load Balancer Controller |
+    | `logs` | CloudWatch Logs |
+    | `secretsmanager` | The application's secrets |
+    | Route 53 | ExternalDNS writing the application's records. Made in `us-east-1` only. |
+
+    Two you may add, in `endpoint_services` in File A:
+
+    - `bedrock-runtime`, to call Amazon Bedrock models from the LLM gateway.
+    - `monitoring`, for CloudWatch Container Insights.
+
+    `endpoint_services` replaces the default list, so list every endpoint you want. File A's example line already
+    holds the default list with `bedrock-runtime` added. If some of these endpoints already exist in the VPC, list only
+    the missing ones: two of the same cannot exist.
+
+    To reach anything outside AWS, your network needs an HTTP(S) proxy. Set it in `overrides.yaml` (see
+    [Use a proxy](/self-host/operate#use-a-proxy)).
+  </Tab>
+  <Tab title="Public mode">
+    Pods reach the internet through a NAT gateway: one shared by default, or one per zone with `nat_per_zone = true`
+    in File A. The foundation still makes the VPC endpoints, so images and secrets never leave AWS's network.
+  </Tab>
+</Tabs>
+
+What OpenController calls outside AWS:
+
+| What | When | In private mode |
+|---|---|---|
+| The LLM gateway's catalogs (model prices, model parameters, the MCP library) from `getbifrost.ai` | At start, when `gateway_catalogs` is `"internet"` | Upload them once in the console instead (the default), or point at a catalog mirror |
+| Model providers other than Amazon Bedrock | When an app calls a model through the LLM gateway | Through your proxy |
+| Other clouds and platforms you connect, such as Microsoft, Snowflake and GitHub | During scans | Through your proxy |
+| Your identity provider | During single sign-on | Through your proxy |
+| The Okta integration | During scans | Needs a NAT gateway. Through a proxy it is refused for now. |
+
+## IAM roles the install makes
+
+Every role a pod uses trusts EKS Pod Identity (`pods.eks.amazonaws.com`) from this account only. The cluster has no
+OIDC provider, and pods cannot borrow the node's identity.
+
+<AccordionGroup>
+  <Accordion title="Roles made by the foundation">
+    | Role | Used by | What it may do |
+    |---|---|---|
+    | `<name>-cluster-` and a suffix | The EKS control plane | AWS's `AmazonEKSClusterPolicy`, and your KMS key for encrypting Kubernetes Secrets |
+    | `general-eks-node-group-` and a suffix | The nodes | AWS's `AmazonEKSWorkerNodePolicy`, `AmazonEC2ContainerRegistryReadOnly` and `AmazonEKS_CNI_Policy` |
+    | `<name>-ebs-csi` | The EBS CSI driver | AWS's `AmazonEBSCSIDriverPolicy`, and your KMS key for the volumes it makes |
+    | `<name>-backup` | AWS Backup | AWS's `AWSBackupServiceRolePolicyForBackup` and `AWSBackupServiceRolePolicyForRestores` |
+    | A flow log role, made by the VPC module | VPC flow logs | Writing the flow log to CloudWatch Logs |
+  </Accordion>
+  <Accordion title="Roles made by the platform">
+    | Role | Used by | What it may do |
+    |---|---|---|
+    | `<name>-load-balancer-controller` | The AWS Load Balancer Controller | The policy AWS publishes with the controller, made as `<name>-load-balancer-controller` |
+    | `<name>-cluster-autoscaler` | The cluster autoscaler | Read Auto Scaling groups, launch templates and node groups. Scale only the Auto Scaling groups tagged `k8s.io/cluster-autoscaler/<name>` = `owned` |
+    | `<name>-external-dns` | ExternalDNS | Change records in your zone only, and list zones and records. Not made with `external_dns = false` |
+    | `<name>-argocd-registry` | The job that signs Argo CD in to Lyzr's registry | Get an ECR sign-in token, and read only the chart repositories in Lyzr's registry |
+    | `<name>-discover-api` | The OpenController API | Assume the `opencontroller-discover` and `opencontroller-control` roles in the AWS accounts you connect. Read and write its own secrets, under `<name>/app/` |
+    | `<name>-gateway-rekori` | The LLM gateway, only with `gateway_secrets_manager = true` | Read and write its own secrets, under `<name>/rekori/` |
+    | `<name>-guardrails-core` | The guardrail engine, only with `guardrails_aws_identity = true` | Assume the `opencontroller-guardrails` roles in the AWS accounts you connect |
+
+    When you connect an AWS account in OpenController, the read-only role you make there trusts `<name>-discover-api`.
+    See [AWS](/integrations/aws).
+  </Accordion>
+  <Accordion title="Who can use the KMS key">
+    - The account administers the key through IAM, as with every KMS key.
+    - The account's principals use it only through EC2, RDS, Secrets Manager, AWS Backup and EKS
+      (`kms:ViaService`). The EBS CSI driver and AWS Backup need no grant of their own.
+    - CloudWatch Logs uses it for this account's log groups only.
+
+    A key scheduled for deletion waits 30 days, so a mistake can be undone.
+  </Accordion>
+  <Accordion title="Who can use the cluster">
+    The cluster uses EKS access entries, not the `aws-auth` ConfigMap. Whoever applies the foundation is a cluster
+    administrator. To add others, such as your SSO administrator role or a CI role, list their role ARNs in
+    `cluster.admins` in File A, then apply the foundation again. Each gets AWS's `AmazonEKSClusterAdminPolicy`.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Choose your setup" icon="network" href="/self-host/choose-your-setup">
+    Private mode or public mode, and the other choices.
+  </Card>
+  <Card title="Install on AWS" icon="download" href="/self-host/install">
+    The steps, from the state bucket to the first sign-in.
+  </Card>
+</CardGroup>
