@@ -1,6 +1,6 @@
 ---
 title: "One Okta sign-in for the console and the LLM gateway"
-description: "Let your people sign in to OpenController and to the LLM gateway's own console with the same Okta app, and turn password sign-in off once it works."
+description: "Let your people sign in to OpenController and to the LLM gateway's own console with the same Okta app, over OpenID Connect or SAML, and turn password sign-in off once it works."
 sidebarTitle: "Okta for the gateway"
 tag: "Guide"
 icon: "key-round"
@@ -10,13 +10,16 @@ OpenController and the LLM gateway (Rekori) each have a console at their own add
 sign people in through **the same Okta app**. People use one Okta account and one set of groups, and you manage
 one app in Okta.
 
+Steps 1 to 5 use OpenID Connect. If OpenController signs in with SAML 2.0, follow
+[Sign in to the gateway with SAML](#sign-in-to-the-gateway-with-saml) instead.
+
 **What you need:**
 - **Owner** in OpenController, and an Okta administrator.
 - Single sign-on with Okta already working for the OpenController console. If not, follow
   [Set up single sign-on with Okta](/administer/guide-sso-okta) first. This guide reuses that app.
 - The gateway's address. This guide uses `https://gateway.example.com`, and `https://console.example.com` for
   OpenController.
-- The gateway administrator's username and password, as a way in if Okta sign-in to the gateway fails.
+- The gateway administrator's username and password, to sign in to the gateway's console before Okta fronts it.
 
 ## How it fits together
 
@@ -66,7 +69,7 @@ Do this from the gateway's own console. You can do it in two ways: choose **one*
 <Tabs>
   <Tab title="In the gateway's console (recommended)">
     1. Open `https://gateway.example.com` and sign in with the gateway administrator's username and password.
-    2. Go to **Gateway** > **Identity Providers (OIDC)**.
+    2. In the sidebar, go to **Routing** > **API Gateway**, and scroll to the **Identity Providers (OIDC)** card.
     3. Fill in:
 
        | Field | Value |
@@ -144,7 +147,9 @@ gateway, or the reverse. Changing a person's Okta groups changes both on their n
 4. In the same window, open `https://console.example.com` and select **Sign in with Okta**. Okta signs you in
    without asking for your password again.
 
-The gateway administrator's username and password still work, as the way in if Okta fails.
+Once a provider fronts the gateway's sign-in, the gateway's sign-in page offers only single sign-on: keep the window
+you set it up in open until the test works. The administrator's username and password keep working for
+OpenController, which manages the gateway with them (**Settings** > **LLM Gateway**).
 
 ## Step 6 (optional): Turn off password sign-in in OpenController
 
@@ -167,6 +172,155 @@ Each change is recorded in the audit log, with who made it.
 <Info>Whoever runs OpenController can fix either way in the configuration, with `DISCOVERY_PASSWORD_LOGIN` and
 `DISCOVERY_CREDENTIAL_LOGIN` (`true` or `false`). A value set there wins over the switch: the switch shows it and
 cannot change it.</Info>
+
+## Sign in to the gateway with SAML
+
+If OpenController signs people in with SAML 2.0 ([Okta](/integrations/identity/okta), the **SAML 2.0** tab), the
+gateway can use that same Okta app. Okta answers each sign-in at the address of the console that asked for it.
+
+**What you need:**
+- SAML sign-in with Okta working for the OpenController console.
+- A gateway whose **Routing** > **API Gateway** page has a **Console sign-in (SAML 2.0)** card.
+- A gateway administrator who can open that page.
+
+```mermaid
+flowchart LR
+  P["Person"] --> OK["Okta SAML app (one app)"]
+  OK -->|"console.example.com/saml/acs (the app's own)"| OC["OpenController console"]
+  OK -->|"gateway.example.com/api/auth/saml/acs (requested)"| GW["Gateway console (Rekori)"]
+```
+
+- The gateway asks Okta to answer at its own address. Okta answers only at addresses listed on the app, so you add
+  the gateway's.
+- Okta addresses every answer to the app's audience, which is OpenController's. The gateway is told to expect that
+  same audience as its entity ID.
+- Each console keeps its own session. A gateway session lasts 8 hours at most, less if the Okta session ends sooner.
+  Signing out of the gateway ends only that session: you stay signed in to Okta.
+- The app's tile on the Okta dashboard opens OpenController. Open the gateway at its own address.
+
+<Steps>
+  <Step title="Let the Okta app answer at the gateway">
+    In Okta, open the SAML app OpenController signs in with (**Applications** > your app). On its **General** tab,
+    under **SAML Settings**, select **Edit**, then:
+
+    1. Select **Next**, then **Show Advanced Settings**.
+    2. Under **Other Requestable SSO URLs**, select **Add Another**. Enter **URL**
+       `https://gateway.example.com/api/auth/saml/acs` and **Index** `1`, or the next free index.
+    3. Leave **Assertion Encryption** at **Unencrypted**: the gateway reads signed assertions, not encrypted ones.
+    4. Select **Next**, then **Finish**.
+
+    The **General** tab now lists the address under **Requestable SSO URLs**.
+  </Step>
+  <Step title="Check the app sends the groups">
+    The gateway gives roles from the groups in Okta's answer, as OpenController does. On the app's **Sign On** tab,
+    under **Attribute statements**, select **Show legacy configuration**. Under **Group attribute statements**, look
+    for **Name** `groups` with **Filter** **Matches regex** `.*`. If it is missing, select **Edit**, add it, and
+    select **Save**.
+
+    <Note>`.*` sends every group the person is in, Okta's **Everyone** included. Never grant a role to
+    **Everyone**. To send fewer, use a filter such as **Starts with** `oc-`.</Note>
+  </Step>
+  <Step title="Collect the values">
+    | Value | Example | Where |
+    |---|---|---|
+    | **Metadata URL** | `https://your-org.okta.com/app/<app id>/sso/saml/metadata` | The app's **Sign On** tab, under **Metadata details** |
+    | **Audience** | `https://console.example.com/saml/metadata` | The app's **General** tab, under **SAML Settings**: **Audience Restriction** |
+
+    <Warning>The gateway's entity ID must be this audience, OpenController's. Left at its default, the gateway's own
+    address, the gateway refuses every answer from this app.</Warning>
+  </Step>
+  <Step title="Turn on SAML sign-in in the gateway">
+    Choose **one** way.
+
+    <Tabs>
+      <Tab title="In the gateway's console (recommended)">
+        1. Sign in to `https://gateway.example.com` as a gateway administrator.
+        2. In the sidebar, go to **Routing** > **API Gateway**, and scroll to the **Console sign-in (SAML 2.0)** card.
+        3. Fill in:
+
+           | Field | Value |
+           |---|---|
+           | **Name** | `okta-saml` |
+           | **Console address** | `https://gateway.example.com`. The page fills in its own address. |
+           | **Identity provider metadata URL** | The metadata URL from the previous step |
+           | **Entity ID (optional)** | The audience from the previous step, `https://console.example.com/saml/metadata` |
+
+           Leave **Email attribute**, **Name attribute** and **Groups attribute** empty: the gateway takes the email
+           from Okta's Name ID, and the groups from `groups`.
+        4. Under the form, **Register the console at the identity provider** should show the address from the first
+           step as **Single sign-on URL (ACS)**, and OpenController's audience as **Audience / entity ID**.
+        5. Select **Front the console sign-in with this provider**, then **Save provider**.
+
+        The provider's row shows **console sign-in**, and **identity provider:** `http://www.okta.com/<app id>` once the
+        gateway has read Okta's metadata. **metadata not read** means it could not: check the metadata URL. The change
+        takes effect at once.
+      </Tab>
+      <Tab title="In the gateway's configuration">
+        Whoever runs the gateway sets these environment variables and restarts it:
+
+        ```bash
+        DASHBOARD_SAML_BASE_URL=https://gateway.example.com
+        DASHBOARD_SAML_METADATA_URL=https://your-org.okta.com/app/<app id>/sso/saml/metadata
+        DASHBOARD_SAML_ENTITY_ID=https://console.example.com/saml/metadata
+        ```
+
+        Optional: `DASHBOARD_SAML_METADATA_XML` (the metadata document itself, in place of the URL),
+        `DASHBOARD_SAML_EMAIL_ATTRIBUTE`, `DASHBOARD_SAML_NAME_ATTRIBUTE`, `DASHBOARD_SAML_GROUPS_ATTRIBUTE`, and
+        `DASHBOARD_SAML_NAME` (default `dashboard-saml`).
+
+        On every start, the gateway writes these values over the provider named `dashboard-saml`, which fronts the
+        sign-in. If it cannot read the metadata at the first start, it still creates the provider, and SAML sign-in
+        fails until a start reads it: the sign-in stays closed, never open. A later start that cannot reach Okta keeps
+        the metadata it read before. Metadata is read only over https.
+      </Tab>
+    </Tabs>
+
+    <Note>The gateway can front its sign-in with OpenID Connect and SAML at once. Its sign-in page then offers both,
+    **Sign in with Okta** and **Sign in with SAML single sign-on**. Like OpenID Connect, fronting closes the gateway's
+    management API to any call without a credential; OpenController keeps managing the gateway with its own.</Note>
+  </Step>
+  <Step title="Give people roles in the gateway">
+    In the gateway's console, go to **Access** > **Roles**. Open a role, or select **New role**, and under **Granted
+    automatically to these groups** type the Okta group names exactly as Okta sends them in `groups`. Save.
+
+    - Someone who already has a gateway account under the same email keeps the roles assigned to it in **Access** >
+      **Members**.
+    - The first SAML sign-in creates an account only when one of the person's groups maps to a role. Anyone else is
+      turned back with **You are signed in, but you have no role here yet.**
+    - Okta sends the groups when the person signs in. A change to their Okta groups reaches the gateway at their next
+      SAML sign-in, at most 8 hours later. A change to a role's groups applies at once.
+  </Step>
+  <Step title="Test it">
+    1. In a **private browser window**, open `https://gateway.example.com`.
+    2. Select **Sign in with SAML single sign-on**, and sign in to Okta as your test user.
+    3. You land in the gateway's workspace, with the role from the previous step.
+
+    Keep the window you set it up in open until this works.
+  </Step>
+</Steps>
+
+### Provision people in the gateway with SCIM (optional)
+
+With SCIM, Okta creates people in the gateway before they sign in and keeps their names and groups current.
+Deactivating someone in Okta stops them in the gateway on their next request, without waiting for their session to
+end.
+
+An Okta app sends SCIM to one place, so the gateway gets its own app, one that no one signs in with:
+
+1. In the gateway's console, go to **Access** > **Provisioning**. Switch **SCIM provisioning** on, select
+   **Generate token**, and copy the token: it is shown once. The **SCIM base URL** is
+   `https://gateway.example.com/scim/v2`. If a token exists already, **Rotate token** replaces it and stops the old one.
+2. In Okta, create a provisioning app as for OpenController: follow steps 2 to 5 of
+   [Provision people with SCIM](/integrations/identity/okta#provision-people-with-scim-optional), with the gateway's
+   values:
+   - **Single sign-on URL** `https://gateway.example.com/api/auth/saml/acs` and **Audience URI (SP Entity ID)**
+     `https://gateway.example.com/api/auth/saml/metadata`. Okta asks for them, though no one signs in with this app.
+   - **SCIM connector base URL** `https://gateway.example.com/scim/v2`, and the gateway's token as the Bearer token.
+3. Push the groups you map in **Access** > **Roles**. They appear on **Access** > **Provisioning**, with how many
+   members each has.
+
+People are matched by email. Unlike OpenController, the gateway does not limit sign-in to the people SCIM
+provisioned: anyone whose groups map to a role can still sign in.
 
 ## Troubleshooting
 
@@ -192,6 +346,25 @@ cannot change it.</Info>
     The address in the error is missing from the app's **Sign-in redirect URIs**. Add it exactly, including
     `https://` and the path.
   </Accordion>
+  <Accordion title="SAML: the gateway says “Single sign-on did not complete”">
+    The gateway refused Okta's answer, and its log says why. Most often the provider's **Entity ID** is not the app's
+    audience, OpenController's `https://console.example.com/saml/metadata`. If Okta's signing certificate changed,
+    open the provider on **Routing** > **API Gateway**, select **Edit**, then **Save changes**: saving reads the
+    metadata URL again.
+  </Accordion>
+  <Accordion title="SAML: Okta shows “Bad Request” and “Bad SAML request”">
+    The gateway asked Okta to answer at an address the app does not list. Its address is missing from the app's
+    **Other Requestable SSO URLs**, or differs from the **Single sign-on URL (ACS)** the gateway shows under **Register
+    the console at the identity provider**. Compare them exactly: `https://`, host and path.
+  </Accordion>
+  <Accordion title="SAML: Okta says the user is not assigned to the application">
+    Assign them, or a group they are in, on the app's **Assignments** tab.
+  </Accordion>
+  <Accordion title="SAML: “You are signed in, but you have no role here yet”">
+    None of the person's Okta groups maps to a gateway role, and no role is assigned to their account. Map a group in
+    **Access** > **Roles**, or assign a role in **Access** > **Members**, then sign in again. If their group is
+    mapped, check the app sends `groups` (the step “Check the app sends the groups”).
+  </Accordion>
 </AccordionGroup>
 
 ## Next steps
@@ -202,5 +375,8 @@ cannot change it.</Info>
   </Card>
   <Card title="Set up the LLM gateway" icon="server" href="/secure/set-up-gateway">
     Connect OpenController to the gateway.
+  </Card>
+  <Card title="Okta" icon="log-in" href="/integrations/identity/okta">
+    Every Okta setting for OpenController: OpenID Connect, SAML and SCIM.
   </Card>
 </CardGroup>
