@@ -14,16 +14,19 @@ apps) has admin keys of its own and is not supported yet.
 ## What it unlocks
 
 - **[AI Inventory](/discover/ai-inventory):**
-  - each model called in the last 30 days, with its tokens and requests, the projects it was called from and how many
-    API keys called it;
-  - each project, with its members and service accounts;
-  - each project API key, with its project, its owner (a person or a service account), when it was last used and
-    expires, and its 30-day tokens;
+  - each model called in the last 30 days, with its tokens and requests, the projects it was called from, how many
+    API keys called it and the service tiers it ran on;
+  - each project, with its members and service accounts, its hard spend limit and whether OpenAI is enforcing it;
+  - each member: their role, whether SCIM manages them, when a key of theirs last called OpenAI, and whether they
+    are banned (shown as **Disabled**);
+  - every enabled project API key, including keys whose owner lost access to the project, with its project, its
+    owner (a person or a service account), when it was last used and expires, and its 30-day tokens;
   - the organization's Admin keys, and who made each;
   - each project's permissions: which hosted tools (remote MCP servers, web search, file search, code interpreter,
     image generation) and which models its keys may use;
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
-    tools, and its **knowledge bases** (vector stores).
+    tools (a tool that is turned off is a property of the agent, not a tool it uses), whether they may create
+    subagents, and its **knowledge bases** (vector stores).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
   key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
 - **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
@@ -178,7 +181,8 @@ Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory)
 limit to one cent. Once the project has spent anything this month, OpenAI refuses its calls (`429
 project_spend_limit_exceeded`), from every API key in it. This is not instant: calls stop once OpenAI applies the
 limit. OpenController keeps the limit the project had before, and **Unblock** puts it back exactly, or removes the
-limit if it had none. A scan shows a blocked project as **Blocked**.
+limit if it had none. A scan shows a blocked project as **Blocked, enforcing** once OpenAI refuses its calls, and
+**Blocked, not yet enforcing** until then (plain **Blocked** when the scan did not read it).
 
 **Blocking an agent.** OpenAI's agent tools have no switch. Turning a tool off takes it off the agent, and turning it
 on puts it back exactly as it was. **Block** takes every tool off: the agent still answers, but reaches nothing.
@@ -205,11 +209,12 @@ reads, and never the control key. Two sources appear under **Spend** > **Sources
 
 | Source | What it is |
 |---|---|
-| **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`batch`, `flex`, `priority`, `fast mode`). Web search calls show as the service **Web search**. A model's tokens the Agents API used show as the service **Agents API**; its tools' calls stay under each tool. Calls made by OpenAI's evals show as the service **Evals**. Spend outside every project is the **Organization**'s. These rows are **billed**. |
-| **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs, even after it is deleted: its spend shows on them on **People**, still under the key. A service account's key belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. |
+| **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`batch`, `flex`, `priority`, `fast mode`). A tool's calls show as that tool's service, whatever product made them: **Web search**, **File search**, **Code interpreter**. A model's tokens the Agents API used show as the service **Agents API**. Calls made by OpenAI's evals show as the service **Evals**. A fine-tuned model (`ft-…`) is named, but links no model asset yet. Spend outside every project is the **Organization**'s; a project archived since keeps its name. These rows are **billed**. |
+| **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs, even after it is deleted: its spend shows on them on **People**, still under the key. A service account's key belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. Both sources split the bill the same way: if OpenAI cannot report the Agents API apart for your organization, neither does. If OpenAI refuses the report by user, the shares are still read, and only keys deleted since name no person; the source's status says how many rows. |
 
 On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
-organization, project, API key, person and model, and lists every API key with its share of the bill. Each project
+organization, project, API key, person and model, and lists every API key with its share of the bill. Every share
+counts as in the bill: OpenAI bills nothing outside it. Each project
 and key is listed by its name, and told apart by its id: two keys of one name are two lines. A key opens its own
 page, with how to rotate it.
 
