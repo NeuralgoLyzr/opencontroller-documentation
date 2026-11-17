@@ -29,8 +29,8 @@ redirect URIs are built from the browser's address.
   <Tab title="OpenID Connect (recommended)">
     <Steps>
       <Step title="Create the app in Okta">
-        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **OIDC - OpenID Connect** >
-        **Single-Page Application**. Set:
+        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **Classic experience** >
+        **OIDC - OpenID Connect** > **Single-Page Application**. Set:
 
         - **Grant type:** Authorization Code and **Refresh Token** (the console renews sessions with `offline_access`).
         - **Sign-in redirect URI:** `<console address>/auth/callback`
@@ -76,7 +76,8 @@ redirect URIs are built from the browser's address.
 
     <Steps>
       <Step title="Create the app in Okta">
-        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **SAML 2.0**. Set:
+        In the Okta Admin Console, go to **Applications** > **Create App Integration** > **Classic experience** >
+        **SAML 2.0**. Set:
 
         - **Single sign-on URL:** `<console address>/saml/acs`
         - **Audience URI (SP Entity ID):** `<console address>/saml/metadata`
@@ -135,7 +136,8 @@ steps below one after the other. Members with a password can still sign in meanw
     old one.
   </Step>
   <Step title="Create the provisioning app in Okta">
-    Go to **Applications** > **Create App Integration** > **SAML 2.0**. Name it, for example, `opencontroller SCIM`.
+    Go to **Applications** > **Create App Integration** > **Classic experience** > **SAML 2.0**. Name it, for example,
+    `opencontroller SCIM`.
     Okta asks for SAML values though this app is not signed in with; enter:
 
     - **Single sign-on URL:** `<console address>/saml/acs`
@@ -192,8 +194,8 @@ OpenController to connect.</Note>
 
 <Steps>
   <Step title="Create the API Services app in Okta">
-    Go to **Applications** > **Create App Integration** > **API Services**. Name it `opencontroller`. This is the third
-    app: not the sign-in app, not the provisioning app.
+    Go to **Applications** > **Create App Integration** > **Classic experience** > **API Services**. Name it
+    `opencontroller`. This is the third app: not the sign-in app, not the provisioning app.
 
     On its **General** tab, leave **Require Demonstrating Proof of Possession (DPoP) header in token requests** off.
     Copy its **Client ID** with the copy button: typing it risks mixing up `0` and `O`, `1` and `l`.
