@@ -215,9 +215,10 @@ values for a group:
 The core secrets are never rotated this way: the key that seals what the API stores, and the first administrator's
 password. Ask Ctrl's keys on computeragent are not rotated this way either.
 
-<Warning>Do not rotate the `gateway` or `evals` group. Each also holds a key that encrypts stored data
-(`BIFROST_ENCRYPTION_KEY`, `EVALS_SECRET_KEY`), and a new key cannot read what the old one encrypted: the gateway's
-provider keys and evals' sealed data would be lost. To change one of their passwords, ask Lyzr.</Warning>
+<Warning>The `gateway` and `evals` groups each also hold a key that encrypts stored data (`BIFROST_ENCRYPTION_KEY`,
+`EVALS_SECRET_KEY`). From pack v0.8.0, a rotation keeps those keys and changes only the passwords. On v0.7.0 or
+earlier, do not rotate either group: it would make a new key, and the gateway's provider keys and evals' sealed data
+could no longer be read. Upgrade first, or ask Lyzr.</Warning>
 
 After you rotate `gateway`, `observability` or `evals`, the console still holds the old credential for that module.
 Go to **Settings**, select the module under **Modules**, type the new credential, select **Save**, then **Check
