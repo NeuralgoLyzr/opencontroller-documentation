@@ -352,11 +352,13 @@ provisioned: anyone whose groups map to a role can still sign in.
     open the provider on **Routing** > **API Gateway**, select **Edit**, then **Save changes**: saving reads the
     metadata URL again.
   </Accordion>
-  <Accordion title="SAML: Okta shows an error instead of sending you back to the gateway">
-    The gateway's address is missing from the app's **Other Requestable SSO URLs**, or differs from the **Single
-    sign-on URL (ACS)** the gateway shows under **Register the console at the identity provider**. Compare them
-    exactly: `https://`, host and path. If Okta says the user is not assigned to the application, assign them, or a
-    group they are in, on the app's **Assignments** tab.
+  <Accordion title="SAML: Okta shows “Bad Request” and “Bad SAML request”">
+    The gateway asked Okta to answer at an address the app does not list. Its address is missing from the app's
+    **Other Requestable SSO URLs**, or differs from the **Single sign-on URL (ACS)** the gateway shows under **Register
+    the console at the identity provider**. Compare them exactly: `https://`, host and path.
+  </Accordion>
+  <Accordion title="SAML: Okta says the user is not assigned to the application">
+    Assign them, or a group they are in, on the app's **Assignments** tab.
   </Accordion>
   <Accordion title="SAML: “You are signed in, but you have no role here yet”">
     None of the person's Okta groups maps to a gateway role, and no role is assigned to their account. Map a group in
