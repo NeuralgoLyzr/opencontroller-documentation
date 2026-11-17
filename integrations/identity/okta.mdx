@@ -81,7 +81,10 @@ redirect URIs are built from the browser's address.
         - **Single sign-on URL:** `<console address>/saml/acs`
         - **Audience URI (SP Entity ID):** `<console address>/saml/metadata`
         - **Name ID format:** EmailAddress, with **Application username** set to the email, so the domain check passes.
-        - A group attribute statement named `groups`, filter **Matches regex** `.*`.
+
+        Then send the groups: on the app's **Sign On** tab, under **Attribute statements**, select **Show legacy
+        configuration**, then **Edit**. Under **Group attribute statements**, add **Name** `groups` with **Filter**
+        **Matches regex** `.*`, and select **Save**.
 
         Copy the app ID from the app's metadata URL: `https://your-org.okta.com/app/<app id>/sso/saml/metadata`.
       </Step>
@@ -142,7 +145,7 @@ steps below one after the other. Members with a password can still sign in meanw
   </Step>
   <Step title="Turn on SCIM">
     On the new app's **General** tab, under **App Settings**, select **Edit**. Tick **Do not display application icon
-    to users**, set **Provisioning** to **SCIM**, and save. A **Provisioning** tab appears. {/* TODO verify: the exact label of the Provisioning choice in App Settings on a SAML 2.0 app. */}
+    to users**, set **Provisioning** to **SCIM**, and save. A **Provisioning** tab appears.
   </Step>
   <Step title="Connect it to OpenController">
     **Provisioning** > **Integration** > **Edit**:
