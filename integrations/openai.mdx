@@ -219,12 +219,13 @@ turn it off in the project.
 
 After each scan (at most every six hours), once a day, and on **Refresh**, OpenController reads the last 35 days of the
 organization's cost report with the read Admin key. It needs no other key: spend uses only what discovery already
-reads, and never the control key. Two sources appear under **Spend** > **Sources**:
+reads, and never the control key. Three sources appear under **Spend** > **Sources**:
 
 | Source | What it is |
 |---|---|
 | **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`batch`, `flex`, `priority`, `fast mode`). A tool's calls show as that tool's service, whatever product made them: **Web search**, **File search**, **Code interpreter**. A model's tokens the Agents API used show as the service **Agents API**. Calls made by OpenAI's evals show as the service **Evals**. A fine-tuned model (`ft-…`) is named, but links no model asset yet. Spend outside every project is the **Organization**'s; a project archived since keeps its name. These rows are **billed**. |
 | **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs, even after it is deleted: its spend shows on them on **People**, still under the key. A service account's key belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. Both sources split the bill the same way: if OpenAI cannot report the Agents API apart for your organization, neither does. If OpenAI refuses the report by user, the shares are still read, and only keys deleted since name no person; the source's status says how many rows. |
+| **OpenAI file search by knowledge base** | The bill's **File search** line split over the knowledge bases that were searched, by their calls: file search is billed per call, so each knowledge base's share is exact. A knowledge base's **Spend** tab shows it, with the keys that searched it. Calls on no knowledge base stay on none, and the source's status says so. These rows are **attributed**, and name no person: the bill by key already does. |
 
 On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
 organization, project, API key, person and model, and lists every API key with its share of the bill. Every share
@@ -239,11 +240,19 @@ The **OpenAI API** panel, on that page and on the **Spend** overview, shows:
   price, less what they cost. Both prices come from the same bill, because OpenAI's discount is different for each
   model.
 - **Batch**, **Flex** and **Saved by batch and flex, estimated:** batch and flex cost half the standard price, so
-  each saved what it cost.
+  each saved what it cost. **Flex** and **Fast mode** say which projects allow them, each a link to the project.
 - **Priority:** costs more than standard, so it saves nothing.
 - **Agents API:** what the Agents API's models cost.
 
-OpenAI does not report spend per agent or per knowledge base, so OpenController cannot show it.
+**Limits.** OpenAI's own spend limits are read with the bill: the organization's and each project's monthly hard
+limit, whether OpenAI is enforcing it, and the spend alerts with who they go to. On **Spend** > **OpenAI**, **This
+month so far** shows each project and the organization against its limit ("$812 of $1,000 this month, enforcing")
+and its alerts. A limit read from OpenAI replaces one typed into OpenController for the same organization: its field
+under **Spend** settings reads **Set in OpenAI**. The forecast and the **Over its limit** signal use the read limits,
+and a project over its own limit opens a signal of its own. A project blocked by OpenController (its one-cent limit)
+is never shown as a limit.
+
+OpenAI does not report spend per agent, so OpenController cannot show it; the Agents API's spend is one line.
 
 ## Permissions it uses
 
