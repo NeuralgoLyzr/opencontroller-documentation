@@ -16,7 +16,12 @@ apps) has admin keys of its own and is not supported yet.
 - **[AI Inventory](/discover/ai-inventory):**
   - each model called in the last 30 days, with its tokens and requests, the projects it was called from, how many
     API keys called it and the service tiers it ran on;
-  - each project, with its members and service accounts, its hard spend limit and whether OpenAI is enforcing it;
+  - each project, with its members and service accounts, its hard spend limit and whether OpenAI is enforcing it,
+    where its data lives (its residency, shown as the project's region) and how long OpenAI keeps it, and the tiers
+    its requests may run on;
+  - the customer's own storage buckets and customer-managed encryption keys, each linked to the projects it stores or
+    encrypts;
+  - fine-tuned models, in their project and derived from their base model;
   - each member: their role, whether SCIM manages them, when a key of theirs last called OpenAI, and whether they
     are banned (shown as **Disabled**);
   - every enabled project API key, including keys whose owner lost access to the project, with its project, its
@@ -30,7 +35,8 @@ apps) has admin keys of its own and is not supported yet.
     image generation) and which models its keys may use;
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
     tools (a tool that is turned off is a property of the agent, not a tool it uses), whether they may create
-    subagents, their **automations** (scheduled runs), and its **knowledge bases** (vector stores).
+    subagents, their **automations** (scheduled runs), its **knowledge bases** (vector stores), and its vault
+    credentials (name, auth type, MCP server and expiry: never the secret).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
   key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
 - **Control (optional):** block a project, turn its hosted tools and models off and on, share it with members and
@@ -270,6 +276,11 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 | `/v1/organization/groups`, `/groups/{group}/users`, `/projects/{project}/groups` and their roles | Groups, their members and their access to projects. |
 | `/v1/organization/roles`, `/users/{user}/roles`, `/groups/{group}/roles` | The organization's own roles and who holds them. |
 | `/v1/organization/workload_identity_providers` and their `/federation_rules` | Workload identity. |
+| `/v1/organization/data_retention`, `/projects/{project}/data_retention` | How long data is kept. |
+| `/v1/organization/external_storage`, `/v1/organization/external_keys` | The customer's own buckets and encryption keys. Never a key's material. |
+| `/v1/organization/projects/{project}/spend_limit`, `/spend_alerts`, `/v1/organization/spend_limit`, `/spend_alerts` | Spend limits and alerts. |
+| `/v1/organization/projects/{project}/service_tier_settings` | Which tiers a project's requests may run on. |
+| `/v1/organization/usage/file_search_calls` | File search calls by knowledge base, for spend. |
 | `/v1/organization/admin_api_keys` | Admin keys. |
 | `/v1/organization/usage/completions` | Tokens by day, model, project and API key: the models in use. |
 | `/v1/organization/costs` | The bill by day, project, line item, API key, user and source (Agents API or other). |
@@ -281,6 +292,8 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 | `/v1/agents` | The project's agents. |
 | `/v1/vector_stores` | The project's knowledge bases. Their files' contents are never read. |
 | `/v1/agents/automations`, `/v1/agents/sessions/{session}` | The project's automations, and which agent each runs. |
+| `/v1/vaults`, `/v1/vaults/{vault}/credentials` | Vault credentials' names, auth types, MCP servers and expiries. The secrets are never read. |
+| `/v1/fine_tuning/jobs`, `/v1/models` | Fine-tuned models and their base models. |
 
 ### Control Admin key (optional)
 
