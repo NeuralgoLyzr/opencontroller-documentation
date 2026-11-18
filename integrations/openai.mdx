@@ -21,16 +21,21 @@ apps) has admin keys of its own and is not supported yet.
     are banned (shown as **Disabled**);
   - every enabled project API key, including keys whose owner lost access to the project, with its project, its
     owner (a person or a service account), when it was last used and expires, and its 30-day tokens;
+  - each group, with its members, and the projects it can use or edit; the organization's own roles, and who holds
+    them;
+  - each workload identity provider and its federation rules: workloads that sign in to a project's service account
+    with a token and no API key;
   - the organization's Admin keys, and who made each;
   - each project's permissions: which hosted tools (remote MCP servers, web search, file search, code interpreter,
     image generation) and which models its keys may use;
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
     tools (a tool that is turned off is a property of the agent, not a tool it uses), whether they may create
-    subagents, and its **knowledge bases** (vector stores).
+    subagents, their **automations** (scheduled runs), and its **knowledge bases** (vector stores).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
   key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
-- **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
-  turn its tools off, and delete API keys, service accounts, agents and knowledge bases. See
+- **Control (optional):** block a project, turn its hosted tools and models off and on, share it with members and
+  groups, block an agent or turn its tools off, turn a federation rule off and on, and delete API keys, service
+  accounts, agents and knowledge bases. See
   [Turn on control](#turn-on-control-optional).
 
 To call OpenAI models through the [LLM gateway](/secure/gateway-overview), add OpenAI as a gateway provider instead
@@ -99,8 +104,14 @@ are two ways to give the keys.
     | `opencontroller-discovery` | Read only (`api.all.read`) | Reading agents and knowledge bases |
     | `opencontroller-control` | Read and write agents and knowledge bases | Blocking agents, turning their tools off, deleting |
 
-    Each key is stored in your secrets manager. OpenAI never shows its value again. A new project gets its keys after
-    the scan that first finds it, and its agents are read from the next scan on.
+    Each key is made with its permissions from the start, and stored in your secrets manager. OpenAI never shows its
+    value again. A new project gets its keys after the scan that first finds it, and its agents are read from the
+    next scan on.
+
+    - **Key lifetime, in days** (optional, 1 to 365): every key made from then on expires after that many days. Set
+      it when a project's key policy refuses keys without an expiry; the error says so. A key within 7 days of
+      expiry is replaced at the next scan and the old key deleted, each replacement in the audit log. The list shows
+      when each made key expires and when it was last replaced.
 
     - **Only these projects:** project IDs (`proj_…`), separated by commas. Only these get keys. Start with a few
       before turning it on for the whole organization. Left empty, every project gets them.
@@ -166,13 +177,14 @@ Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory)
 
 | Asset | Actions | Undone by |
 |---|---|---|
-| **Project** | **Block** (below). **Share** with a member of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
+| **Project** | **Block** (below). **Share** with a member or a group of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
 | **Project permissions** | Turn each hosted tool (remote MCP servers, web search, file search, code interpreter, image generation) and each model **off** and **on**. | Turning it back on. |
 | **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. A deleted agent cannot be brought back. |
 | **Knowledge base** | **Delete**: nothing can search it again. Its files stay in the project. Needs the project's control key. | Nothing. |
+| **Federation rule** | **Keyless sign-in** off and on: whether workloads matching the rule can sign in as its service account. | Turning it back on. |
+| **Member** | Change their organization role, the organization's own roles included. | Changing it back. |
 | **API key** | **Delete**: every call made with it fails at once. | Nothing. OpenAI cannot turn a key off and on: block its project to stop it for now. |
 | **Service account** | **Delete**, with its API keys. | Nothing. |
-| **Member** | Change their organization role (**owner**, **reader**). **Delete** removes them from the organization. | Changing it back; inviting them again. |
 | **Admin key** | None. OpenAI's API cannot turn off or delete an Admin key. Delete one at platform.openai.com. | |
 
 {/* TODO verify: the exact button labels on each OpenAI asset's page (Block, Share, Delete, the tool and model switches). */}
@@ -188,7 +200,9 @@ limit if it had none. A scan shows a blocked project as **Blocked, enforcing** o
 on puts it back exactly as it was. **Block** takes every tool off: the agent still answers, but reaches nothing.
 **Unblock** puts back what the block took off; a tool you turned off by itself stays off. The agent's metadata says
 what OpenController took off (`opencontroller_tools_off`, `opencontroller_blocked`), so anyone reading the agent in
-OpenAI sees it.
+OpenAI sees it. **Block** also pauses the agent's automations, which would otherwise keep running it on schedule, and
+**Unblock** resumes only the ones the block paused. A session or an automation may still pass an inline agent of its
+own, which no block reaches; the agent's page says so.
 
 **Models.** A project's model policy is an allow list (only these) or a deny list (all but these). Turning a model off
 adds it to the deny list, or takes it out of the allow list. The last model of an allow list cannot be turned off:
@@ -244,6 +258,9 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 | `/v1/organization/projects/{project}/hosted_tool_permissions`, `/model_permissions` | What each project allows. |
 | `/v1/organization/projects/{project}/users`, `/service_accounts` | Each project's members and service accounts. |
 | `/v1/organization/users` | Members' names, emails and roles, for the inventory's projects, control, and whose each key's spend is. |
+| `/v1/organization/groups`, `/groups/{group}/users`, `/projects/{project}/groups` and their roles | Groups, their members and their access to projects. |
+| `/v1/organization/roles`, `/users/{user}/roles`, `/groups/{group}/roles` | The organization's own roles and who holds them. |
+| `/v1/organization/workload_identity_providers` and their `/federation_rules` | Workload identity. |
 | `/v1/organization/admin_api_keys` | Admin keys. |
 | `/v1/organization/usage/completions` | Tokens by day, model, project and API key: the models in use. |
 | `/v1/organization/costs` | The bill by day, project, line item, API key, user and source (Agents API or other). |
@@ -254,12 +271,14 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 |---|---|
 | `/v1/agents` | The project's agents. |
 | `/v1/vector_stores` | The project's knowledge bases. Their files' contents are never read. |
+| `/v1/agents/automations`, `/v1/agents/sessions/{session}` | The project's automations, and which agent each runs. |
 
 ### Control Admin key (optional)
 
 Used only for the changes in [What control can change](#what-control-can-change), each made by a person in
 OpenController and recorded. With **Make the keys for me** on, it also makes and deletes the
-`opencontroller-discovery` and `opencontroller-control` service accounts, and nothing else.
+`opencontroller-discovery` and `opencontroller-control` service accounts and their keys, replaces a key before it
+expires, and nothing else.
 
 <Warning>
 An Admin key with write permissions can change the whole organization: its projects, keys and members. Treat it as an
