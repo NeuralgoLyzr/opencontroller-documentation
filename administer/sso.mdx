@@ -38,6 +38,24 @@ OpenController acts as the service provider. After you connect, copy the values 
 
 For a named provider such as Okta, OpenController can work out the metadata URL from the fields you gave, so it may already be filled. {/* TODO verify: after connecting Okta (or Entra, Google, Keycloak) over SAML, box 2 shows the derived metadata URL and the badge is IdP connected without Save metadata. */} The **SAML 2.0** provider choice works with any identity provider, given its metadata URL.
 
+### Sign in from a dashboard tile (SAML)
+
+People can open OpenController from a tile on their identity provider's dashboard, such as the Okta End-User Dashboard or Microsoft My Apps. The sign-in then starts at the provider, not in the console. OpenController accepts these sign-ins by default, so the tile works with no extra setup.
+
+**Allow sign-in from your identity provider's dashboard**, under **Settings** > **Single sign-on**, turns this on or off. It shows only for SAML, and only to an **Owner**. A change applies at once and is recorded in the [audit log](/administer/audit-log).
+
+{/* SCREENSHOT: sso-idp-initiated | crop | Settings > Single sign-on connected over SAML: the "Allow sign-in from your identity provider's dashboard" switch, on, with its hint text. Crop to that card. */}
+
+<Warning>A sign-in started at the provider is not tied to the browser that receives it. Another site could sign someone in to an account of its choosing. To accept only sign-ins started in the console, turn the switch off.</Warning>
+
+With the switch off, a dashboard tile gets an error. Point the tile at the **Sign-on URL** instead (`https://console.example.com/saml/login`), so the console starts the sign-in. {/* TODO verify: what the person sees when the switch is off and they use a provider-started tile (a bare 403 "Forbidden" page?). */}
+
+If the provider sends a RelayState with the sign-in, OpenController opens it only when it is a path on the console, such as `/inventory`. Any other address is ignored, and the person lands on the console's home page. {/* TODO verify: the landing page when the RelayState is empty or dropped is "/". */}
+
+The switch is for SAML only. With OpenID Connect, a tile can open the console's address, and the person signs in from the sign-in page. {/* TODO verify: whether an OpenID Connect app's "Initiate login URI" (Okta) set to the console address signs the person in without a click on Sign in with <provider>. */}
+
+Whoever runs OpenController with the provider set in the server's configuration, not in Settings, uses `DISCOVERY_SAML_ALLOW_IDP_INITIATED` (`true` by default) instead.
+
 ### Provision people with SCIM (optional)
 
 With SCIM, your identity provider decides who exists and which groups they are in. Only provisioned, active people can then sign in through single sign-on. Deactivating someone at the provider ends their access on their next request.
@@ -76,6 +94,8 @@ Okta. It needs an Okta **API Services** app. See
 
 - **Change provider** keeps the email domains, the SAML signing key and the SCIM token. People signed in through the old provider are signed out on their next request, so do this as a local administrator.
 - **Disconnect** turns single sign-on off and forgets the provider and the SCIM token. Members with a password, and service accounts, are not affected.
+
+Once single sign-on works, you can turn off email and password sign-in under **Settings** > **Authentication** > **Ways in**. See [Turn sign-in methods off](/administer/secrets-auth#ways-in-turn-sign-in-methods-off).
 
 ## Who can use it
 

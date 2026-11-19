@@ -25,8 +25,9 @@ on the subscriptions.
 - **[Shadow AI](/discover/shadow-ai) and [People](/discover/people-and-spend):** who each agent is shared with: owners
   and co-authors of Copilot Studio agents, users of Foundry agents, and who an Agent 365 catalog agent is shared with.
 - **[Spend](/discover/people-and-spend):** Microsoft 365 licences and who uses them, and the daily cost of Azure AI services.
-- **Control (optional):** share and remove access to agents, quarantine, block and delete them, and route Foundry prompt
-  agents through the [LLM gateway](/secure/gateway-overview).
+- **Control (optional):** share and remove access to agents, quarantine, block and delete them, turn Entra agent
+  identities' sign-in off and on and delete them, and route Foundry prompt agents through the
+  [LLM gateway](/secure/gateway-overview).
 - **[Cloud guardrails](/secure/guardrails/cloud-providers):** link an Azure AI Content Safety credential to this tenant.
   It is a key of its own, not one of these apps.
 
@@ -140,10 +141,16 @@ application permissions with admin consent.
 | Share and remove Copilot Studio access, turn off org-wide sharing, publish, delete agents and their flows | The control app as an **application user** with **System Administrator** in each Power Platform environment. Co-authors also need **Environment Maker**. |
 | Quarantine Copilot Studio agents; delete Agent Builder agents | The same application user in the agent's environment, plus the administrator sign-in above |
 | Find people and groups to share with | Graph **User.Read.All** and **GroupMember.Read.All** |
-| Disable and enable Foundry hosted agents; delete Foundry agents | **Foundry User** on the Foundry resource |
+| Disable and enable Foundry hosted agents; delete Foundry agents | **Foundry User** on the Foundry resource. Disabling and enabling a hosted agent also needs Graph **AgentIdentity.EnableDisable.All**, for its Entra agent identity's sign-in. |
+| Disable and enable an Entra agent identity's sign-in | Graph **AgentIdentity.EnableDisable.All** |
+| Delete an Entra agent identity | Graph **AgentIdentity.DeleteRestore.All** |
 | Share Foundry agents | **Role Based Access Control Administrator** on the Foundry project, conditioned to assign only **Foundry Agent Consumer** |
 | Route Foundry prompt agents through the LLM gateway | `Microsoft.CognitiveServices/accounts/projects/connections/read`, `/write` and `/delete`, and **Foundry User** |
 | Delete a Foundry agent's Bot Service too (**Delete with cascade**) | `Microsoft.BotService/botServices/read` and `/delete` (or Contributor) on the bot's resource group, and **Reader** |
+
+<Warning>
+A control app connected before agent identities could be turned off lacks **AgentIdentity.EnableDisable.All**. Without it, disabling a Foundry hosted agent still stops the agent but reports an error, and **Enable** fails. Grant the permission, with admin consent, before you disable a hosted agent.
+</Warning>
 
 ### Azure AI Content Safety
 

@@ -1,0 +1,136 @@
+---
+title: "Skills and versions"
+description: "Upload a skill, scan each version with your guardrails, make a version live or roll back, and approve versions proposed from machines."
+sidebarTitle: "Skills and versions"
+icon: "history"
+---
+
+<Badge>Operator</Badge>
+
+<Note>Skills must be turned on for your organization. It is off unless whoever runs your OpenController turns it on in its configuration (`FEATURES=skills=on`). See [Modules](/administer/modules).</Note>
+
+The library holds each skill once, with every version saved. One version is **live**: the marketplace serves it, and every place the skill was published gets it. Saving a version never makes it live.
+
+## Pick the guardrails that scan versions
+
+Every version is scanned with the guardrails the Skills policy names. Do this before you upload, so the first versions are scanned.
+
+1. Go to **Govern** > **Skills** > **Policy**.
+2. Under **Scan**, pick the guardrails every version must pass. See [Guardrails](/secure/guardrails/list) to make one.
+3. Select **Save** in the bar at the foot of the page.
+
+This needs the **Admin** role. With no guardrail picked, or the guardrail engine not running, versions are **Not scanned**, and go live only through an override.
+
+## Upload a skill
+
+<Steps>
+  <Step title="Open New skill">
+    Go to **Govern** > **Skills** > **Skills** and select **New skill**.
+  </Step>
+  <Step title="Choose the folder">
+    The skill's folder must have its `SKILL.md` at the root. Its name and description come from the `SKILL.md` frontmatter. Choose one of:
+    - **A .zip**: a zip of the folder. A single folder at its top is taken as the skill's.
+    - **A folder**: every file in it, by its path in the folder.
+    - **Files**: each kept at the skill's root, by its name.
+
+    {/* SCREENSHOT: skills-new-skill | crop | The New skill dialog with A .zip selected, pr-review.zip · 4.2 KB chosen, Version 1.0.0 and Notes "First version". Crop to the dialog. */}
+  </Step>
+  <Step title="Give the version">
+    **Version** is a SemVer number, above every version before it (`1.0.0` for a new skill). Add **Notes** if you want.
+  </Step>
+  <Step title="Upload">
+    Select **Upload**. The skill's page opens. The version is scanned, and is not live.
+  </Step>
+</Steps>
+
+To add a version to a skill, open the skill and select **New version**. The next patch number is filled in.
+
+## Read a version's scan
+
+Open the skill. The **Versions** tab lists every version, newest first, with who saved it, its size and its **Scan**:
+
+| Scan | Means |
+|---|---|
+| **Passed** | The guardrails found nothing. |
+| **Flagged** | A guardrail found something. It goes live only when someone overrides the scan. |
+| **Failed** | The scan could not finish. Scan it again. |
+| **Not scanned** | No guardrail read it: none is set to scan with, or the guardrail engine is not running. |
+
+{/* SCREENSHOT: skills-versions | crop | The pr-review skill on the Versions tab: 1.2.0 Live and Passed, 1.1.0 Passed, 1.0.0 Flagged · overridden, with the row menu of 1.1.0 open (View files, Download, Rescan, Roll back to this). Crop to the header and table. */}
+
+Select a version's scan, or the **Scan** tab, to see each finding: the **File**, the **Lines**, the **Guardrail**, the **Reason** and an **Excerpt**, as the guardrail masked it. Every text file is scanned, in pieces of whole lines.
+
+From a version's **⋯** menu:
+- **View files** opens the **Files** tab, where you can compare it with another version.
+- **Download** saves the version as a zip.
+- **Rescan** scans it again, for example after you change the guardrails.
+
+## Make a version live, or roll back
+
+From the version's **⋯** menu, select **Make live**. For a version older than the live one, the item reads **Roll back to this**. Nothing is overwritten: every version keeps its files.
+
+Making a version live:
+- serves it from the marketplace, while the skill is **In the marketplace**;
+- publishes it again everywhere the skill was published, so the Managed Agents given it get it (see [Deliver skills](/govern/skills/deliver#publish-to-the-claude-platform));
+- moves team marketplace entries and assignments that follow live versions.
+
+If a delivery fails, a message names each place and why. If the version cannot go live, the page says why above the table.
+
+### Override a scan
+
+A version whose scan is **Flagged**, **Failed** or **Not scanned** goes live only after an override. This needs the **Admin** role.
+
+1. From the version's **⋯** menu, select **Override scan**.
+2. In **Reason**, say why it is safe to go live.
+3. Select **Override**, then make the version live.
+
+The **Scan** tab then shows who overrode it, when and why. The scan badge reads **· overridden**.
+
+## Approve a version proposed from machines
+
+When someone edits a copy of a library skill on their machine, it can be proposed as the skill's next version (see [Skills on machines](/govern/skills/on-machines#propose-a-machines-edit-as-the-next-version)). It waits under **Approvals**.
+
+<Steps>
+  <Step title="Open the proposals">
+    Go to **Govern** > **Approvals** and select **Skill versions**. **Waiting** lists each proposal with its **Skill**, **Version**, where it was **Seen on**, its **Risk**, and who **Proposed** it.
+
+    {/* SCREENSHOT: skills-approvals-versions | crop | Approvals on the Skill versions tab, Waiting: pr-review v3 on machines, edited from 1.2.0, seen on alice-mbp, Risk Medium, proposed by alice@example.com. */}
+  </Step>
+  <Step title="Read the proposal">
+    Select the row. The dialog compares its files with the library version it was edited from, or the library's latest, and shows the notes for the approver.
+  </Step>
+  <Step title="Decide">
+    Add a **Note** if you want, then select **Approve into the library** or **Reject**. Approved, it becomes the skill's next minor version, scanned and not live. Making it live is a step of its own.
+  </Step>
+</Steps>
+
+Deciding needs the **Admin** role (`skills:approve`). **Decided** lists approved and rejected proposals, with who decided, and the version each approval added. {/* TODO verify: at PR #238's head nothing stops the person who proposed a version from approving it. Confirm before adding a "you cannot approve your own" warning here. */}
+
+## Stop serving a skill
+
+Turn off **In the marketplace** at the top of the skill's page. The marketplace stops serving it, and the managed settings list it as off, which turns it off wherever it was installed once machines get the new file. See [Deliver skills](/govern/skills/deliver#serve-the-marketplace).
+
+## Check it worked
+
+- The **Skills** list shows the version under **Live**, and **Listed** under **Marketplace** for a skill in the marketplace.
+- The skill's **Activity** tab lists what was done to it, newest first, with who did it. Each change is also in the [audit log](/administer/audit-log).
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read skills, versions, files and scans, and download a version. |
+| **Operator** | Also upload skills and versions, rescan, make a version live or roll back, and mark a skill **In the marketplace**. |
+| **Admin** | Also pick the guardrails under **Scan**, override a scan, and approve or reject proposed versions. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Deliver skills" icon="store" href="/govern/skills/deliver">
+    Serve live versions to Claude Code and the Claude Platform.
+  </Card>
+  <Card title="Make a guardrail" icon="shield" href="/secure/guardrails/create">
+    Choose what every version is checked for.
+  </Card>
+</CardGroup>

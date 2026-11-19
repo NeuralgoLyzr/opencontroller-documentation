@@ -1,6 +1,6 @@
 ---
 title: "Okta"
-description: "Let people sign in to the OpenController console with their Okta account, over OpenID Connect or SAML, and provision them with SCIM."
+description: "Let people sign in to the OpenController console with their Okta account, over OpenID Connect or SAML, provision them with SCIM, and read who has left from Okta's directory."
 icon: "log-in"
 ---
 
@@ -8,13 +8,14 @@ Okta signs people in to the console with **OpenID Connect**, through one of its 
 2.0**, through an app. It can also provision people with **SCIM 2.0**. Okta groups map to roles in OpenController. For
 apps that call the LLM gateway as a person, see [Okta for gateway callers](/integrations/caller-identity/okta).
 
-OpenController can use up to three Okta apps, each for one job:
+OpenController can use up to four Okta apps, each for one job:
 
 | Okta app | Okta app type | What it is for | Needed for |
 |---|---|---|---|
 | Sign-in | **OIDC - OpenID Connect** > **Single-Page Application** (or **SAML 2.0**) | People sign in to the console | Single sign-on |
 | Provisioning | **SAML 2.0**, used for SCIM only | Okta tells OpenController who exists and which groups they are in | The people list in **Members**, and deactivation |
 | Role changes | **API Services** | OpenController moves a person between Okta groups | Changing roles from the console |
+| Directory | **API Services**, read only | OpenController reads who works at your organization, and who has left | Saying an asset's owner has left |
 
 <Warning>Each app has its own **Client ID**. Most setup errors come from a value of one app entered for another.
 Keep them apart.</Warning>
@@ -97,6 +98,11 @@ redirect URIs are built from the browser's address.
         what you set in Okta.
       </Step>
     </Steps>
+
+    The app's tile on the Okta End-User Dashboard signs people in to the console, since **Allow sign-in from your
+    identity provider's dashboard** is on by default. A **Default RelayState** set on the app must be a path on the
+    console, such as `/inventory`; any other value is ignored. To accept only sign-ins started in the console, see
+    [Sign in from a dashboard tile](/administer/sso#sign-in-from-a-dashboard-tile-saml).
   </Tab>
 </Tabs>
 
@@ -254,6 +260,93 @@ A role change needs:
 To change the **Okta domain** or **Client ID**, select **Disconnect** and connect again. That makes a **new key**: add
 it in Okta, and remove the old one there. **Replace key** makes a new key the same way.
 
+## Read who has left from Okta (optional)
+
+OpenController says an asset's owner has left only when a directory says so. Connected to your Okta org as an
+integration, it reads every person there. An owner is then shown as **left the organization** only when Okta
+**deactivated** them, or a full scan **no longer lists** them. People who were never given OpenController are not taken
+for leavers. See [Ownership](/discover/asset-details#ownership) and GOV-3 in
+[Security policies](/posture/security-policies).
+
+| What Okta says | What OpenController shows |
+|---|---|
+| Okta deactivated the person | Left, with the day: *deactivated in Okta on …* |
+| A full scan no longer lists the person (deleted in Okta) | Left, as of that scan: *no longer in Okta as of …* |
+| Okta lists the person as active, suspended or locked out | Active |
+| No directory knows the person | Unknown: no badge and no finding |
+
+Without this connection, with SCIM on, someone SCIM deactivated or removed shows as **no longer has access**, a lower
+finding (GOV-6): they may still work here.
+
+This is not single sign-on. It is a connection under **Integrations**, with its own **API Services** app, and it needs
+none of the other Okta apps. The app only reads: it never creates, changes, deactivates or deletes a user, and reads no
+group, app assignment, factor, password or log.
+
+<Note>You need an Okta **Super Admin** (only one can grant scopes and admin roles), the **Admin** role in
+OpenController, a secrets manager, and outbound HTTPS from OpenController to `https://your-org.okta.com`.</Note>
+
+<Steps>
+  <Step title="Create the API Services app in Okta">
+    Go to **Applications** > **Applications** > **Create App Integration**, choose **API Services**, and name it, for
+    example `opencontroller directory`. This is not the app that changes roles.
+
+    - On its **Okta API Scopes** tab, grant `okta.users.read`, and nothing else.
+    - On its **Admin Roles** tab, select **Edit assignments** and assign **Read-only Administrator**, so it sees every
+      person. Without a role, Okta answers the app with 403.
+    - On its **General** tab, copy the **Client ID**.
+  </Step>
+  <Step title="Connect Okta in OpenController">
+    Go to **Integrations** > **Connect** > **Okta**. Fill in:
+
+    | Field | What to enter |
+    |---|---|
+    | **Name** | A name for the connection, for example `workforce`. |
+    | **Okta org** | Your org's address, `your-org.okta.com`. The Admin Console's address, `your-org-admin.okta.com`, works too. |
+    | **Client ID** | The API Services app's client ID. |
+
+    OpenController makes a key pair. The private half goes into your secrets manager and is never shown. The dialog
+    **Let opencontroller into Okta** shows the public half, with its key ID, and the steps left in Okta.
+
+    {/* SCREENSHOT: okta-directory-setup | crop | The "Let opencontroller into Okta" dialog for a connection named workforce, org your-org.okta.com: the five steps (Scope, Role, Public key, Client authentication, DPoP) and the public key below. Client ID and key ID blurred. */}
+  </Step>
+  <Step title="Add the key in Okta">
+    On the API Services app's **General** tab:
+
+    1. Under **Public keys**, select **Edit**, then **Add**. Paste the public key whole, and save. Check that its KID
+       matches the one OpenController shows.
+    2. Under **Client Credentials**, select **Edit**, set **Client authentication** to **Public key / Private key**, and
+       save. Until then, Okta signs the app in with a client secret and refuses the key.
+    3. If the app shows **Require Demonstrating Proof of Possession (DPoP) header in token requests**, turn it off, and
+       save.
+  </Step>
+  <Step title="Verify and scan">
+    Back in OpenController, select **Verify** on the connection's row. It signs in as the app and reads one person;
+    nothing is changed. Its checks are **Sign in** and **People**. Then select **Run scan**.
+  </Step>
+</Steps>
+
+To see the steps again, select **Show the setup steps** on the connection's row.
+
+### Scans
+
+A scan reads every person in the org, the deactivated ones too. Its source says how many people Okta lists, how many
+it deactivated, and how many it no longer lists. People are not assets: a scan adds nothing to the inventory.
+
+- An Okta connection is scanned **once a day**, and whenever you select **Run scan**, so the org's API rate limit is not
+  spent. Change it under **Settings** > **Scan schedule**, as for any connection. See [Scans](/discover/scans).
+- A scan that fails partway removes nobody. Only a scan that read everyone can say a person is no longer listed.
+- Findings are evaluated again after each scan, so an owner Okta deactivated shows as left within minutes.
+- If Okta refuses a request for its rate limit, the scan waits and asks again, up to three times.
+
+People are matched by any of their addresses: login, primary and secondary email, and the addresses a cloud lists as
+their aliases. **[People](/discover/people-and-spend)** shows Okta's word on each person, with a **Left** filter.
+
+**Generate a new key**, in the setup steps, makes a new key pair, and OpenController stops using the old key at once.
+Scans fail until you add the new public key in Okta; then remove the old one there.
+
+**Remove** on the connection deletes the stored private key and forgets the people it listed at once: nobody is said
+to have left on Okta's word any more. The app in Okta stays until you delete it there, under **Applications**.
+
 ## Troubleshooting
 
 <AccordionGroup>
@@ -296,6 +389,21 @@ it in Okta, and remove the old one there. **Replace key** makes a new key the sa
   <Accordion title="A role change says the group “is not managed in Okta”">
     The group is imported from an app or directory. Map the role to a group created in Okta.
   </Accordion>
+  <Accordion title="The directory connection's Verify fails">
+    - **401 `invalid_client`**: the app still signs in with a client secret, or the key is not on it. Set **Client
+      authentication** to **Public key / Private key**, and add OpenController's public key under **Public keys**.
+    - **400 `invalid_scope`**: grant `okta.users.read` on the app's **Okta API Scopes** tab.
+    - **403**: assign **Read-only Administrator** on the app's **Admin Roles** tab.
+    - **An error naming DPoP**: turn off **Require Demonstrating Proof of Possession (DPoP)** on the app.
+  </Accordion>
+  <Accordion title="Someone who left is still shown as active">
+    Check that their status in Okta is **Deactivated**, then run a scan. Someone only suspended or locked out is not
+    taken to have left.
+  </Accordion>
+  <Accordion title="Someone active is shown as left">
+    They have two Okta users at one address, one of them deactivated. If only the deactivated user holds the address
+    their platform names, add it to their working user, or change the asset's owner.
+  </Accordion>
   <Accordion title="The new role does not show after a minute">
     Check that the provisioning app pushes that group (**Push Groups**), and that no Okta group rule changes its
     members back.
@@ -312,6 +420,7 @@ it in Okta, and remove the old one there. **Replace key** makes a new key the sa
 | SAML metadata | `https://your-org.okta.com/app/<app id>/sso/saml/metadata` |
 | Stored | Nothing of Okta's: the app is public (PKCE), and tokens are checked against Okta's published keys, never stored. For SAML, OpenController's own signing key, in your secrets manager. For SCIM, the token's hash. To change roles, OpenController's own key for the API Services app, in your secrets manager. |
 | Okta API calls (role changes) | Find a person, find a group, add or remove a person in a group. Nothing else, and only within the groups its admin role covers. |
+| Okta API calls (directory) | List users, the deactivated ones too. Nothing is written. Each person's Okta ID, name, login, email addresses, status and the day it changed are stored in your deployment's database; the app's private key in your secrets manager. Okta's access token lasts an hour and is never stored. |
 
 **Change provider** signs out everyone signed in through SSO. **Disconnect** forgets the provider, the SAML signing key
 and the SCIM token; people already provisioned stay.
