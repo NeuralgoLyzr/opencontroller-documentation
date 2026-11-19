@@ -1,0 +1,224 @@
+---
+title: "Skills on machines"
+description: "Learn which skills people keep in Claude Code and Claude Desktop, bring them into the library, and change or assign skills on their machines."
+sidebarTitle: "On machines"
+icon: "laptop"
+---
+
+<Badge>Admin</Badge>
+
+<Note>Skills must be turned on for your organization. It is off unless whoever runs your OpenController turns it on in its configuration (`FEATURES=skills=on`). See [Modules](/administer/modules).</Note>
+
+People keep skills in their own folder, in repositories, in plugins and in their claude.ai account. The OpenController plugin reports them, so you can see which skills are in use, bring the good ones into the library, and change or install skills on people's machines. Nothing is installed by hand: the plugin comes from the marketplace OpenController serves.
+
+## What the plugin reads
+
+The plugin runs when a session starts and when a skill changes, in Claude Code, Claude Desktop's Code tab and Cowork. It runs in the background and never stops Claude Code. It reads four places, and leaves out Anthropic's own skills and its own plugin:
+
+| Place | Where |
+|---|---|
+| Personal | `~/.claude/skills` |
+| Repository | The repository's `.claude/skills`, for a session started in it |
+| Plugin | Each installed plugin's skills |
+| claude.ai account | The account's skills, as Claude Code and Claude Desktop keep them on the machine |
+
+A skill is known by its content, not its name. The same files on any machine are one skill, whatever each copy is called. A copy edited where it lives adds a version to that skill.
+
+It never reads prompts or conversations. Beyond the skill folders, it reads only the list of installed plugins, a repository's origin (without credentials), Claude Desktop's data to find the account's skills, and Claude Code's settings files for its key.
+
+## Before you start
+
+- **The marketplace is served.** **Serve the marketplace** is on, and its managed settings are on people's machines. See [Deliver skills](/govern/skills/deliver#serve-the-marketplace).
+- **A reporting key.** Make a custom role that holds `skills:report` and nothing else, in **Settings** > **Roles**. Then make a service account with that role in **Settings** > **Service accounts**, and keep its key. See [Service accounts](/administer/service-accounts).
+- **To register skills** before they enter the library: add **Skill** to the kinds the registry policy governs, in [Registry policies](/govern/policies).
+- The machines reach OpenController's address. The plugin runs on macOS, Linux and Windows. Where there is no build for a machine, it needs Python 3.8 or later.
+
+<Warning>The reporting key sits in the managed settings on every machine, where anyone can read it. Its role must hold `skills:report` alone.</Warning>
+
+## Turn on reporting
+
+<Steps>
+  <Step title="Turn on the switches">
+    Go to **Govern** > **Skills** > **Policy**. In the row **Discover**, column **Claude Code**:
+    - Turn on **Report skills from machines**. It needs **Serve the marketplace**; where that is off, the page offers **Turn it on**.
+    - Turn on **Collect contents** to have machines send each skill's files. Off, only names, header facts and fingerprints are kept. Editing a copy, pushing a version and proposing a version need the files.
+    - Turn on **List in Shadow AI** to make each skill on machines a shadow asset, registered through Approvals before it enters the library.
+
+    {/* SCREENSHOT: skills-policy-grid | crop | Govern > Skills > Policy for the Organization: the Scan strip with one guardrail, and the grid with rows Deliver, Discover, Change and columns Claude Code, claude.ai and Cowork; Serve the marketplace, Report skills from machines and Collect contents on. Crop to the Scan strip and the grid. */}
+  </Step>
+  <Step title="Save">
+    Select **Save** in the bar at the foot of the page.
+  </Step>
+  <Step title="Add the key to the managed settings">
+    Go to **Govern** > **Skills** > **Marketplaces** > **Organization marketplace**, and copy the managed settings again. They now turn on the OpenController plugin and hold a place for its key. Replace `<REPORTING_KEY>` with the reporting key:
+
+    ```json
+    "env": { "OPENCONTROLLER_SKILLS_KEY": "<REPORTING_KEY>" }
+    ```
+
+    Put the file where it went before: claude.ai's managed settings, or `managed-settings.json` through MDM. For a team's machines, use the team's file. See [Deliver skills](/govern/skills/deliver#put-the-managed-settings-on-machines).
+  </Step>
+</Steps>
+
+For one machine without managed settings, put the same `env` in `~/.claude/settings.json`, and install `opencontroller@<marketplace name>` from the marketplace.
+
+### Check it works
+
+- The Skills policy shows, beside **Report skills from machines**, how many machines reported and when the last did.
+- On a machine, from the plugin's folder, `sh scripts/oc-skills list` prints what a report would hold and sends nothing. `sh scripts/oc-skills report` reports now. On Windows, use `scripts/oc-skills.ps1`.
+
+| The plugin says | Because |
+|---|---|
+| *reporting skills from machines is off* | **Report skills from machines** is off. |
+| *no reporting key* | The `env` entry is missing, or still says `<REPORTING_KEY>`. |
+
+## Read the skills on machines
+
+Go to **Govern** > **Skills** > **On machines**. Each row is one skill: its **Stage**, who holds it and on how many machines (**Held by**), its **Versions**, its **Risk** and when it was **Last seen**. Skills that share a name but not content are separate rows under that name. Search by name or description, and sort by **Most machines**, **Most people**, **Highest risk**, **Last seen** or **Name**.
+
+{/* SCREENSHOT: skills-on-machines | crop | Govern > Skills > On machines: the stage bar, then rows for pr-review (Registered, 6 people on 8 machines, 3 versions, Medium), deploy-helper (Shadow, 2 people, High) and notes (Found, Normal). People blurred. */}
+
+**Risk** is read from the skill's header and, where collected, its files:
+
+| Risk | Means |
+|---|---|
+| **Normal** | Instructions and text alone: nothing runs. |
+| **Medium** | Lets Claude use a tool without asking, or points at a web address. |
+| **High** | Can run or fetch something: hooks, commands, scripts, binaries, downloads. |
+
+Open a skill to see its tabs:
+- **Holders**: each copy's person, machine, place and path, version and last seen. A person who has not confirmed their machine shows only what the machine says.
+- **Versions**: each version, the one it was edited from, who holds it now and before, and its risk. Compare any two.
+- **Changes**: every removal, push and edit asked of its copies.
+- **Files**: any version's files, and what it can do.
+
+A warning names the machines with Claude Desktop installed where its skills were not found. One machine was likely never signed in; many at once mean a Desktop update moved them.
+
+## Bring a skill into the library
+
+With **List in Shadow AI** on, a skill must be registered first:
+
+1. On the skill, select **Register** (Operator). Give an owner and a purpose. To register several, pick them on **On machines** and select **Register selected**.
+2. An Admin approves the request under [Approvals](/govern/approvals). With **Separation of duties** on, you cannot approve a request you made.
+3. The skill is **Registered**. Continue below.
+
+With **List in Shadow AI** off, skip registering.
+
+To bring it in, select **Bring into library** on the skill (Operator). Pick the **Version**, numbered from the oldest seen on any machine; only versions whose files were all collected are offered. Select **Bring into library**. It becomes a new library skill at `1.0.0`, or the next version of the library skill with its name. It is scanned and not live. Its copies on machines stay as they are.
+
+If no version can be picked, turn on **Collect contents** and wait for the machines' next report, or ask the holder to share it.
+
+## Share a skill from your machine
+
+Anyone can offer a skill they wrote. In Claude Code, run:
+
+```
+/opencontroller:share-skill <name>
+```
+
+It uploads the skill's files and prints a link, which works once, for an hour. Open it and sign in. The **Share** page shows the skill's files and **What it can do**. Select **Submit for approval**. What happens next:
+
+- While skills are listed in Shadow AI, it asks to register the skill, owned by you. An Admin approves it under **Approvals**.
+- For a skill already in the library, it is proposed as the skill's next version, and waits under **Approvals** > **Skill versions**.
+- Otherwise it becomes a version in your name, scanned and not live, until someone makes it live.
+
+## Propose a machine's edit as the next version
+
+When a copy of a library skill was edited on a machine, its edit can be offered back. Open the skill on machines, then the **Versions** tab. On a version the library does not have, select **Propose as next version** (Operator). Add **Notes for the approver**, and select **Propose**. It waits under **Approvals** > **Skill versions**. See [Approve a version proposed from machines](/govern/skills/library#approve-a-version-proposed-from-machines).
+
+The version's files must all have been collected.
+
+## Confirm your machine
+
+Changes and assignments reach only a machine its person confirmed, because anyone can say whose a machine is. In Claude Code, run:
+
+```
+/opencontroller:connect
+```
+
+Open the link it prints (it works once, for an hour) and sign in. The page shows the **Machine**, its **System**, who it is **Signed in to Claude as**, and who is **Signed in here as**. Select **Confirm it's mine**. If the machine names someone else, the page warns you: close it if the machine is not yours.
+
+## Change skills on machines
+
+Admins can remove, edit or replace a copy of a skill on someone's machine, in their own folder or a repository's.
+
+<Warning>Turning this on lets admins remove, edit and install skills on people's computers. Saving asks **Turn these on?** before **Turn on and save**.</Warning>
+
+1. Go to **Govern** > **Skills** > **Policy**. In the row **Change**, column **Claude Code**, turn on **Change skills on machines**. Select **Save**, then **Turn on and save**.
+2. Open the skill in **On machines**, on the **Holders** tab. A copy's **⋯** menu has:
+   - **Edit**: change its text files, or delete any file but `SKILL.md`. Needs the copy's files collected.
+   - **Push a version**: put in place another version this skill had, whose files were all collected.
+   - **Remove**: take the copy off the machine.
+3. To change several copies, pick them and select **Push a version** or **Remove**. A review says what happens to each copy, and why any is left as it is.
+4. Give a **Reason**, and confirm.
+
+{/* SCREENSHOT: skills-holders | crop | The Holders tab of pr-review with two copies picked, the Push a version and Remove buttons, and one row's menu open (Edit, Push a version, Remove). People and machines blurred. */}
+
+A change waits until the machine's next report. The plugin makes it only if the folder still holds what you saw: a copy edited since is left alone. A repository's change is made when Claude Code next starts in it. What it removes or replaces goes to `~/.opencontroller/removed/`, with a note of who asked and why, so the person can put it back.
+
+A plugin's skills and a claude.ai account's skills are not changed on the machine. Turn the plugin off in the managed settings, or delete the skill in claude.ai: see [Skills in claude.ai](/govern/skills/claude-enterprise#delete-a-members-claudeai-skill).
+
+**Changes** on the skill lists each change: **Waiting for the machine** until its next report, then **Done**, **Skipped** (the folder changed, or is gone) or **Failed**, with what the machine said. A waiting change can be cancelled.
+
+## Assign a skill
+
+An assignment installs a library skill in people's `~/.claude/skills` on their confirmed machines, at their next report. People who join a group or team later get it too. It needs **Change skills on machines** on, and a skill with a live version.
+
+<Steps>
+  <Step title="Open Assignments">
+    Go to **Govern** > **Skills** > **Skills**, open the skill, select the **Assignments** tab, and select **Assign**.
+  </Step>
+  <Step title="Choose who">
+    Under **Assign to**, pick **A person** (by name or email), **A group** (from the identity provider), **A team** (its members and its groups) or **Everyone** (every confirmed machine).
+
+    {/* SCREENSHOT: skills-assign | crop | The Assign pr-review dialog with A team picked, the platform team selected, the reach line "Reaches 9 people on 12 confirmed machines now.", and Policy Follow live. Crop to the dialog. */}
+  </Step>
+  <Step title="Choose the policy">
+    **Policy** is **Follow live**, which takes each new live version as it goes live, or **Hold**, which keeps this one. A team's assignment follows only versions that pass the team's guardrails. An assignment to **Everyone** holds unless you pick **Follow live**.
+  </Step>
+  <Step title="Assign">
+    Before you save, the dialog shows how many confirmed machines and people it reaches now, and how many machines name a person it reaches but are not confirmed. For **Everyone**, tick the box that confirms it. Select **Assign to** *name*.
+  </Step>
+</Steps>
+
+When several assignments of one skill reach a person, one serves it: the person's own, then a group's or a team's, then everyone's. Between equals, the lower version serves. A folder of that name holding another skill is left alone.
+
+The **Assignments** tab counts each assignment's machines: **Installed**, **On its way**, **Served by another**, **Not confirmed**, **Name taken** (another skill of that name is there) and **Refused**. The tab is marked while a machine needs a look.
+
+From an assignment's **⋯** menu, **Set the version served** moves it to another version whose scan is clear. **End the assignment** stops new versions and new people. Tick **Also remove it from their machines** to have each machine no other assignment reaches remove it when Claude Code next starts there, keeping it in `~/.opencontroller/removed/`.
+
+## What is kept
+
+- **A report:** each skill's name, its `SKILL.md` header facts, and each file's path, size and SHA-256; the machine's host name and system, whether Claude Desktop is installed, and the email and claude.ai account it says it is signed in as.
+- **Contents**, only while **Collect contents** is on: each file once, for every machine that holds it. A skill takes up to 500 files and 8 MiB.
+- **The machine's secret:** each machine enrolls before its first report and gets a secret of its own. OpenController keeps only its hash. Changes go only to a machine that proves it, so the shared reporting key is not enough to take them.
+- A skill gone from a machine is marked gone, not deleted.
+
+Nothing a machine reports reaches anyone else, unless an admin brings it into the library or pushes it to a machine.
+
+## Turn it off
+
+- **Report skills from machines** off: reports are refused, and the marketplace stops serving the plugin. The switches that need it go off with it. What machines reported stays on **On machines**. Give the machines the new managed settings.
+- **Collect contents** off: no more files are asked for. The files kept stay.
+- **List in Shadow AI** off: on save, every skill on machines is retired from Shadow AI and AI Inventory. They stay on **On machines**.
+- **Change skills on machines** off: no change is sent. Waiting changes stay waiting, and assignments are kept.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read **On machines** and assignments. Share a skill from their machine, and confirm their machine. |
+| **Operator** | Also register skills, bring a skill into the library, and propose a version from machines. |
+| **Admin** | Also turn on the switches, change and remove copies, cancel changes, and make and end assignments. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Skills and versions" icon="history" href="/govern/skills/library">
+    Make a skill you brought in live.
+  </Card>
+  <Card title="Skills in claude.ai" icon="cloud" href="/govern/skills/claude-enterprise">
+    See the skills people keep in claude.ai too.
+  </Card>
+</CardGroup>

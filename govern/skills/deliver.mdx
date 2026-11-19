@@ -1,0 +1,177 @@
+---
+title: "Deliver skills"
+description: "Serve the library to Claude Code as a plugin marketplace, give teams marketplaces of their own, and publish skills to the Claude Platform's workspaces and Managed Agents."
+sidebarTitle: "Deliver skills"
+icon: "store"
+---
+
+<Badge>Admin</Badge>
+
+<Note>Skills must be turned on for your organization. It is off unless whoever runs your OpenController turns it on in its configuration (`FEATURES=skills=on`). Publishing to the Claude Platform also needs `skills.anthropic=on`. See [Modules](/administer/modules).</Note>
+
+A skill reaches people only at its live version, and only once its scan is clear. You choose the ways it goes:
+
+| Way | Reaches | Set up |
+|---|---|---|
+| The organization's marketplace | Everyone's Claude Code | [Serve the marketplace](#serve-the-marketplace) |
+| A team marketplace | The members of its teams, in Claude Code and, through Claude Enterprise, in claude.ai | [Team marketplaces](#team-marketplaces) |
+| Everyone in claude.ai | Every member of the Claude Enterprise organization | [Skills in claude.ai](/govern/skills/claude-enterprise#give-a-skill-to-everyone-in-claudeai) |
+| An assignment | The confirmed machines of a person, group, team or everyone | [Skills on machines](/govern/skills/on-machines#assign-a-skill) |
+| The Claude Platform | A workspace's custom skills and its Managed Agents | [Publish to the Claude Platform](#publish-to-the-claude-platform) |
+
+## Serve the marketplace
+
+OpenController can be a Claude Code plugin marketplace. It serves each library skill as a plugin of its own, at its live version, over git:
+
+```
+https://opencontroller.example.com/marketplace/claude-code.git           the marketplace
+https://opencontroller.example.com/marketplace/plugins/<skill>.git       each skill's plugin
+```
+
+<Warning>The marketplace is read without sign-in. Anyone who can reach OpenController's address can read the skills it serves. Keep it off where a skill holds anything that must not be read.</Warning>
+
+<Steps>
+  <Step title="Name the marketplace">
+    Go to **Govern** > **Skills** > **Policy**. Under **Marketplace**, below the grid, set its **Name** (lowercase letters, digits and hyphens; `opencontroller-skills` until set) and its **Owner**. Turn on **Only the organization's marketplaces** to allow people no other marketplace but this one and their teams'.
+  </Step>
+  <Step title="Turn it on">
+    In the row **Deliver**, column **Claude Code**, turn on **Serve the marketplace**, and select **Save**. The address shows beside the switch, to copy.
+  </Step>
+  <Step title="Choose the skills it serves">
+    On each skill, turn on **In the marketplace**, and make a version live. See [Skills and versions](/govern/skills/library#make-a-version-live-or-roll-back).
+  </Step>
+</Steps>
+
+A skill is served once it is **In the marketplace** and its live version's scan is clear. Making another version live serves that one from then on.
+
+### Put the managed settings on machines
+
+Go to **Govern** > **Skills** > **Marketplaces** > **Organization marketplace**. Under **Managed settings**, copy the file or select **Download**. It adds the marketplace for everyone, turns on each skill it serves, and turns off every other library skill wherever it was installed.
+
+{/* SCREENSHOT: skills-org-marketplace | crop | Organization marketplace: the address https://opencontroller.example.com/marketplace/claude-code.git with Copy, the /plugin commands, and the Managed settings box with Download and Copy. */}
+
+Put it in one of two places:
+
+- **claude.ai** > **Organization settings** > **Claude Code** > **Managed settings**, for everyone signed in to Claude Code with your claude.ai organization.
+- `managed-settings.json` on each machine, through MDM:
+
+  | System | Where the file goes |
+  |---|---|
+  | macOS | `/Library/Application Support/ClaudeCode/managed-settings.json` |
+  | Windows | `C:\Program Files\ClaudeCode\managed-settings.json` |
+  | Linux | `/etc/claude-code/managed-settings.json` |
+
+For a marketplace named `opencontroller-skills`, the file reads:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "opencontroller-skills": { "source": { "source": "git", "url": "https://opencontroller.example.com/marketplace/claude-code.git" } }
+  },
+  "enabledPlugins": { "pr-review@opencontroller-skills": true, "old-checklist@opencontroller-skills": false }
+}
+```
+
+<Info>The file changes when a skill joins the library or is listed or taken out, when **Report skills from machines** is turned on or off, and with **Only the organization's marketplaces**. Give the machines the new file each time.</Info>
+
+Without managed settings, one person can add the marketplace in Claude Code:
+
+```
+/plugin marketplace add https://opencontroller.example.com/marketplace/claude-code.git
+/plugin install pr-review@opencontroller-skills
+```
+
+### Check it works
+
+- **Organization marketplace** lists under **Plugins** each skill served, at its live version. A skill **In the marketplace** but missing there has no live version, or its scan is not clear.
+- Without signing in, the catalog answers as Claude Code reads it, and answers not found while the marketplace is off:
+
+  ```sh
+  curl -sS https://opencontroller.example.com/marketplace/claude-code/.claude-plugin/marketplace.json
+  ```
+
+## Team marketplaces
+
+A team marketplace lists library skills for the teams it is assigned to. Each skill has a name of its own there and a version policy. It is served beside the organization's marketplace, at `https://opencontroller.example.com/marketplace/<name>/claude-code.git`, and only while **Serve the marketplace** is on.
+
+Before you start, make the teams in **Settings** > **Teams**. See [Members, roles and teams](/administer/members-roles-teams#teams-group-people-and-the-assets-they-own).
+
+<Steps>
+  <Step title="Make the marketplace">
+    Go to **Govern** > **Skills** > **Marketplaces** and select **New marketplace**. Give its **Name**, which is its address (`plugins`, `reporter` and `claude-code` are taken), **What it is for**, and its **Teams**. Select **Create marketplace**.
+  </Step>
+  <Step title="Add skills">
+    On its page, on the **Skills** tab, select **Add a skill**. Pick a library skill with a live version, its **Name here** (optional), and its **Policy**.
+
+    {/* SCREENSHOT: skills-team-marketplace | crop | A team marketplace "platform-tools" on the Skills tab: pr-review with Version served 1.2.0 and Follow live, release-notes held back at 1.0.0 with what its teams' guardrails found. */}
+  </Step>
+  <Step title="Get it to the team's machines">
+    On the **Teams** tab, select **Download** for each team, or **One file for** several teams, for people in more than one. Put each file on the team's machines through MDM, at the paths above. With reporting on, replace `<REPORTING_KEY>` in it.
+  </Step>
+</Steps>
+
+claude.ai's managed settings are one file for the whole organization, so a team's machines get their own file through MDM: the organization's settings, with the team's marketplaces added. To deliver team skills in claude.ai instead, see [Skills in claude.ai](/govern/skills/claude-enterprise#deliver-team-skills-in-claudeai).
+
+A version policy is **Follow live**, which takes each new live version that passes the teams' guardrails, or **Hold**, which keeps the version the skill was added at. A version a guardrail flags is held back, and the entry says what was found. The organization sets the default under **Team marketplaces follow**; a team, or an entry, can set its own.
+
+OpenController does not know whether MDM put a file on the machines. The **Teams** tab says only whether each team's file was never downloaded, changed since, or is unchanged.
+
+### Set a team's policy
+
+A team's policy adds to the organization's. It never takes anything away.
+
+1. Go to **Govern** > **Skills** > **Policy**, and pick the team under **Policy for**.
+2. Set what the team adds:
+   - Under **Scan**, the guardrails its versions must also pass. The organization's show as fixed.
+   - **Only its marketplaces**: its members may add no marketplace but theirs and the organization's.
+   - **Its skills follow**: **Each new live version** or **The version added**, or the organization's default.
+   - **Its claude.ai group**, once delivery through Claude Enterprise is on.
+3. Select **Save**. A dialog says what saving does: which skills move from which version to which, which hold, the guardrails added or taken off, the group, and the managed settings file changing. Select **Save** again.
+
+The team's **Managed settings file** can be downloaded from its policy too. Someone in several teams gets the strictest of each: every team's guardrails, any team's marketplace limit, and hold over follow.
+
+## Publish to the Claude Platform
+
+A skill can be put in a Claude Platform workspace's own skills, where its Managed Agents can take it.
+
+Before you start, connect the Anthropic organization with a control key: a key linked to a service account with the admin role, added to each workspace skills go to. An Admin API key acts in no workspace, so it cannot publish. See [Anthropic](/integrations/anthropic). {/* TODO verify: integrations/anthropic.mdx does not yet describe adding a control key to a Claude Platform connection; link the right section once it does. */}
+
+1. Open the skill and select the **Delivery** tab.
+2. Under **Publications**, choose the workspace, and select **Publish** *version*. A skill with no live version cannot be published.
+3. Under **Agents**, choose the workspace in **Agents in**. Select **Give skill to agent** on each agent. The skill is published there first if it is not yet.
+
+{/* SCREENSHOT: skills-delivery | crop | The pr-review skill on the Delivery tab: Publications with Claude Platform · Production at 1.2.0, and Agents with support-bot (On) and billing-agent with Give skill to agent. */}
+
+A publication holds the live version, and gets every version made live after. An agent follows the published skill's latest version; Claude applies the change to new sessions. Turn an agent's switch off to take the skill away, and on to give it back. To remove a publication, select its delete button and **Remove**: the agents there that have it lose it.
+
+## What is kept, and what is never read
+
+- The marketplace serves the library alone: each served skill's name, description, live version and that version's files. It holds no key: the managed settings it writes hold `<REPORTING_KEY>`, never a key.
+- It is served read-only: a push is refused.
+- Each save of the Skills policy and of a team's policy, each marketplace change and each publication is in the [audit log](/administer/audit-log).
+
+## Turn it off
+
+- **Serve the marketplace** off: its addresses, and every team marketplace's, answer not found. The switches that need it go off with it. The library and its versions stay. Take the managed settings out of claude.ai, or off the machines.
+- **In the marketplace** off on a skill: it is no longer served, and the managed settings list it as off.
+- **A marketplace removed**: it goes from its teams' managed settings files. Give their machines the new ones.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read the marketplaces, the Skills policy and where each skill is delivered. |
+| **Operator** | Also mark a skill **In the marketplace**, publish it to the Claude Platform, and give it to Managed Agents. |
+| **Admin** | Also save the Skills policy and teams' policies, make and change marketplaces, and download teams' managed settings. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Skills in claude.ai" icon="cloud" href="/govern/skills/claude-enterprise">
+    Deliver team skills as claude.ai plugins.
+  </Card>
+  <Card title="Skills on machines" icon="laptop" href="/govern/skills/on-machines">
+    Learn which skills people keep.
+  </Card>
+</CardGroup>

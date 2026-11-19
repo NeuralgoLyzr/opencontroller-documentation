@@ -1,0 +1,102 @@
+---
+title: "Skills"
+description: "What Skills does, how a skill gets into the organization's library, who reviews it, and who can do what."
+sidebarTitle: "Overview"
+icon: "puzzle"
+---
+
+<Badge>Viewer</Badge>
+
+<Note>Skills must be turned on for your organization. It is off unless whoever runs your OpenController turns it on in its configuration (`FEATURES=skills=on`). While it is off, the **Skills** pages are not in the menu, and a link to one says **Skills is not part of this organization's opencontroller**. See [Modules](/administer/modules).</Note>
+
+A skill is a folder with a `SKILL.md` and the files it refers to. An agent loads it when a task calls for it. Skills is where your organization keeps its skills, checks them, and decides who gets them.
+
+- **One library.** Each skill in it has versions. One version is **live**: the one that is served and delivered.
+- **Scanned before it goes live.** Each version is scanned with the guardrails you pick. A version goes live only when its scan passed, or an Admin overrides the scan and says why.
+- **Delivered where agents run.** To Claude Code through a plugin marketplace OpenController serves, to claude.ai and Cowork through Claude Enterprise, and to the Claude Platform's workspaces and Managed Agents.
+- **Found where people keep them.** The OpenController plugin reports the skills on people's machines, and Claude Enterprise reports the skills in members' claude.ai accounts.
+
+{/* SCREENSHOT: skills-library-hero | full | Govern > Skills > Skills: the stage bar (Shadow, Requested, Registered, In library, Live, with "Governed: 9 of 14") above the library table with pr-review (Live 1.2.0, Latest 1.2.0, Passed, Listed) and release-notes (Live none, Latest 1.0.0, Flagged). */}
+
+## The Skills pages
+
+Go to **Govern** > **Skills**. The group has four pages:
+
+| Page | What it is for |
+|---|---|
+| **Skills** | The library: each skill's **Live** and **Latest** version, its **Latest scan**, and whether the **Marketplace** lists it. **New skill** uploads one. |
+| **Marketplaces** | The organization's marketplace and the team marketplaces coding agents install skills from. |
+| **On machines** | The skills people keep on their machines and in claude.ai, until they are in the library. |
+| **Policy** | The Skills policy: the guardrails every version must pass, and the switches for each way skills are delivered, found and changed. |
+
+A bar at the top of **Skills** and **On machines** counts every skill by stage, from machines to the marketplace:
+
+| Stage | Means |
+|---|---|
+| **Found** | On machines, not listed in Shadow AI. |
+| **Shadow** | On machines, not registered. |
+| **Requested** | Waiting in Approvals. |
+| **Registered** | Not yet in the library. |
+| **In library** | In the library, no version live. |
+| **Live** | A version is live, and the marketplace serves it. |
+
+**Governed** counts the skills that are registered, in the library or live.
+
+## How a skill gets into the library
+
+| Way | Who | How |
+|---|---|---|
+| Upload it | **Operator** | Select **New skill** on **Skills**, and upload the folder. See [Skills and versions](/govern/skills/library). |
+| Share it from a machine | Anyone with a role | Run `/opencontroller:share-skill <name>` in Claude Code, open the link, and select **Submit for approval**. See [Skills on machines](/govern/skills/on-machines#share-a-skill-from-your-machine). |
+| Bring it in from machines | **Operator** | Select **Bring into library** on a skill on machines. See [Skills on machines](/govern/skills/on-machines#bring-a-skill-into-the-library). |
+| Share it from claude.ai | **Admin** | Select **Share with the organization** on a skill kept in claude.ai. See [Skills in claude.ai](/govern/skills/claude-enterprise#share-a-claudeai-skill-with-the-organization). |
+
+Whichever way it comes in, a new version is scanned and is not live. Nothing reaches anyone until someone makes a version live.
+
+## Review and approval
+
+A skill is reviewed at up to three points:
+
+1. **Registration.** With **List in Shadow AI** on, each skill found on machines is a shadow asset. An **Operator** selects **Register**, and the request waits under [Approvals](/govern/approvals) like any other asset. With **Separation of duties** on in [Registry policies](/govern/policies), you cannot approve a registration you requested. It is on by default.
+2. **A version proposed from machines.** An edited copy of a library skill can be proposed as the skill's next version. It waits under **Approvals** > **Skill versions** for an **Admin**. Approved, it is added to the library, scanned and not live. {/* TODO verify: at PR #238's head the server does not stop the person who proposed a version from approving it; check whether self-approval of skill versions is blocked before saying so. */}
+3. **Going live.** An **Operator** makes a version live. A version whose scan did not pass needs an **Admin** to override its scan first, with a reason.
+
+## Teams
+
+There is one library for the whole organization. Teams change which skills reach their members, and the rules those skills are held to:
+
+- A **team marketplace** lists library skills for the teams it is assigned to. See [Deliver skills](/govern/skills/deliver#team-marketplaces).
+- A **team policy** adds guardrails, a version policy and a claude.ai group to the organization's. See [Deliver skills](/govern/skills/deliver#set-a-teams-policy).
+- An **assignment** installs a library skill on the machines of a person, a group, a team or everyone. See [Skills on machines](/govern/skills/on-machines#assign-a-skill).
+
+Teams do not narrow what people see. Everyone with a role in the organization reads the whole library, every marketplace and every skill on machines. Skills permissions come from your role in the organization: a role you hold only in a team does not give them.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read the library, the marketplaces, the Skills policy, skills on machines, assignments and proposals. Share a skill from their machine, and confirm a machine is theirs. |
+| **Operator** | Also upload skills and versions, rescan, make a version whose scan is clear live, mark a skill **In the marketplace**, bring a skill on machines into the library, propose a version from machines, publish to the Claude Platform and give skills to Managed Agents, and give a skill to everyone in claude.ai. Request registrations. |
+| **Admin** | Also save the Skills policy and teams' policies, override a scan, make and change marketplaces, download teams' managed settings, change and remove skills on machines, delete skills in claude.ai, assign skills, share a claude.ai skill with the organization, and approve or reject proposed versions and registrations. |
+| **Owner** | The same as Admin. |
+
+A custom role can hold each permission on its own: `skills:read`, `skills:write`, `skills:manage`, `skills:approve`, `skills:submit`, `skills:report` and `skills:report-cloud`. See [Members, roles and teams](/administer/members-roles-teams#make-a-custom-role).
+
+<Warning>Give `skills:report` and `skills:report-cloud` only to a service account whose custom role holds them and nothing else. Their keys sit in files anyone on the machine, or anyone in claude.ai, can read.</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Skills and versions" icon="history" href="/govern/skills/library">
+    Upload a skill, scan it and make a version live.
+  </Card>
+  <Card title="Deliver skills" icon="store" href="/govern/skills/deliver">
+    Serve the marketplace and set up team marketplaces.
+  </Card>
+  <Card title="Skills on machines" icon="laptop" href="/govern/skills/on-machines">
+    Find the skills people keep, and change or assign them.
+  </Card>
+  <Card title="Skills in claude.ai" icon="cloud" href="/govern/skills/claude-enterprise">
+    Read, share and deliver skills through Claude Enterprise.
+  </Card>
+</CardGroup>

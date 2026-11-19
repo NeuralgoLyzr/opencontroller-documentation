@@ -1,0 +1,138 @@
+---
+title: "Skills in claude.ai"
+description: "Through Claude Enterprise, see the skills members keep in claude.ai, share or delete them, deliver library skills in claude.ai, and bring Cowork's skills into reporting."
+sidebarTitle: "Skills in claude.ai"
+icon: "cloud"
+---
+
+<Badge>Admin</Badge>
+
+<Note>Skills must be turned on for your organization. It is off unless whoever runs your OpenController turns it on in its configuration (`FEATURES=skills=on`). See [Modules](/administer/modules).</Note>
+
+People who use claude.ai, Claude Desktop or Cowork keep skills that no machine report shows. With a Claude Enterprise connection, OpenController reads those skills, can delete them, and delivers library skills in claude.ai as plugins. The **claude.ai and Cowork** column of the Skills policy turns each part on.
+
+## Before you start
+
+- **A Claude Enterprise connection.** Connect it under **Integrations**, with a **Read key** holding `read:compliance_activities` and `read:plugins`. See [Connect Claude Enterprise](/integrations/anthropic#connect-claude-enterprise).
+- **A control key**, for anything that changes claude.ai: deleting, delivering and publishing the plugin. Add it to the connection as its **Control key**, holding `write:plugins`. While no connection holds one, the Skills policy does not let those switches be turned on, and names the connections that do.
+- **Reporting from machines** is on: see [Skills on machines](/govern/skills/on-machines#turn-on-reporting). The server refuses **Read members' claude.ai skills** and **Publish the OpenController plugin in claude.ai** without it.
+
+<Info>The Compliance API's activity feed holds skill events only from when it was turned on for your organization. A skill a member made before then is not seen.</Info>
+
+## Read members' claude.ai skills
+
+1. Go to **Govern** > **Skills** > **Policy**. In the row **Discover**, column **claude.ai and Cowork**, turn on **Read members' claude.ai skills**.
+2. Select **Save**.
+
+Every 15 minutes, OpenController reads the skills members wrote or uploaded, and those in members' own plugins. The organization's own skills are left out. To read now, select **Read claude.ai now** on **On machines**.
+
+On **On machines**, a skill held only in claude.ai shows **In claude.ai**. Under **Holders**, a copy in claude.ai shows as a **claude.ai account**. Its files are not sent: only its name and description, its owner, the plugin carrying it, claude.ai's version of it, and when it last changed.
+
+## Delete a member's claude.ai skill
+
+<Warning>A delete is at once and permanent. Every version goes, for its owner too. OpenController keeps no copy.</Warning>
+
+1. In the Skills policy, in the row **Change**, column **claude.ai and Cowork**, turn on **Delete members' claude.ai skills**. It needs **Read members' claude.ai skills**. Select **Save**. The page asks **Turn these on?**: select **Turn on and save**.
+2. Open the skill in **On machines**, on the **Holders** tab. On the **claude.ai account** copy, select **Delete in claude.ai** from its **⋯** menu.
+3. Give a **Reason**, and select **Delete permanently**.
+
+A machine's copy of a claude.ai account's skill is deleted the same way. A claude.ai skill is never edited from OpenController. The delete is listed on the skill's **Changes** tab, with who asked and why.
+
+| Refusal | Fix |
+|---|---|
+| *no Claude Enterprise control key* | Add a control key holding `write:plugins` to the connection, under **Integrations**. |
+| *may not change plugins: it needs the write:plugins scope* | Make a control key with `write:plugins`. |
+| *Claude Enterprise does not list the plugin carrying this skill* | Remove the skill in claude.ai. |
+| *claude.ai has not said which plugin carries this skill* | Remove the skill in claude.ai. |
+
+## Share a claude.ai skill with the organization
+
+A skill a member keeps in claude.ai can come into the library, and then go to everyone.
+
+1. Open the skill in **On machines**, and select **Share with the organization**.
+2. Under **How everyone gets it**, pick **Available to install** (everyone can add it in claude.ai and Claude Code) or **Required for everyone** (installed for everyone, who cannot remove it).
+3. Add **Notes for the approver** if you want, and select **Share with the organization**.
+
+{/* SCREENSHOT: skills-claude-share | crop | The Share release-notes with the organization dialog: the note "Its files are downloaded from claude.ai through Claude Enterprise now", How everyone gets it with Available to install selected, and Notes for the approver. Crop to the dialog. */}
+
+Its files come from a copy a machine collected, or else they are downloaded through Claude Enterprise. Claude records the download in its Compliance activity feed. A skill written in claude.ai's skill editor alone cannot be downloaded: the dialog says so. Upload it to the library instead.
+
+It then waits under **Approvals**: as a registration request, or, for a skill already in the library, as its next version. Once it is approved and a version is live, claude.ai gives it to everyone, as you picked. This needs **Deliver team skills as claude.ai plugins** on.
+
+## Deliver team skills in claude.ai
+
+With this on, each skill in a [team marketplace](/govern/skills/deliver#team-marketplaces) goes to claude.ai as a plugin of its own, required for the claude.ai groups of the marketplace's teams, and for no one else. Members get it in claude.ai, Claude Desktop, Cowork and Claude Code.
+
+Before you start, sync each team's group to claude.ai from your identity provider, through SCIM.
+
+1. In the Skills policy for the **Organization**, in the row **Deliver**, column **claude.ai and Cowork**, turn on **Deliver team skills as claude.ai plugins**. It needs **Serve the marketplace** and a control key. Select **Save**.
+2. For each team, pick the team under **Policy for**, and set **Its claude.ai group**. A group is one team's: a group another team has is not offered, and the group with the team's name is suggested. Select **Save**.
+
+It is off until an Admin turns it on, as it changes what claude.ai gives people. Delivery runs every 15 minutes, and at once with **Deliver now** on a team marketplace's **Delivery** tab. A skill waits while none of its teams has a claude.ai group (**None: its skills wait**). A group reached by one library skill from several marketplaces gets it once, at the lowest version.
+
+The **Delivery** tab shows **Last delivered**, and which skills are in step, not delivered, or waiting for a claude.ai group. A failing delivery is said once, with where to fix it.
+
+### Give a skill to everyone in claude.ai
+
+Open the skill, select the **Delivery** tab, and under **Everyone in claude.ai**, pick **Available to install** or **Required for everyone**. **Not given to everyone** takes it back. It is delivered within 15 minutes, at its live version, while **Deliver team skills as claude.ai plugins** is on. This needs the **Operator** role.
+
+## Report Cowork's skills
+
+Cowork finds its plugins in claude.ai and reads no settings file. So OpenController uploads its own plugin to claude.ai, required for everyone, with a reporting key of its own. On a member's computer, it reports as Claude Code's plugin does. In Anthropic's cloud, it reports the account's skills on an entry of the person's own, **claude.ai (cloud)**, which is never sent a change.
+
+Before you start:
+- Make a service account whose custom role holds `skills:report` and `skills:report-cloud` and nothing else. Every member can read its key in the plugin.
+- OpenController's secrets manager is set up, and its public address is set, for the plugin to report to.
+
+<Steps>
+  <Step title="Say where Cowork runs">
+    In the Skills policy, under **Claude Desktop's Cowork**, set **Where Cowork runs** as claude.ai has it: **On members' computers**, **In Anthropic's cloud** or **Both**.
+  </Step>
+  <Step title="Save the key">
+    Enter the **Reporting key** and select **Save key**. It is never shown again. Saving another replaces it.
+  </Step>
+  <Step title="Publish the plugin">
+    In the row **Deliver**, column **claude.ai and Cowork**, turn on **Publish the OpenController plugin in claude.ai**, and select **Save**. OpenController checks every 15 minutes, and uploads a new version when its files change. **Publish now** does it at once.
+  </Step>
+  <Step title="Set up claude.ai">
+    In claude.ai, under **Organization settings**:
+    - **On members' computers** alone: in **Cowork**, turn off **Cowork in the cloud**. Members' Cowork tasks then stop while their computer sleeps.
+    - **In Anthropic's cloud**: in **Capabilities** > **Allow network egress**, add OpenController's domain to **Additional allowed domains**.
+  </Step>
+</Steps>
+
+Without a control key, save the key, select **Download the plugin**, and upload it in claude.ai under **Organization settings** > **Plugins & skills** > **Add** > **Upload a plugin**, required for everyone. Nothing uploads its later versions: download and upload it again when it changes.
+
+**Claude Desktop's Cowork** says how many organizations the plugin is **Published to**, and when.
+
+## What is never read
+
+Of the activity feed, only skill events are read. Of the Plugins API, only members' own plugins. No conversation, project or file is read through Claude Enterprise, except a skill's plugin downloaded for a share.
+
+## Turn it off
+
+- **Read members' claude.ai skills** off: nothing more is read. **Delete members' claude.ai skills** goes off with it. The copies read stay as last read.
+- **Delete members' claude.ai skills** off: **Delete in claude.ai** is refused.
+- **Deliver team skills as claude.ai plugins** off: nothing more is delivered or withdrawn. The plugins already in claude.ai stay there. To take them out, take the skills out of their marketplaces while delivery is on, or remove them in claude.ai.
+- **Publish the OpenController plugin in claude.ai** off: no new version is uploaded. The plugin already in claude.ai stays, required for everyone: remove it in claude.ai's **Plugins & skills**.
+- To stop OpenController changing claude.ai at all, remove the connection's control key.
+
+## Who can use it
+
+| Role | What they can do |
+|---|---|
+| **Viewer** | Read the skills in claude.ai on **On machines**, and how each is delivered. |
+| **Operator** | Also give a library skill to everyone in claude.ai. |
+| **Admin** | Also turn on the switches, read claude.ai now, delete a member's skill, share a claude.ai skill with the organization, set the Cowork reporting key, and select **Publish now** and **Deliver now**. |
+| **Owner** | The same as Admin. |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Connect Claude Enterprise" icon="plug" href="/integrations/anthropic#connect-claude-enterprise">
+    Add the read key and the control key.
+  </Card>
+  <Card title="Deliver skills" icon="store" href="/govern/skills/deliver">
+    Set up team marketplaces.
+  </Card>
+</CardGroup>
