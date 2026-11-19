@@ -50,6 +50,9 @@ provisioned, deactivated people too. For each person it shows:
   names one of their groups, or *the default role*.
 - *None: cannot sign in* when no mapping names their groups and there is no default role.
 - **Active**, or **Deactivated** when the provider deactivated them.
+- **Last sign-in**: when they last signed in through your identity provider, or **Never** when no sign-in is on
+  record. It is read from the [audit log](/administer/audit-log), matched by their email, user name or the provider's
+  ID for them. On a narrow window this column is hidden.
 
 Search by name, email or group. With SCIM off, the list says so.
 

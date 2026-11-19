@@ -20,6 +20,12 @@ Every governed asset is in one of three places: **Shadow AI** (nobody has regist
 
 Each step is kept in the registration's **History** and in the [audit log](/administer/audit-log).
 
+### The owner comes from your directory
+
+When your identity provider provisions people into OpenController (SCIM), the **Owner** field offers them as you type part of a name or an email. This works in the single, bulk and external agent forms. Pick a person: the field takes their email, or their user name when they have no email. That is how sign-ins and the ownership checks name them, so an owner who leaves shows as gone.
+
+While SCIM is on, the registry refuses an owner your directory does not have. The message names the owner and asks for someone your identity provider provisioned, by email. An owner the platform names is taken as before. Without SCIM, you can type any owner.
+
 An agent you register by hand (an A2A agent or an endpoint outside every connected cloud) is one asset per address. Asking again for one already pending or registered is refused, and the asset stays as the first request read it. Two agents behind one path, told apart by a query parameter such as `?agent=sales`, are two assets; a parameter that carries a secret (a token, a key, a signature) is never kept.
 
 When registered assets are no longer reported by their cloud, a line above the list says how many ("*N* registered assets are gone from their clouds") and offers to **Show them**. They stay registered, but are not counted as part of the estate: the **Registered** figures on **Overview** and **AI Inventory** count live assets only.
