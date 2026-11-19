@@ -11,9 +11,13 @@ OpenController's own AWS identity, and only when it presents the role's external
 
 - **[AI Inventory](/discover/ai-inventory):** Amazon Bedrock AgentCore harnesses, runtimes, gateways, memories,
   browsers, code interpreters and policy engines; classic Bedrock agents with their action groups and knowledge bases;
-  Bedrock guardrails; AWS Agent Registry records; the models, tools, identities and images agents use.
+  Bedrock guardrails; AWS Agent Registry records; the models, tools, identities and images agents use. From Amazon
+  SageMaker: notebooks (Studio spaces and notebook instances) with the instance each runs on, whether it is a GPU
+  one, whether it is running, and what shuts it down when idle; and the models in the model registry with their
+  latest and approved versions.
 - **[Shadow AI](/discover/shadow-ai):** who may call each runtime or gateway, and whether it is open to everyone.
-- **[Spend](/discover/people-and-spend):** the daily cost of Bedrock services from Cost Explorer, and an estimate per
+- **[Spend](/discover/people-and-spend):** the daily cost of Bedrock services from Cost Explorer, and of Amazon
+  SageMaker by what it ran on (an endpoint, a notebook or a training job, and its instance type); and an estimate per
   AgentCore runtime from CloudWatch.
 - **Control (optional):** share, remove, and block AgentCore runtimes and gateways from an agent's page.
 - **[Cloud guardrails](/secure/guardrails/cloud-providers):** once you add a guardrail credential for the account, run
@@ -127,8 +131,9 @@ does not change.
 | Bedrock AgentCore | `ListHarnesses`, `GetHarness`, `ListHarnessVersions`, `ListAgentRuntimes`, `GetAgentRuntime`, `ListGateways`, `GetGateway`, `ListGatewayTargets`, `GetGatewayTarget`, `ListGatewayRules`, `GetGatewayRule`, `GetResourcePolicy` (who may call a runtime or gateway), `ListMemories`, `ListBrowsers`, `ListCodeInterpreters`, `ListOauth2CredentialProviders`, `ListApiKeyCredentialProviders`, `ListWorkloadIdentities`, `ListPolicyEngines`, `ListRegistries`, `GetRegistry`, `ListRegistryRecords`, `GetRegistryRecord` |
 | AWS Agent Registry (`agent-registry:`) | `ListRegistries`, `GetRegistry`, `ListRegistryRecords`, `GetRegistryRecord` |
 | Bedrock (`bedrock:`) | `ListGuardrails`; classic agents: `ListAgents`, `GetAgent`, `ListAgentAliases`, `ListAgentActionGroups`, `GetAgentActionGroup`, `ListAgentKnowledgeBases`, `ListAgentCollaborators`; knowledge bases: `ListKnowledgeBases`, `GetKnowledgeBase`, `ListDataSources`, `GetDataSource`. The configuration only: never `InvokeAgent`, `Retrieve` or `GetAgentMemory`. |
+| SageMaker (`sagemaker:`) | Notebooks: `ListDomains`, `DescribeDomain`, `ListSpaces`, `DescribeSpace`, `ListApps`, `ListNotebookInstances`, `DescribeNotebookInstance`; the model registry: `ListModelPackageGroups`, `ListModelPackages`. The settings only: never a presigned URL that opens a notebook, nor a model's files. |
 | Account | `account:ListRegions`, so scans skip the opt-in regions that are not enabled. |
-| Spend | `ce:GetCostAndUsage`, `ce:GetDimensionValues` (Bedrock's bill, from Cost Explorer), `cloudwatch:ListMetrics`, `cloudwatch:GetMetricData` (each AgentCore runtime's vCPU and memory hours). |
+| Spend | `ce:GetCostAndUsage`, `ce:GetDimensionValues` (Bedrock's and SageMaker's bill, from Cost Explorer), `cloudwatch:ListMetrics`, `cloudwatch:GetMetricData` (each AgentCore runtime's vCPU and memory hours). |
 
 **Always denied**, at both levels. An explicit deny wins over any allow, `ReadOnlyAccess` included:
 
