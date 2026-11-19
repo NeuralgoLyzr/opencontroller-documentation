@@ -25,6 +25,7 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | Foundry prompt agent | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> |
 | | Foundry workflow agent | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — |
 | | Foundry agent published to Microsoft 365 | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | Entra agent identity | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Disable sign-in**) | <Icon icon="check" size={16} color="#2f855a" /> (restorable for 30 days) | — | — |
 | **Google Cloud** | Agent Runtime agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — |
 | | CX Agent Studio app | — | — | <Icon icon="check" size={16} color="#2f855a" /> (public web access) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — |
 | **Snowflake** | Cortex Agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (to CoWork) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
@@ -125,8 +126,9 @@ Makes the agent unusable, and can be undone. **Unblock** brings it back as it wa
   <Tab title="Microsoft">
     - **Copilot Studio:** quarantines the agent in Power Platform. Needs a Microsoft administrator (Global, AI or Power Platform) signed in: the dialog asks you to **Sign in to Microsoft**. The sign-in lasts about an hour.
     - **Agent Builder and Agent 365 catalog agents:** blocks the agent in the Agent 365 catalog for the whole tenant. Needs an AI or Global administrator signed in and an **Agent 365 licence**. Published agents only.
-    - **Foundry hosted agents:** **Disable** stops the agent in Foundry; sessions already running are not ended. **Enable** turns it back on.
+    - **Foundry hosted agents:** **Disable** stops the agent in Foundry; sessions already running are not ended. Foundry leaves the agent's own Entra agent identity able to sign in, so OpenController turns that identity's sign-in off too. **Enable** turns the identity's sign-in back on first, then the agent. An agent that runs as its project's shared identity keeps it as it was, as the project's other agents use it. If the identity cannot be turned back on, the agent stays disabled.
     - **Foundry agents published to Microsoft 365:** blocks the published copy; the agent still runs in Foundry. Needs an AI or Global administrator signed in and an Agent 365 licence.
+    - **Entra agent identities:** an agent identity is what a Copilot Studio or Foundry agent signs in as. **Disable sign-in** stops Entra from giving it new tokens, so the agent, and anything else that runs as it, can no longer reach what it was granted: Azure resources, Microsoft Graph, its tools. A Foundry agent also refuses every request while its identity is off. A token already issued works until it expires, within about an hour. The identity, its permissions and its role assignments are kept. **Enable sign-in** undoes it. Use it from the identity's own **Access** card, or from the **Runs as** row on the **Access** card of the agent that runs as it. Blocking a Copilot Studio or Microsoft 365 agent turns its identity's sign-in off as well.
   </Tab>
   <Tab title="Snowflake">
     **Cortex Agent:** OpenController's control role takes ownership of the agent and revokes its grants, keeping a snapshot in your account; **Unblock** gives them back. While blocked, sharing, removing, ending organization-wide access and publishing are refused. Needs a warehouse on the connection.
@@ -147,6 +149,7 @@ Removes the agent from its cloud for good. Type the agent's name to confirm. **D
 - **Microsoft, Copilot Studio:** deletes the agent; **Delete with cascade** also deletes the flows only this agent uses.
 - **Microsoft, Agent Builder:** deletes the agent (published or draft) and its catalog entry. Needs a Global, AI or Power Platform administrator signed in. No cascade.
 - **Microsoft, Foundry agents:** deletes the agent; **Delete with cascade** also deletes its Azure Bot Services.
+- **Microsoft, Entra agent identity:** deletes the identity in Entra, which keeps it restorable for 30 days in the Entra admin center; after that it is gone for good. The agent that runs as it stays but cannot sign in: a Foundry agent refuses every request within minutes, until the identity is restored. To stop the agent, use **Disable sign-in** instead. To remove the agent, delete the agent: Microsoft deletes its identity with it. No cascade.
 - **Anthropic:** archives the API key, workspace, Managed Agent, deployment, vault, environment or memory store (a custom skill is deleted). Deleting a member removes them from the organization. Archiving a workspace archives its API keys; removing a member archives their personal keys. The Default workspace can't be archived, and admins and owners can't be removed.
 
 ## Route through gateway
@@ -171,7 +174,7 @@ For any other agent, point the agent's model address at the gateway and give it 
 Why some actions show — in the table:
 
 - **AWS:** classic Bedrock agents cannot be changed from OpenController, and AgentCore agents cannot be published or deleted from here. Agents with a JWT authorizer can only be blocked.
-- **Microsoft:** only an Agent Builder agent's creator can share it, in Microsoft 365 Copilot. Drafts are not in the Agent 365 catalog, so they can be deleted but not blocked. Foundry can disable only hosted agents, not prompt or workflow agents.
+- **Microsoft:** only an Agent Builder agent's creator can share it, in Microsoft 365 Copilot. Drafts are not in the Agent 365 catalog, so they can be deleted but not blocked. Foundry can disable only hosted agents, not prompt or workflow agents. An Entra agent identity is what an agent signs in as, so it is never shared or published.
 - **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
 - **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
 - **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
