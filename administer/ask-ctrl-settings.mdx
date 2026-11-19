@@ -37,7 +37,7 @@ Under each setting, **The server's configuration.** means the setting follows th
 |---|---|---|
 | **Gateway** | Where Ask Ctrl's model calls go: **Your LLM gateway**, or **Another gateway** at an address you give. | **Your LLM gateway** |
 | **Model** | The model Ask Ctrl thinks with. Ask Ctrl calls tools, so choose a model made for that. | `anthropic/claude-sonnet-5-5` |
-| **Thinking** | How much Ask Ctrl thinks before it answers: **None**, **Minimal**, **Low**, **Medium**, **High** or **Extra high**. More is slower, and costs more. | **Medium** |
+| **Thinking** | How much Ask Ctrl thinks before it answers: **None**, **Minimal**, **Low**, **Medium**, **High** or **Extra high**. More is slower, and costs more. A model that takes no such setting is asked without one (see [Thinking](#thinking)). | **Medium** |
 | **Thinking shown** | How much of that thinking people see under each answer: **Hidden**, **Automatic** (as much as the model gives), **Brief** or **Detailed**. | **Automatic** |
 | **Steps per answer** | How many round trips with the model one answer may take, from 1 to 30. Each look-up or change is one. | 12 |
 | **Keep conversations** | How many days a conversation is kept after its last answer, from 0 to 3650. **0** keeps none. | 90 days |
@@ -46,7 +46,20 @@ Whoever runs your OpenController may have configured other defaults. The page sh
 
 ### Gateway and model
 
-By default, Ask Ctrl calls its model through your LLM gateway, the one in **Settings** > **LLM Gateway**. Its calls then follow that gateway's guardrails, budgets and logs. Under **Model**, choose a provider and one of its models.
+By default, Ask Ctrl calls its model through your LLM gateway, the one in **Settings** > **LLM Gateway**. Its calls then follow that gateway's guardrails, budgets and logs. Under **Model**, choose a provider, then type the model's ID. As you type, the models the gateway lists for that provider are offered. Choose one, or type the whole ID.
+
+The gateway's list is not the only choice. A key can reach a model the gateway does not list, for example a Bedrock inference profile such as `us.anthropic.claude-sonnet-5-5`. Type that ID: the note under the field says **The gateway does not list this one: it is asked for by the ID as typed.** Ask Ctrl saves the ID as you typed it. If no key can call it, the first answer fails with the gateway's reason (see [When Ask Ctrl cannot answer](#when-ask-ctrl-cannot-answer)).
+
+{/* SCREENSHOT: ask-ctrl-model-typed | crop | Settings > Ask Ctrl, the Model setting: provider bedrock, the ID us.anthropic.claude-sonnet-5-5 typed, and under it the note "The gateway does not list this one: it is asked for by the ID as typed." Crop to the Model setting. */}
+
+The note under the field also says when the gateway has nothing to offer:
+
+| The note says | What it means |
+|---|---|
+| **The gateway lists no models for this provider: check its keys' Models. Type the model's ID.** | The provider's keys in the LLM gateway serve no models. Type the ID, or check each key's **Allowed Models** (see [Add a model provider](/secure/set-up-gateway#add-a-model-provider)). |
+| **The gateway would not list this provider's models. Type the model's ID.** | The gateway did not answer the request for the list. Type the ID. |
+
+{/* TODO verify: that "its keys' Models" in the first note is the provider key's Allowed Models field in LLM Gateway > Providers. */}
 
 You can give Ask Ctrl another gateway instead: any gateway that serves the OpenAI Responses API.
 
@@ -68,6 +81,14 @@ You can give Ask Ctrl another gateway instead: any gateway that serves the OpenA
 <Warning>With another gateway, Ask Ctrl's questions, and what it reads of your estate to answer them, go to that gateway. They do not pass through your LLM gateway's guardrails and logs.</Warning>
 
 **The gateway's key.** Ask Ctrl's model calls carry the secret `platform/assistant-gateway-key` as their key, whichever gateway they go to. A gateway that asks for no key needs none. Under **Gateway**, the **Key** line says when the key was set, and **Set** or **Rotate** changes it. You can also change it in [Secrets](/administer/secrets-auth). The value is never shown.
+
+### Thinking
+
+Every call Ask Ctrl makes to its model asks it to think, at the **Thinking** setting, and to return the **Thinking shown**. Some models take no such setting and refuse the call. Amazon's Nova 1 models on Bedrock (Nova Lite, Nova Pro and Nova Micro) are an example.
+
+When the gateway refuses a call because of its thinking (a `400` or `422` that names the reasoning or the thinking), Ask Ctrl asks the same model again, once, without the setting. If that call goes through, Ask Ctrl asks that model without the setting for the next hour, then tries with it again. A change to the gateway, **Model**, **Thinking** or **Thinking shown** is tried with the setting at once.
+
+Nothing on this page changes when this happens. The settings keep the values you saved, and the hint under **Thinking** says **A model that takes no such setting is asked without one.** The model's answers have no thinking to show under them. If the call without the setting fails too, Ctrl says what the gateway answered, for example "Ask Ctrl's gateway answered 400: …".
 
 ### Keep conversations
 
@@ -104,7 +125,7 @@ When an answer fails, Ctrl says why. The common reasons:
 | "Ask Ctrl has no gateway to reach its model through: …" | Connect the LLM gateway in **Settings** > **LLM Gateway** (see [Modules](/administer/modules)), or give Ask Ctrl another gateway here. |
 | "Ask Ctrl's gateway could not be reached: …" | Check the address under **Gateway**, and that OpenController can reach it. |
 | "Ask Ctrl's gateway has an address that is not valid: …" | Correct the address under **Gateway**. |
-| "Ask Ctrl's gateway answered 401: …" (or another code) | The gateway refused the call, for the reason shown. A `401` or `403` is usually the key: set or rotate it under **Gateway**. Otherwise check **Model**. |
+| "Ask Ctrl's gateway answered 401: …" (or another code) | The gateway refused the call, for the reason shown. A `401` or `403` is usually the key: set or rotate it under **Gateway**. Otherwise check **Model**: an ID the gateway does not list is sent as typed. |
 | "The LLM gateway's guardrails blocked this request: …" | A content rule in your LLM gateway blocked Ask Ctrl's call, for the reason shown, for example "detected PII". An **Admin** reviews the rule in [Content rules](/secure/routing-and-mcp#content-rules). |
 | "This answer called the model as often as one answer may: …" | Ask a narrower question, or raise **Steps per answer**. |
 | "the answer took too long; try a narrower question" | An answer may take 2 minutes (`DISCOVERY_CHAT_TIMEOUT`). Ask a narrower question. |
