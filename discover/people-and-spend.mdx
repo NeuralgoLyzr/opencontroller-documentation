@@ -1,6 +1,6 @@
 ---
 title: "See people and spend"
-description: "What your organization spends on AI (cloud bills, licences, model calls and their sources) and who it is spent on: people, idle and unpriced licences, departments."
+description: "What your organization spends on AI (cloud bills, licences, model calls and their sources), what spend needs a look, and who it is spent on: people, idle and unpriced licences, departments."
 sidebarTitle: "People and spend"
 icon: "circle-dollar-sign"
 ---
@@ -82,6 +82,59 @@ provider's own billing. Its columns follow the FinOps Foundation's FOCUS specifi
   <img src="/images/home/spend-sources.png" alt="The Sources panel with sources that are read, one that failed and one not set up." />
 </Frame>
 
+## What needs a look
+
+After each read of the bills, OpenController reads every asset's last 30 days of spend together with what the
+[registry](/govern/registry) says of the asset. When something about that spend needs a look, a **signal** opens on
+the asset. The signal resolves on its own once its rule no longer holds.
+
+| Signal | What it means | Severity |
+|---|---|---|
+| **Unregistered, spending** | An asset no one registered spent $10 or more over 30 days. | High. Critical when it also spikes or accelerates, or spends ten times the amount. |
+| **Spending after revoke** | An asset whose registration was rejected or revoked still spent money in the last week. | Critical |
+| **Spike** | A day in the last week cost at least 3 times the average of the 7 days before it, and at least $10 more. | Medium. High on an asset no one registered. |
+| **Accelerating** | Spend grew 10% a day or faster over the last 14 days, on a steady curve. The signal says how many days spend takes to double. | High. Critical on an asset no one registered. |
+| **No owner** | A registered, pending or unregistered asset spent $10 or more over 30 days, and no one owns it. | Medium |
+| **Over its limit** | A connection's spend this month reached the monthly limit set for it. This signal is about the connection, not an asset. | High |
+
+These amounts are the defaults. An Admin changes them in the [spend policy](/govern/policies#spend-policy).
+
+- **What an asset spent** is its last 30 days, today included, the same 30 days as its cost everywhere else in the
+  console. It is the asset's bill or, with none, its share of one. It is in the currency the asset is billed in most,
+  and the policy's amounts are read in that currency.
+- **Over its limit** counts this month's billed and estimated spend, in the currency the connection is billed in most.
+  It resolves when the month turns or the limit is raised.
+- Signals are worked out again each time spend is read, and each time the spend policy is saved.
+
+### Where signals show
+
+- **Spend** > **Needs attention**: one line for each asset, the most urgent first. Each line shows the asset's
+  registry status, a badge for each signal (point at a badge for its detail), what it spent and since when it needs a
+  look. Select **Register** for an asset no one registered, or **Open** for any other. With a **Provider** picked, only
+  that provider's assets show. An Admin sees **When it says so**, which opens the spend policy.
+- **Overview**: a banner at the top while any asset has a high or critical signal. It says how many assets need
+  attention and names the worst one. Select it to open **Spend**.
+- **An asset's page**: the **Spend, 30 days** card has a **Needs a look** row, and the asset's **Spend** tab has a
+  **Needs a look** panel with when each signal opened.
+- **[Findings](/posture/findings)**: each open signal on an asset is also a finding, **FIN-1** to **FIN-5** under
+  Governance. Turn each on or off in [Security policies](/posture/security-policies).
+
+**Needs attention** and the **Overview** banner show only where your deployment runs the registry.
+
+{/* SCREENSHOT: spend-needs-attention | crop | The Needs attention panel on Spend: an unregistered API key with the Unregistered, spending (critical) and Spike badges and a Register button, a registered agent with Accelerating and an Open button, a connection with Over its limit. Account IDs blurred. */}
+
+### A connection's monthly limit
+
+Most providers' APIs do not say an organization's spend limit. A Claude organization's limit, for example, is set
+only in the Claude Console. So an Admin enters each connection's monthly limit in the
+[spend policy](/govern/policies#spend-policy). OpenController enforces nothing: the limit is what the month is
+forecast against, and what opens **Over its limit**.
+
+At the top of Anthropic's, OpenAI's and Snowflake's own pages, a panel named for the month (for example **November so
+far**) shows each connection's bill this month, where it is headed at the last seven days' pace, and its limit. When
+the pace passes the limit, it says around which day the limit is reached. An Admin selects **Enter its limit** or
+**Change** there to open the spend policy.
+
 ## Who it is spent on
 
 **People** lists people the costliest first, over the last 30 days, 50 at a time.
@@ -108,7 +161,7 @@ Who holds which licence is personal data, so the person-by-person views (**Peopl
 |---|---|
 | **Viewer** | Read **Spend**, except the person-by-person panels. |
 | **Operator** | Also select **Refresh**. |
-| **Admin** | Also set prices, read an integration back, and see **People**, **Top spenders** and **Spend by department**. |
+| **Admin** | Also set prices, read an integration back, change the [spend policy](/govern/policies#spend-policy) and the monthly limits (`spend:limits`), and see **People**, **Top spenders** and **Spend by department**. |
 | **Owner** | The same as Admin. |
 
 ## Next steps
