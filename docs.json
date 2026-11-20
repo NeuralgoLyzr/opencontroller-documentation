@@ -182,7 +182,8 @@
                   "integrations/gcp",
                   "integrations/microsoft",
                   "integrations/databricks",
-                  "integrations/snowflake"
+                  "integrations/snowflake",
+                  "integrations/cloudera"
                 ]
               },
               {
