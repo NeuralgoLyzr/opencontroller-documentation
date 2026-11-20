@@ -60,10 +60,21 @@ runtime, not what it calls.
     application only to one. With `MLUser`, OpenController sees only the projects the machine user was added to.
   </Step>
   <Step title="Make its API key in each workbench">
-    A workbench answers only a key made in it. For each workbench, a workbench administrator makes the machine user an
-    API key. Note the workbench's CRN with the key.
+    A workbench answers only a key made in it. For each workbench:
 
-    {/* TODO verify: how an administrator makes a workbench API key for a machine user, per Cloudera version. */}
+    1. Open the workbench as a site administrator, and go to **Site Administration** > **Users**. Select **Sync**, so
+       `opencontroller-discover` is listed.
+    2. On its row, select **Edit**, then **Create API Key** (not **Legacy API Key**), and copy the key.
+    3. Note the workbench's CRN with the key. `cdp ml list-workspaces` lists each workbench with its `crn`.
+
+    On premises, this needs Data Services 1.5.5 SP2 or later.
+
+    {/* TODO verify: the workbench's Site Administration labels, against a live Cloudera account. */}
+  </Step>
+  <Step title="Turn on endpoint permissions (optional)">
+    To see who may call each model endpoint, turn on the inference service's access control: **Cloudera AI** > **AI
+    Inference Services** > the service > **Details** > **Access Control** > **Enable Access Control**. It is off by
+    default. Without it, endpoints are still discovered, without who may call them.
   </Step>
   <Step title="Connect it">
     Go to **Integrations** > **Connect** > **Cloudera account**. Fill in:
