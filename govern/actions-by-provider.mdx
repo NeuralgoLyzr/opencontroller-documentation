@@ -30,8 +30,7 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | CX Agent Studio app | — | — | <Icon icon="check" size={16} color="#2f855a" /> (public web access) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — |
 | **Snowflake** | Cortex Agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (to CoWork) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
 | | Snowflake-managed MCP server | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — |
-| **Cloudera** | Model deployment, application, agent workflow | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Stop**, **Start**) | — | — | — |
-| | Copilot model | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Turn off**, **Turn on**) | — | — | — |
+| **Cloudera** | Workbench model, application, agent workflow | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Stop**, **Start**) | — | — | — |
 | | Workbench | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Suspend**, **Resume**) | — | — | — |
 | | Model endpoint, project, environment | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — | — |
 | **Anthropic (Claude)** | Managed Agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
@@ -181,7 +180,7 @@ Why some actions show — in the table:
 - **Microsoft:** only an Agent Builder agent's creator can share it, in Microsoft 365 Copilot. Drafts are not in the Agent 365 catalog, so they can be deleted but not blocked. Foundry can disable only hosted agents, not prompt or workflow agents. An Entra agent identity is what an agent signs in as, so it is never shared or published.
 - **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
 - **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
-- **Cloudera:** what runs in a workbench is used by whoever its project lets in, so it is stopped, not shared; share the project. Nothing is deleted, because Cloudera cannot undo a delete. On premises (1.5.5), a stopped model deployment is started again in its workbench, and a project is shared there.
+- **Cloudera:** what runs in a workbench is used by whoever its project lets in, so it is stopped, not shared; share the project. An agent workflow is two assets, its model and its application, each stopped on its own page. Nothing is deleted, because Cloudera cannot undo a delete. On premises, a stopped model deployment is started again in its workbench, and a project is shared there.
 - **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
 - **Databricks:** no actions yet.
 

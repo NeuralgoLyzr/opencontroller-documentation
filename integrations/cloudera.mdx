@@ -5,76 +5,82 @@ icon: "server"
 ---
 
 OpenController reads a Cloudera account as a **machine user**. One integration is one account: Cloudera on cloud, in
-one of Cloudera's control plane regions, or Cloudera on premises, at your own control plane's address.
+one of Cloudera's control plane regions, or Cloudera Data Services on premises, at your console's address.
 
 It reaches three APIs, each its own way:
 
-- **The control plane**, with the machine user's access key. Each request is signed with the key's ED25519 private
-  key. Only the signature is sent, never the key.
-- **Each Cloudera AI workbench**, with an API key made in that workbench for the machine user.
-- **Each AI Inference service**, with a short-lived token the control plane issues for each scan. It is never stored.
+- **The control plane**, with the machine user's access key. Each request is signed with the key's private key. Only
+  the signature is sent, never the key.
+- **Each Cloudera AI workbench**, with an API key made in that workbench.
+- **Each AI Inference service and AI Registry**, with a token the control plane issues for each scan. It lasts an hour
+  and is never stored.
 
 ## What it unlocks
 
-- **[AI Inventory](/discover/ai-inventory):** environments, Cloudera AI workbenches and their projects, model
-  deployments, applications, agent workflows, Copilot models, AI Inference services and their model endpoints, AI
-  Registries and registered models, and Semantic Search services.
-- **How they connect:** which agent workflow runs on which model deployment, which endpoint serves which registered
-  model, and which runtime each runs on.
-- **Who can reach what:** project owners and collaborators, who may call or manage each model endpoint, and who holds
-  `MLAdmin`, `MLUser` or `MLBusinessUser` on each environment. Machine users and their access keys are listed too.
+- **[AI Inventory](/discover/ai-inventory):** environments, Cloudera AI workbenches and their projects, workbench
+  models, applications and agent workflows, AI Inference services, their model endpoints and the model each serves,
+  and AI Registries and their registered models.
+- **How they connect:** which environment holds which workbench, service and registry, which endpoint serves which
+  model, and which registered model a workbench model was deployed from.
+- **Who can reach what:** who may call or manage each model endpoint, and who holds a Cloudera AI role on each
+  environment. People, groups, machine users and their access keys are listed too.
 - **[Spend](/discover/people-and-spend):** what Cloudera AI's compute costs, and whose workloads ran it up.
+- **[Findings](/posture/findings):** a workbench model or application anyone may call without signing in, an endpoint
+  open to the internet, and access keys, which Cloudera never expires.
 - **[Actions](/govern/actions-by-provider):** stop and start what runs, and share or unshare endpoints, projects and
   environments, as a second machine user.
 
-OpenController never calls a model endpoint, a deployment or an application, and never reads project files, datasets,
-model files, prompts, responses or workflow traces. Environment variables that projects, applications and deployments
-return are dropped as they are read, because they often hold credentials.
+OpenController never calls a model endpoint, and never reads model files, project files, datasets, prompts or
+responses. A workbench model's access key and the environment variables of projects, deployments and applications are
+not read into the inventory, because they can hold secrets.
+
+<Warning>
+Cloudera has no read-only role for what discovery reads. **MLUser**, the least role that reads it, also lets its
+holder create, change and delete model endpoints. OpenController only reads with it. Keep the machine user's private
+key as you would an administrator's.
+</Warning>
 
 <Note>
-An agent workflow is recognised by the application its builder deploys it as. Its tools, MCP servers and model settings
-stay inside that application, and no Cloudera API returns them, so the agent shows its deployment, application and
-runtime, not what it calls.
+An agent workflow deployed to a workbench is two assets: the model it runs as, and its application. Each has its own
+page.
 </Note>
 
 ## Connect a Cloudera account
 
 <Steps>
   <Step title="Create the machine user">
-    As an account administrator, in the Cloudera Management Console go to **User Management** > **Actions** > **Create
-    Machine User**, and name it `opencontroller-discover`. Open it, then:
+    As a Cloudera administrator (PowerUser), go to **Management Console** > **User Management** > **Users** >
+    **Actions** > **Create Machine User**, and name it `opencontroller-discover`. On its page:
 
-    - **Roles** > **Update Roles**: assign **IamViewer**, and **BillingAdmin** to read spend on cloud.
-    - **Access Keys** > **Generate Access Key**: choose **ED25519**, and copy the access key ID and the private key.
+    - Select **Generate Access Key**, and copy the access key ID and the private key, or download the credentials
+      file.
+    - Go to **Roles** > **Update Roles**, select **IamViewer**, then **Update**.
 
-    <Warning>The private key is shown once. An RSA key is not accepted: generate the key as ED25519.</Warning>
+    <Warning>The private key is shown once.</Warning>
 
-    {/* TODO verify: the Management Console menu labels, against a live Cloudera account. */}
+    An Ed25519, RSA or ECDSA key works. For an Ed25519 key, use Cloudera's CLI:
+    `cdp iam create-machine-user-access-key --machine-user-name opencontroller-discover --type V2`.
   </Step>
   <Step title="Give it access to each environment">
-    For each environment, go to **Environments** > the environment > **Actions** > **Manage Access**, find the machine
-    user, and assign **EnvironmentUser** and **MLAdmin**. Then select **Actions** > **Synchronize Users**, so the
-    environment's workbenches know the machine user.
+    Go to **Management Console** > **Environments** > the environment > **Actions** > **Manage Access**. Find
+    `opencontroller-discover`, select **EnvironmentUser** and **MLUser**, then **Update Roles**.
 
-    Discovery needs an administrator's role in Cloudera AI because a workbench lists every project, model and
-    application only to one. With `MLUser`, OpenController sees only the projects the machine user was added to.
+    On premises, **AIInferenceInstanceUser** can stand in for **MLUser** to read model endpoints.
   </Step>
-  <Step title="Make its API key in each workbench">
-    A workbench answers only a key made in it. For each workbench:
+  <Step title="Make an API key in each workbench">
+    A workbench's projects, models, applications and experiments are read through the workbench's own API. A workbench
+    key sees what its user sees. For each workbench:
 
-    1. Open the workbench as a site administrator, and go to **Site Administration** > **Users**. Select **Sync**, so
-       `opencontroller-discover` is listed.
-    2. On its row, select **Edit**, then **Create API Key** (not **Legacy API Key**), and copy the key.
-    3. Note the workbench's CRN with the key. `cdp ml list-workspaces` lists each workbench with its `crn`.
+    1. Sign in to the workbench as a user who collaborates on the projects to discover, or as a site administrator.
+    2. Go to **User Settings** > **API Keys** > **Create API Key**, and copy the key.
+    3. Note the workbench's address with the key, for example `https://ml-1a2b3c4d-5e6.example.com`.
 
-    On premises, this needs Data Services 1.5.5 SP2 or later.
-
-    {/* TODO verify: the workbench's Site Administration labels, against a live Cloudera account. */}
+    To also see whose workloads ran up the cost, use a site administrator's key: it sees every workload's usage.
   </Step>
   <Step title="Turn on endpoint permissions (optional)">
-    To see who may call each model endpoint, turn on the inference service's access control: **Cloudera AI** > **AI
-    Inference Services** > the service > **Details** > **Access Control** > **Enable Access Control**. It is off by
-    default. Without it, endpoints are still discovered, without who may call them.
+    To see who may call each model endpoint, turn on fine-grained access control on each AI Inference service:
+    **Details** > **Access Control** > **Enable Access Control**. It needs Cloudera Runtime 7.3.1.500 or 7.3.2.
+    Without it, endpoints are still discovered, without who may call them.
   </Step>
   <Step title="Connect it">
     Go to **Integrations** > **Connect** > **Cloudera account**. Fill in:
@@ -82,122 +88,161 @@ runtime, not what it calls.
     | Field | What to enter |
     |---|---|
     | **Name** | A name for the integration. |
-    | **Account ID** | The fifth part of the machine user's CRN: `crn:altus:iam:<region>:<account ID>:machineUser:…`. |
-    | **Control plane** | **On cloud**, then its **Region** (`us-west-1`, `eu-1` or `ap-1`); or **On premises**, then the **Control plane address**. |
-    | **Read machine user: access key ID** | The access key's ID. |
-    | **Read machine user: private key** | The ED25519 private key: 44 characters. |
-    | **Workbench CRN** and **Workbench API key** | Optional: one workbench's key. Add the others afterwards. |
-    | **Credit price**, or **vCPU-hour price** and **GPU-hour price** | Optional: what prices the account's usage. See [Read spend](#read-spend-optional). |
+    | **Where it runs** | **Cloudera on cloud**, or **On premises (Cloudera Data Services)**. |
+    | **Control plane region** | On cloud: `us-west-1`, `eu-1`, `ap-1` or `usg-1`. It is the region in the account's CRNs. |
+    | **Console address** | On premises: your Cloudera console's address, `https://` and its host. OpenController must be able to reach it. |
+    | **Account ID** | The part after the region in any of the account's CRNs: `crn:altus:iam:<region>:<account ID>:machineUser:…`. You can paste the CRN itself. |
+    | **Access key ID** | The machine user's access key ID. |
+    | **Private key** | As Cloudera gave it: the 44-character Ed25519 key, or the whole PEM block of an RSA or ECDSA key. |
+    | **CA certificate** (optional) | On premises, where the console and services present certificates from your cluster's own certificate authority: that authority's certificate, in PEM. |
+    | **Credit price**, or **vCPU-hour** and **GPU-hour** (optional) | What prices the account's usage, with its **Currency**. See [Read spend](#read-spend-optional). |
+    | **Workbench** (optional) | One workbench's address and its API key. Add the others afterwards. |
 
-    Select **Connect**. The **Grant the machine user access** dialog opens, with one row for each grant.
+    Select **Connect**. The **Give the machine user its roles** dialog opens, with one row for each grant.
   </Step>
-  <Step title="Add the other workbenches' keys">
-    On the integration's row, select **Add workbench keys**, and enter each workbench's CRN and API key. A workbench with
-    no key is listed in the inventory, but what runs in it is not read.
+  <Step title="Add the other workbenches">
+    Select the **Setup** icon on the integration's row. Under **Workbenches reached through their API**, enter each
+    workbench's address and API key, and select **Add the workbench**. A workbench with no key is listed in the
+    inventory, but what runs in it is not read. Each scan names the workbenches it holds no key for.
   </Step>
   <Step title="Verify">
     On the row, select **Verify**. Each check says what it found, or what to grant:
 
-    | Verify check | Grant |
+    | Verify check | Passes when |
     |---|---|
-    | **Sign in** | The machine user, with an ED25519 access key of the account the integration names. |
-    | **People and keys** | Account role **IamViewer**. |
-    | **Environments** | Resource role **EnvironmentUser** on each environment. |
-    | **Workbenches**, **AI Inference**, **AI Registry** | Resource role **MLAdmin** on each environment. |
-    | **Workbench API**, one for each workbench | The machine user's API key of that workbench, added to the integration. |
-    | **Spend** | On cloud: account role **BillingAdmin**. |
+    | **Sign in** | The control plane accepts the access key, in the account the integration names. |
+    | **Environments** | The machine user holds **EnvironmentUser** on each environment. |
+    | **Cloudera AI Workbenches**, **AI Inference services**, **AI Registries** | It holds **EnvironmentUser** and **MLUser** on each environment. |
+    | **Model endpoints**, **Registered models** | The control plane issues a token, and each running service and registry answers. |
+    | **People and keys** | It holds the account role **IamViewer**. |
+    | **Workbench**, one for each workbench | The workbench accepts the API key you added. |
 
-    A check says **not available on this account** when the service is not in use, and **refused**, with the missing
-    role, when the machine user lacks it. A suspended workbench is a warning. Scans run every 5 minutes by default.
+    A check says **not available in this account** when the account does not have that service, and **refused**, with
+    the missing grant, when the machine user lacks it. If the counts miss workbenches or services you can see in
+    Cloudera, give the machine user **MLAdmin** instead of **MLUser**. Scans run every 5 minutes by default.
   </Step>
 </Steps>
 
-Workbenches and inference services must be served over HTTPS: a key or a token is never sent over plain HTTP. Where
-they allow only certain IP addresses, add OpenController's egress address.
+### Network
 
-## Cloudera on premises
+OpenController calls the control plane, each workbench, and each AI Inference service and AI Registry at its own
+address. On premises, or where a service's load balancer is private, run OpenController where it can reach them. Where
+a load balancer allows only listed addresses, add OpenController's outbound addresses. Where OpenController's outbound
+traffic goes through a proxy, list the Cloudera hosts the proxy does not reach in the deployment's `proxy.noProxy`.
+See [Operate](/self-host/operate).
 
-A workbench's API offers less on Cloudera AI on premises (Data Services 1.5.5) than on cloud. There:
+A service OpenController cannot reach fails only its own part of the scan. The rest of the account is still read.
 
-- A workbench lists the projects its machine user can see, with each project's owner and no collaborators.
-- Registered models and Copilot models are not listed by the workbench.
-- Semantic Search and compute usage records are not available.
-- Workbenches return no usage records, so there is nothing to price: spend shows **not set up**.
-- A stopped model deployment is started again in its workbench, and a project is shared in its workbench.
+Where a proxy in front of an on-premises console does not let **Sign in** confirm whose key it is, the check passes
+with a warning: the key is proven by the token it mints, and its account is unconfirmed.
 
 ## Read spend (optional)
 
-Every 6 hours by default, OpenController reads the last 35 days.
+Every 6 hours by default, OpenController reads the last 35 days of Cloudera AI's compute. Cloudera prices nothing
+through an API, so you enter what compute costs, and the rows are **estimated**. Until a price is set, spend shows
+**not set up**. Set or change the prices from the **Setup** icon on the row, under **What its compute costs**.
 
 <Tabs>
   <Tab title="On cloud">
     Cloudera meters compute in credits. OpenController reads the hourly compute usage records of the clusters that run
-    workbenches and AI Inference services, and prices the credits at the integration's **Credit price**. A credit's
-    price is in your contract, not in any API: enter your contracted price, so any discount is reflected. The rows are
-    **estimated**. Without a credit price, spend shows **not set up**.
+    workbenches and AI Inference services, and prices them at the integration's **Credit price**. Enter your
+    contracted price, so any discount is reflected. Cloudera's usage data lags about three days.
 
-    Each workbench's usage records then say whose workloads ran. A workbench's cost for a day is shared across that
-    day's workloads in proportion to their vCPU-hours. If you also set a **vCPU-hour price** and a **GPU-hour price**,
-    it is shared in proportion to what each workload would cost at them, so a GPU weighs what it costs.
+    The machine user also needs the account role **BillingAdmin**.
+
+    Each workbench with a key then says whose workloads ran. A workbench's cost for a day is shared across that day's
+    workloads by the vCPUs and GPUs each held. These rows say whose the cost was, and never add to it.
   </Tab>
   <Tab title="On premises">
-    Nothing is metered in credits. Each workbench's usage is priced at the integration's **vCPU-hour price** and
-    **GPU-hour price**, and a workbench's day is the total of its workloads. Without those prices, or where the
-    workbenches return no usage records, spend shows **not set up**.
+    Nothing is metered in credits. Each workload's vCPU-hours and GPU-hours are priced at the integration's
+    **vCPU-hour** and **GPU-hour** prices, and a workbench's day is their total. A workbench with no usage API has
+    nothing to price, and spend shows **not set up**.
   </Tab>
 </Tabs>
 
-Each share names the person by the email the account lists for their workload username, and shows on **People**. A
-machine user's workloads are no person's. Model calls that agents and Copilot make to outside providers are billed by
-those providers: connect them to see that spend.
+To name whose each workload was, the machine user needs **IamViewer**, and each workbench key should be a site
+administrator's. Until a grant is in place, spend shows **Needs a permission** and names it.
 
 ## Turn on control (optional)
 
-Control needs a second machine user. Changes are made as it, never as the read one.
+Control needs a second machine user. Changes are made as it, never as the read one, so control can be taken away
+alone. Every change is recorded in the audit log, and Cloudera applies it at once.
 
 <Steps>
   <Step title="Create the control machine user">
-    Create `opencontroller-control` the same way, with **IamViewer**. On each environment it controls, assign
-    **MLAdmin**, and **EnvironmentAdmin** to change who holds a Cloudera AI role there. Make it an API key in each
-    workbench it controls.
+    Create a machine user for control the same way, with an access key and the account role **IamViewer**, which
+    finds the people to share with. On each environment it changes, assign **MLAdmin**, and **EnvironmentAdmin** to
+    share the environment.
+  </Step>
+  <Step title="Make its API key in each workbench">
+    In each workbench whose models and applications it stops and starts, make an API key as the control machine user.
   </Step>
   <Step title="Add it to the integration">
-    On the integration's row, set the **Control machine user: access key ID** and **Control machine user: private
-    key**, then add its workbench keys under **Add workbench keys**.
+    On the connect form, set **Control machine user** to **A machine user of its own (recommended)**, and enter the
+    **Control access key ID** and **Control private key**. On a connected account, select **Turn on** next to
+    **Control: off** on its row.
+
+    Then select the **Setup** icon on the row. Under **Workbenches reached through their API**, enter each workbench's
+    address and the control machine user's key, turn on the control key switch, and select **Add the control key**.
   </Step>
   <Step title="Verify">
-    Select **Verify**. It adds **Control sign in**, and **Control workbench API** for each workbench with a control key.
+    Select **Verify**. It adds **Control sign in**, and **Control workbench API** for each workbench with a control
+    key. Neither check changes anything. A key a workbench accepts may still lack the role to stop what runs there,
+    which the first change shows.
   </Step>
 </Steps>
 
 | Action | On | What happens in Cloudera |
 |---|---|---|
-| **Stop** and **Start** | Model deployment, application | The deployment or the application is stopped, or restarted. |
-| | Agent workflow | Its application and the model deployment behind it. The application stops first and starts last. |
-| **Turn off** and **Turn on** | Copilot model | The model is disabled, or enabled, for the workbench's Copilot. |
-| **Suspend** and **Resume** | Workbench | Everything in the workbench stops until it resumes. |
-| **Share** and **Remove** | Model endpoint | **Can use** lets them call it; **Can edit** lets them manage it. Remove takes every access type they hold. |
-| | Project | **Can use** adds them as a reader; **Can edit**, as a contributor. |
-| | Environment | **Can use** assigns `MLUser`; **Can edit**, `MLAdmin`. Remove takes `MLAdmin`, `MLUser` and `MLBusinessUser`, and no other role. |
+| **Stop** and **Start** | Workbench model | Its latest deployment is stopped: every call is refused until it is started. The model, its builds and its settings are kept. |
+| | Application | The application is stopped: its address answers no one until it is started. |
+| | Agent workflow | The model deployment the workflow runs as is stopped. Its application is stopped on its own page. |
+| **Suspend** and **Resume** | Workbench | Everything in the workbench stops until it resumes, and nobody can open it. Its projects are kept. |
+| **Share** and **Remove** | Model endpoint | **Can use** lets them call it; **Can edit** lets them manage it. Remove takes every access they hold on the endpoint. |
+| | Project | **Can use** adds them as a Viewer; **Can edit**, as a Contributor. Check the first Contributor share in the workbench. |
+| | Environment | **Can use** assigns **MLUser**; **Can edit**, **MLAdmin**. Remove takes every Cloudera AI role they hold there. |
 
-Sharing an endpoint or a project needs the person's workload username, which Cloudera gives once users are
-synchronized to the environment. Removing someone from an endpoint leaves the access its owner and the environment's
-roles give. Nothing is deleted from OpenController: Cloudera cannot undo a delete.
+- Sharing an endpoint or a project names the person by their workload username, which Cloudera gives once users are
+  synchronized to the environment.
+- Removing someone leaves the access they have as an owner, through a group, or through the environment's roles.
+- Nothing is deleted from OpenController, because Cloudera cannot undo a delete.
+- When control moves to another machine user, add each workbench's control key again.
+- Turning control off deletes the control key and every workbench control key.
+
+<Note>
+On premises, Cloudera AI cannot start a stopped model deployment again through its API, and has no API to share a
+project. Deploy the model's build again in the workbench, and share the project there.
+</Note>
 
 ## Permissions it uses
 
 | Surface | Grant | Why |
 |---|---|---|
-| Sign in | A machine user with an ED25519 access key | Signs each request to the control plane |
-| People and keys | Account role **IamViewer** | Lists users, groups, machine users and their access keys, to name who holds what |
-| Environments | Resource role **EnvironmentUser** | Lists environments |
-| Workbenches, AI Inference, AI Registry | Resource role **MLAdmin** on each environment | Lists workbenches, inference services and their endpoints, and registries |
-| Workbench API | The machine user's API key, made in each workbench | Reads projects, models, deployments, applications and usage |
+| Sign in | A machine user with an active access key | Signs each request to the control plane |
+| Environments | Resource role **EnvironmentUser** on each environment | Lists environments |
+| Workbenches, AI Inference services, AI Registries | **EnvironmentUser** and **MLUser** on each environment | Lists them, their model endpoints and their registered models |
+| Who may call an endpoint | Fine-grained access control turned on for the AI Inference service | Lists each endpoint's permissions |
+| People and keys | Account role **IamViewer** | Lists users, groups, machine users, access keys and who holds a Cloudera AI role |
+| Workbench API | An API key made in each workbench | Reads projects, models, applications, experiments and usage |
 | Spend, on cloud | Account role **BillingAdmin** | Reads compute usage records |
-| Control | A second machine user: **MLAdmin**, and **EnvironmentAdmin** to change roles, with its own workbench keys | Stops, starts and shares |
+| Control | A second machine user: **MLAdmin**, **EnvironmentAdmin** to share environments, **IamViewer**, and its own workbench keys | Stops, starts and shares |
 
-The private keys and the workbench API keys are kept in your secrets manager and never shown again. A workbench's key
-is sent only to the address the control plane lists for that workbench, over HTTPS.
+The private keys and the workbench API keys are kept in your secrets manager and never shown again. A workbench key
+is sent only to its own workbench.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| **Sign in** is refused | The access key ID or private key is wrong, or the key is inactive. Generate a new key. Select the **Setup** icon on the row, then **Give a new access key**. |
+| The access key is of another account | The key belongs to a machine user in a different account. Use a key from this account. |
+| `certificate signed by unknown authority` | The console or a service presents a certificate from your cluster's own authority. Add its certificate as the **CA certificate**. |
+| One AI Inference service fails, the others are read | OpenController cannot reach that service. See [Network](#network). |
+| Who may call an endpoint is refused, or empty | Turn on fine-grained access control for the AI Inference service. |
+| Owners are shown by CRN | Give the machine user the account role **IamViewer**. |
+| A workbench is refused | The workbench refused its API key. Make one as a user who collaborates on the projects, or as a site administrator. |
+| A change says a proxy refused the call | A proxy in front of Cloudera refused it, not Cloudera. Let the control machine user's calls through. |
+| A share says the person has no workload username yet | Synchronize users to the environment, then share again. |
 
 ## Remove the integration
 
