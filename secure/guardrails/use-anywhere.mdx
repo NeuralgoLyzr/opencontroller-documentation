@@ -124,6 +124,8 @@ Each hook reads the current message only, so you can send the whole conversation
 
 Calls to this route are not written to the audit log. They change nothing.
 
+A call the guardrail blocks or redacts is kept in [Guardrail Violations](/secure/who-trips/violations#violations-from-the-guardrail-api), under the service account whose key made it. Send the model call's W3C `traceparent` header too, and the violation links to that trace in Observability. A call that passes is not kept.
+
 ### Calls through the LLM gateway
 
 Calls through the LLM gateway need no code. The guardrail is already in the gateway as a guardrail provider. A content rule uses it to block or redact.
@@ -240,7 +242,7 @@ sequenceDiagram
 - **A guardrail that cannot be reached never stops work.** Claude Code carries on when a hook fails, and shows why.
 - **Long tool output.** The prompt checks read only the first 512 KiB of a tool's input or output. A hook request over the API's size limit (1 MiB by default) fails, and Claude Code goes on with that step unchecked.
 
-These checks run through OpenController, not through the LLM gateway, so they are not counted in **Guardrail Violations**. Nor are they in the audit log.
+What the guardrail blocks is kept in [Guardrail Violations](/secure/who-trips/violations#violations-from-the-guardrail-api), under the service account whose key the settings file carries. These checks are not in the audit log.
 
 ## Next steps
 
