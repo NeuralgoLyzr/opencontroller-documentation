@@ -1,6 +1,6 @@
 ---
 title: "Asset details"
-description: "Every part of an asset's side panel and page: the header, the tabs, the graph, the registration, access and sharing, the LLM gateway and ownership."
+description: "Every part of an asset's side panel and page: the header, the tabs, the graph, the registration, access and sharing, the LLM gateway, ownership, and an agent's activity."
 sidebarTitle: "Asset details"
 icon: "panel-right"
 ---
@@ -55,6 +55,34 @@ The **LLM gateway** card, also on **Identity & access**, puts an agent's model c
 ## Configuration
 
 **Attributes** states the same facts for every cloud (exposure, authentication, framework, model and more); public exposure and no authentication show in warning colour. **Configuration** holds everything else the cloud reported. Secret values are never stored: variables and headers are kept by name only, and a name that looks like a secret is flagged.
+
+## Activity
+
+An agent's **Activity** tab shows what it did, from its traces, day by day over **7 days**, **30 days** or **90 days**. It
+shows for agents when the **Observability** module is on.
+
+| Figure | What it shows |
+|---|---|
+| **Runs** | How many runs the agent made, and when the last was. |
+| **Failed runs** | The share of its runs that failed, and how many. |
+| **Model calls** | The model calls in its runs, and their input and output tokens. |
+| **Cost** | What its model calls cost. |
+| **People** | How many people its runs served. "100+" means at least that many. |
+| **Latency, p95** | How long its runs took: p95, and p50 beneath. Each is within 5%, shown with ≈. |
+
+Below the figures are **Models it used** and **Tools it called**, the most runs first, each with its calls, failures and
+cost; **People it served**; and, with the **Guardrails** module, **Guardrail violations in its runs**, by type. A model
+or tool is the inventory asset of its name, when exactly one asset has it.
+
+- **Which runs count.** A run counts for the agent its trace began with: the agent of the project the trace was sent
+  to, or of the service that sent it. See [Count each service for its own agent](/monitor/observability#count-each-service-for-its-own-agent).
+- **How recent.** The figures come from a roll-up of the traces, made every 15 minutes, a quarter of an hour of runs at
+  a time, each run read once. The tab says how recent it is ("From its traces, as of …"). A run shows within about 40
+  minutes of starting. Opening the tab reads no trace.
+- **People it served** needs traces that name a person, with an `enduser.id` or `user.id` attribute.
+- **Guardrail violations in its runs** counts a violation when it names the trace its call was in. See
+  [Open the trace](/secure/who-trips/violations#open-the-trace).
+- With no runs in the window, the tab says **No runs in the last *N* days**, with a link to **Projects**.
 
 ## Who can do what
 

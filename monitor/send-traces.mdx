@@ -49,7 +49,7 @@ The agent sends its spans over OTLP/HTTP to the console's address. OpenControlle
         OTEL_SERVICE_NAME=support-bot
         ```
 
-        Traces go to `<endpoint>/v1/traces`. The `x-project` header decides which agent the traces are, whatever the code says.
+        Traces go to `<endpoint>/v1/traces`. The `x-project` header decides which agent the traces are, whatever the code says. Where one project takes traces from several services, each service can count for an agent of its own: see [Count each service for its own agent](/monitor/observability#count-each-service-for-its-own-agent).
 
         With **OpenTelemetry GenAI**, two more variables make the instrumentors write the latest names and keep prompts and answers on the spans:
 

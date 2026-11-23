@@ -72,6 +72,23 @@ Open the project and select **Settings**. Unassigned and removed projects have n
 - Changing the **Agent** applies to traces sent from then on. Traces already sent keep the agent they came with.
 - After **Remove**, nothing can send to the project. Its traces stay in the store, listed with the projects as removed.
 
+### Count each service for its own agent
+
+One project can take traces from several services: an app, say, and the gateway it calls. Each can count for an agent
+of its own. Under **Settings** > **Services**, each service that sent traces to the project in the last week is listed
+with how many spans it sent, and the agent it **Counts for**: the project's **Agent**, unless the service is bound to
+another.
+
+- **Discovery found** offers the inventory agent named like the service, and says how: **named as the service**, **its
+  subdomain is the service** or **its address names the service**. Select **Count for it** to bind the service to it.
+  Nothing is bound until someone chooses.
+- **Choose another agent** binds the service to any agent in the inventory.
+- The remove icon beside a bound service makes it count for the project's own **Agent** again.
+
+The service is the `service.name` of the spans' resource, which `OTEL_SERVICE_NAME` sets. Traces sent from then on
+count for the agent chosen; traces already sent keep theirs. A project binds up to 50 services. The agent each run
+counts for is what an agent's [Activity tab](/discover/asset-details#activity) adds up.
+
 ## Who can use it
 
 - **Viewer** reads everything except what was asked and answered. A member of a project's team reads that project too.
