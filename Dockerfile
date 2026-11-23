@@ -35,7 +35,7 @@ FROM nginxinc/nginx-unprivileged:1.30-alpine@sha256:56b8272e43a0525f67aed68d1e07
 LABEL org.opencontainers.image.title="opencontroller-documentation" \
       org.opencontainers.image.source="https://github.com/NeuralgoLyzr/opencontroller-documentation"
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker/license.sh /docker-entrypoint.d/40-license.sh
+COPY docker/gate.sh /docker-entrypoint.d/40-gate.sh
 COPY docker/locked.html /usr/share/nginx/locked/_locked.html
 COPY --from=export /out /usr/share/nginx/html/docs
 EXPOSE 8080

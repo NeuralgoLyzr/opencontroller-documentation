@@ -46,4 +46,5 @@ jobs:
         run: |
           image=897722707629.dkr.ecr.us-east-1.amazonaws.com/opencontroller/docs:v0-$(git rev-parse --short=12 HEAD)
           docker build -t "$image" .
+          sh docker/gate-test.sh "$image"
           if [ "$GITHUB_EVENT_NAME" = push ]; then docker push "$image"; fi
