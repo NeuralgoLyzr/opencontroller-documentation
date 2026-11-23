@@ -55,8 +55,12 @@ A page's menu works there as on the hosted site: Copy page and View as Markdown 
 `docker/markdown.sh` writes beside each exported page (Mintlify serves it, the export leaves it out), and Download
 PDF prints the page with the browser (`ui.js`, `style.css`), with no service behind it.
 
-It is held to the cell's license: with `LICENSE_API_URL`, which the chart sets, each page asks the cell's API first, and a
-locked cell shows a locked page. An API that is down or restarting does not stop the pages. `/healthz` is for probes.
+It is held to the cell's sign-in and to its license (`docker/gate.sh`). With `SESSION_API_URL`, which the chart sets,
+every request asks the cell's API who the visitor is, with the cookies their browser sent: signed in, the page is
+served; otherwise they are sent to the console to sign in. A locked cell shows a locked page, and while the API is down
+nothing is served. With `LICENSE_API_URL` alone, only the license is asked: anyone who reaches the address reads the
+pages, and an API that is down does not stop them. `/healthz` is for probes. `sh docker/gate-test.sh <image>` tries
+all of it against a stand-in API, and the build runs it.
 
 ```sh
 docker build -t opencontroller-documentation .
