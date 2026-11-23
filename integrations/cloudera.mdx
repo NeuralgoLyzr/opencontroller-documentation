@@ -57,7 +57,7 @@ datasets, or reads prompts and responses.
 | Who holds a Cloudera AI role on each environment: **MLAdmin**, **MLUser**, **MLBusinessUser**, **AIInferenceInstanceAdmin**, **AIInferenceInstanceUser** | **Can edit** and **Can use** |
 | Workbench projects: owner, creator, visibility, experiments and runs | Workspace, in its workbench |
 | Workbench models: whether a call needs the model's access key, the latest deployment (replicas, CPU, memory, GPUs, who deployed it, its state), and the registered model it came from | Endpoint, in its project |
-| Workbench applications: subdomain, state, whether anyone may open it without signing in, runtime, CPU, memory and GPUs | Agent when it is one ([see below](#which-applications-are-agents)); otherwise Tool |
+| Workbench applications: subdomain, state, whether anyone may open it without signing in, the script it runs, its runtime and add-ons, CPU, memory and GPUs, and when it last started, stopped and changed | Agent when it is one ([see below](#which-applications-are-agents)); otherwise Tool |
 | Agent Studio workflows deployed to a workbench | Agent, with its model and its application |
 | Inside each deployed Agent Studio workflow: its agents (role, goal, tasks), and the tools, MCP servers and language models each uses | Agent, Tool, MCP server, Model; the workflow calls its agents, which use the rest |
 
@@ -185,6 +185,11 @@ days.
   service used each hour, priced at the **Credit price**. Cloudera's usage data lags about three days.
 - **On premises:** nothing is metered in credits. Each workload's vCPU-hours and GPU-hours are priced at the
   **vCPU-hour** and **GPU-hour** prices.
+- **On premises, without usage records:** a workbench shows its usage records to site administrators only, and
+  Cloudera AI 1.5.5 has no usage API. Where a workbench gives none, what runs in it now is priced instead: each model
+  whose latest deployment is deployed, and each running application, at the vCPUs and GPUs it holds times its
+  replicas, for each hour since it was deployed or created, up to now. The rows read **reserved vCPU-hours**, on the
+  model's or application's own asset, and count for whoever deployed or created it.
 - **Whose it was:** each workbench given a key is asked for its usage records: each workload, who started it, and in
   which project. Spend then shows by person on **People** and by project.
 
@@ -198,6 +203,11 @@ To read spend, the machine user also needs:
 - for every workload's usage, a site administrator's key of each workbench.
 
 Until these are in place, spend says **needs permission** and names what to grant.
+
+<Info>
+Reserved vCPU-hours estimate capacity held, not use. A model that took no calls is counted, and so is a pause the
+workbench no longer shows. Spend says **not set up** on premises only where nothing is running either.
+</Info>
 
 ## Turn on control (optional)
 
