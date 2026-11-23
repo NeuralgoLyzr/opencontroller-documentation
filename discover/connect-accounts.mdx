@@ -26,6 +26,7 @@ Each integration connects one account, tenant or workspace with a read credentia
 | **Snowflake** | A service user | Cortex Agents and their tools, MCP servers, Cortex Search and the AI Gateway; with a warehouse, their use, and the AI credits and whose they were |
 | **OpenAI** | An Admin key, used only to read; project keys for agents | Agents, models, project API keys and what each project allows; the bill and whose it was |
 | **GitHub** | A GitHub App the organization installs, or an owner's token | GitHub Copilot, its cloud agent and custom agents, what people use with Copilot; the bill, seats and whose use it was |
+| **Cloudera** | A machine user, on cloud or on premises | Cloudera AI workbenches, Agent Studio workflows and the agents inside them, model endpoints and registries; the compute cost, at the prices you set, and whose it was |
 
 Each has a setup guide with every field and the role, permissions or SQL to create on the provider's side:
 
@@ -53,6 +54,9 @@ Each has a setup guide with every field and the role, permissions or SQL to crea
   </Card>
   <Card title="GitHub" icon="git-branch" href="/integrations/github">
     A GitHub organization's Copilot, as a GitHub App.
+  </Card>
+  <Card title="Cloudera" icon="cloud-cog" href="/integrations/cloudera">
+    A Cloudera account, on cloud or on premises.
   </Card>
 </CardGroup>
 

@@ -30,6 +30,12 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | CX Agent Studio app | — | — | <Icon icon="check" size={16} color="#2f855a" /> (public web access) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — |
 | **Snowflake** | Cortex Agent | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (to CoWork) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
 | | Snowflake-managed MCP server | <Icon icon="check" size={16} color="#2f855a" /> (use only) | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — |
+| **Cloudera** | Workbench model, Agent Studio workflow's model | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Stop** / **Start**) | — | — | — |
+| | Workbench application, Agent Studio workflow's among them | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Stop** / **Start**) | — | — | — |
+| | Workbench | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Suspend** / **Resume**) | — | — | — |
+| | Model endpoint | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — | — |
+| | Project | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera on cloud) | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera on cloud) | — | — | — | — | — | — |
+| | Environment | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera AI roles) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — | — |
 | **Anthropic (Claude)** | Managed Agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | Workspace | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | Deployment | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Pause**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
@@ -43,7 +49,7 @@ Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**,
 
 <Steps>
   <Step title="Turn on control for the provider">
-    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
+    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional), [Cloudera](/integrations/cloudera#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
   </Step>
   <Step title="Register the agent and get it approved">
     Where your deployment runs the registry, every action waits until the agent is registered **and an Admin has approved the registration**. This includes **Unblock**. A shadow or pending agent's controls show dimmed; selecting one opens **Register this agent first**. Assets your registry policy doesn't govern, such as Claude members, aren't held to this. See [Registry](/govern/registry) and [Approvals](/govern/approvals).
@@ -78,6 +84,12 @@ Gives a person, group or role access to the agent. In the **Share this agent** d
     - **Cortex Agent:** **Can use** runs `GRANT USAGE`, **Can edit** runs `GRANT MODIFY`, to a role or a user.
     - **MCP server:** use only (`GRANT USAGE`).
   </Tab>
+  <Tab title="Cloudera">
+    - **Model endpoint:** **Can use** lets them call it, **Can edit** lets them manage it.
+    - **Project:** **Can use** makes them a Viewer, **Can edit** a Contributor. Cloudera on cloud only: on premises, share the project in its workbench.
+    - **Environment:** **Can use** gives them **MLUser**, **Can edit** **MLAdmin**, on the environment.
+    - Choose people and groups from the account's directory. A model endpoint and a project name a person by their workload username, which Cloudera gives once users are synchronized to the environment.
+  </Tab>
   <Tab title="Anthropic">
     **Workspace:** **Can use** adds the person as a workspace developer, **Can edit** as a workspace admin. Not the Default workspace. Organization admins, billing members and owners are in every workspace already.
   </Tab>
@@ -92,6 +104,7 @@ Takes a person's, group's or role's access away. Select the remove icon next to 
   <Tab title="Microsoft">Copilot Studio: removes their access and their co-author role (the owner cannot be removed). Agent 365 catalog and Foundry agents: removes them from the list or the role. For Foundry, access from the project or above stays. For an Agent 365 agent available to everyone, end organization-wide access first.</Tab>
   <Tab title="Google Cloud">Removes every role the person holds on the agent. Roles they hold on the whole project stay; OpenController's log of the change names the ones that still let them call the agent.</Tab>
   <Tab title="Snowflake">Runs `REVOKE` of every privilege the role or user holds on the agent or MCP server. The owner role is refused. Grants inherited from the schema, database or account stay; the log names them.</Tab>
+  <Tab title="Cloudera">Model endpoint: takes every access the person holds on it; what the owner and the environment's roles give stays. Project: removes them as a collaborator. Environment: removes every Cloudera AI role they hold there; a role a group gives them stays.</Tab>
   <Tab title="Anthropic">Removes the person from the workspace; they stay in the organization. Organization admins, billing members and owners are in every workspace through their organization role, so they can't be removed here: change their role instead.</Tab>
 </Tabs>
 
@@ -117,7 +130,7 @@ Makes the agent's latest changes reach the people using it. Select **Publish**, 
 
 ## Block and Unblock
 
-Makes the agent unusable, and can be undone. **Unblock** brings it back as it was. The button's words depend on the agent: **Block** / **Unblock**, **Disable** / **Enable** (Foundry hosted agents), **Disable** / **Re-enable** (Claude API keys), **Pause** / **Resume** (Claude deployments) and **Block in Claude** / **Unblock in Claude** (MCP servers, see [Claude actions](#claude-actions)).
+Makes the agent unusable, and can be undone. **Unblock** brings it back as it was. The button's words depend on the agent: **Block** / **Unblock**, **Disable** / **Enable** (Foundry hosted agents), **Disable** / **Re-enable** (Claude API keys), **Pause** / **Resume** (Claude deployments), **Stop** / **Start** (Cloudera models and applications), **Suspend** / **Resume** (Cloudera workbenches) and **Block in Claude** / **Unblock in Claude** (MCP servers, see [Claude actions](#claude-actions)).
 
 <Tabs>
   <Tab title="AWS">
@@ -132,6 +145,13 @@ Makes the agent unusable, and can be undone. **Unblock** brings it back as it wa
   </Tab>
   <Tab title="Snowflake">
     **Cortex Agent:** OpenController's control role takes ownership of the agent and revokes its grants, keeping a snapshot in your account; **Unblock** gives them back. While blocked, sharing, removing, ending organization-wide access and publishing are refused. Needs a warehouse on the connection.
+  </Tab>
+  <Tab title="Cloudera">
+    - **Workbench model:** **Stop** stops its latest deployment, so every call to the model is refused; **Start** starts it again. On premises, Cloudera AI has no restart: deploy the model's build again in the workbench.
+    - **Application:** **Stop** stops it, so its address answers no one; **Start** starts it again. Its files and settings are kept.
+    - **Agent Studio workflow:** it is two assets, its model and its application. Stop each on its own page.
+    - **Workbench:** **Suspend** stops everything in it, its models and applications with it, and nobody can open it; **Resume** brings it back. Cloudera documents suspending for its cloud only.
+    - Needs the control machine user's API key of the workbench, and **MLAdmin** on the environment.
   </Tab>
   <Tab title="Anthropic">
     - **Managed Agent:** turns all its tools off, pauses its deployments and stops its open sessions. **Unblock** turns back on exactly the tools the block turned off and resumes the deployments it paused; stopped sessions stay stopped. Custom tools stay on, and a session started while blocked can still talk but use no tool. Needs the service-account control key, in the agent's workspace.
@@ -177,6 +197,7 @@ Why some actions show — in the table:
 - **Microsoft:** only an Agent Builder agent's creator can share it, in Microsoft 365 Copilot. Drafts are not in the Agent 365 catalog, so they can be deleted but not blocked. Foundry can disable only hosted agents, not prompt or workflow agents. An Entra agent identity is what an agent signs in as, so it is never shared or published.
 - **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
 - **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
+- **Cloudera:** nothing is deleted from OpenController, because Cloudera can undo no delete. A model endpoint, a project and an environment are not stopped: remove who may use them, or stop what they run. On premises, projects have no collaborators API.
 - **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
 - **Databricks:** no actions yet.
 
