@@ -1,0 +1,113 @@
+---
+title: "Trace and session evaluators"
+description: "Judge a whole run or a whole conversation instead of one step: what the record holds, how the steps and the transcript are written out, and how to set one up."
+sidebarTitle: "Trace and session"
+icon: "route"
+---
+
+<Note>
+**Before you start:** a trace store connection with traces whose spans carry a session id if you want conversations (see [Send traces](/monitor/send-traces)), and the **Operator** role or above.
+</Note>
+
+Most evaluators read **One step**: a single span, usually the model call that wrote the answer. Two questions need
+more. Whether the agent finished the task is a question about the whole run, every retrieval and tool call included.
+Whether the user got what they came for is a question about the whole conversation. **Reads** has a setting for each.
+
+| **Reads** | Record | Ask it | Templates |
+|---|---|---|---|
+| **Whole run** | A trace: the user's request, every step, the final answer | Did it complete the task? Were the tool calls right? Did it loop? | Task completion, Tool calling |
+| **Conversation** | A session: every turn between the user and the agent | Was the request resolved? Did the user get frustrated? How many turns did it take? | Session resolution |
+
+## What a whole run holds
+
+A trace record is built from every span of one trace. Its variables:
+
+| Variable | Holds |
+|---|---|
+| `input`, `output` | The root span's input and output: the user's request and the final answer |
+| `name`, `service` | The root span's name and the service that produced the trace |
+| `spans` | Every step, in order of start, one a line |
+| `span_count`, `error_count` | How many steps, and how many ended in error |
+| `duration_ms` | How long the run took |
+
+**`spans`** is written for a model to read. Each step is `[Kind] Name`, with ` (error)` when the step failed, followed
+by its input and output on indented lines when it has them:
+
+```text
+[Server] handle request
+  input: When does my plan renew?
+[Client] retrieve documents
+  output: [{"title": "Billing", "text": "Plans renew on the 1st…"}]
+[Client] chat gpt-4o
+  input: …
+  output: On the 1st of each month.
+```
+
+Up to 200 steps are written; each input and output is cut at 2,000 characters with an ellipsis. That keeps a long
+agentic run within what a judge can read in one call, at the cost of the middle of very long payloads.
+
+A trace is in the window when its root span ends there, and it is judged when any of its spans matches the filter, so
+`"name" = 'chat gpt-4o'` picks the runs that called that model and judges the whole of each.
+
+## What a conversation holds
+
+A session record is built from every trace that carries the same session id. OpenController reads `session.id`, then
+`gen_ai.conversation.id`, then `conversation.id` from the spans; a trace with none belongs to no conversation. Its
+variables:
+
+| Variable | Holds |
+|---|---|
+| `transcript` | The turns, in order |
+| `session_id` | The id the spans carried |
+| `service` | The service that produced the traces |
+| `turn_count`, `trace_count` | How many turns were written, and how many traces the session has |
+
+**`transcript`** is one turn per trace, from the root span's input and output:
+
+```text
+user: When does my plan renew?
+assistant: On the 1st of each month.
+
+user: Can I move it to the 15th?
+assistant: Yes. I have moved your renewal to the 15th, starting next month.
+```
+
+Up to 100 turns are written, each part cut at 2,000 characters. A session's time is its last turn's end, so a monitor's
+window picks up conversations as they finish.
+
+<Info>Traces from an Arize trace store carry only `session.id`, and their steps and turns are not capped. Everything else on this page holds for both stores.</Info>
+
+## Set one up
+
+<Steps>
+  <Step title="Pick the record">
+    Under **Judge**, set **Reads** to **Whole run** or **Conversation**. The templates that need one, **Task completion**, **Tool calling** and **Session resolution**, come with it set.
+  </Step>
+  <Step title="Write the judge for a long record">
+    Lay the record out under headings so the judge keeps track: `[Request]`, `[Steps]`, `[Final answer]` for a run; `[Conversation]` for a session. Ask one question that only the whole record can answer. A code evaluator can read `vars.spans` or `vars.transcript` just as well: count tool calls, measure turns, check that the last assistant turn is not a question.
+  </Step>
+  <Step title="Choose what it reads">
+    Under **Configuration**, pick the project and a filter. The **Matching** table shows traces with their step count, or sessions with their turn count, instead of spans. The variables map to the record's fields: `{spans}` and `{transcript}` have one home each.
+  </Step>
+  <Step title="Test, then run">
+    **Test on traces** or **Test on sessions** judges up to five and shows the reasoning beside each. A run or a conversation is more text than a span, so each verdict costs more tokens; set a task's **Sampling rate** with that in mind.
+  </Step>
+</Steps>
+
+## Where the scores land
+
+A trace evaluator's score is kept with the trace, and a session evaluator's with the session, with the scope recorded
+on each score. **Scores** filters by evaluator either way, and a monitor compares a trace evaluator's runs with its own
+earlier runs like any other. A dataset can hold whole runs and conversations too: **Capture from traces** offers
+**Whole run** and **Conversation** as the item, so an experiment can grade them.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Code evaluators" icon="code" href="/monitor/evals/code">
+    Count tool calls or turns with a few lines of JavaScript.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    The Loops and retries detector finds runaway runs with no judge at all.
+  </Card>
+</CardGroup>

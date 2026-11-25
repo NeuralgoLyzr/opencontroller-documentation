@@ -172,7 +172,7 @@ kubectl -n opencontroller describe pod -l app.kubernetes.io/component=api | grep
 ### Turn on code evaluators
 
 A code evaluator is your own JavaScript scoring each record, with no model (see
-[Score answers with evaluators](/monitor/evals/evaluators)). It runs inside the evals service under a time limit but
+[Code evaluators](/monitor/evals/code)). It runs inside the evals service under a time limit but
 no memory limit, so one evaluator can exhaust the service. It is off unless you turn it on, for a cell where every
 operator is trusted with that:
 

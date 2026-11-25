@@ -14,16 +14,7 @@ Evaluators run over any connected trace store, and over test sets you build. Eva
   <img src="/images/evals/evals-overview.png" alt="The Evals overview with the getting started steps, resource counts, quality by evaluator and the main metrics." />
 </Frame>
 
-| Word | Meaning |
-|---|---|
-| **Evaluator** | A saved judge: a prompt and the labels or questions a model answers about a record. Or your own code. |
-| **Record** | What an evaluator reads at a time: **One step** (a span), a **Whole run** (a trace) or a **Conversation** (a session). |
-| **Task** | One evaluator run over a trace store: once over a window, or continuously as traffic arrives. |
-| **Score** | One judgment: a label, a score, and the judge's reasoning. |
-| **Monitor** | Several evaluators and detectors run on a schedule. Each run is compared with the runs before, with an alert on what got worse. |
-| **Dataset** | A test set of examples, with the grades you would give them. |
-| **Experiment** | A run that answers every row of a dataset and grades each answer. |
-| **Prompt** | Instructions that write an answer for each row of a dataset, saved in versions. |
+The words, and the loop they make, are in [What are evals?](/monitor/evals/what-are-evals).
 
 Judging with a model costs money: each record judged is one model call, and **Judge tokens** shows what judging spent. Code evaluators use no model and cost nothing.
 
@@ -46,11 +37,12 @@ Evaluators read records from a trace store (**ClickHouse** or **Arize**) and jud
 
 - **ClickHouse**: the address of its HTTP interface (port 8123), and a user that can only read. Leave **Database** and **Traces table** empty for `otel` and `otel_traces`, the collector's defaults.
 - **Arize**: the **Space ID** your projects are in.
-- **Model**: the API's address, up to `/v1`. Anthropic and Arize fill in their own. To judge through the LLM gateway, use **OpenAI-compatible (Rekori, OpenAI, …)** with the gateway's address and a virtual key.
+- **Model**: for **OpenAI-compatible (Rekori, OpenAI, …)**, the API's address up to `/v1`, the one `/chat/completions` hangs from; **Anthropic** fills in its own. To judge through the LLM gateway, use the OpenAI-compatible kind with the gateway's address and a virtual key.
+- **Arize** has a rate limit of ten calls a minute, so a large window is read in pages; ClickHouse has none.
 
 The **Password** or **API key** is sealed in the evals service and never shown again.
 
-**Save** saves the connection and checks it. If the check fails, it stays saved and the dialog says **Saved, but it does not work yet:** with the reason. A model connection is checked with a real answer from a model an evaluator uses. A connection an evaluator, task or monitor uses cannot be removed.
+**Save** saves the connection and checks it: a trace store is asked for one row, a model is asked for its models and, when an evaluator names one, for a real answer. Changing a connection's address, kind or user asks for its secret again. If the check fails, it stays saved and the dialog says **Saved, but it does not work yet:** with the reason. A model connection is checked with a real answer from a model an evaluator uses. A connection an evaluator, task or monitor uses cannot be removed.
 
 ## Who can use it
 
@@ -61,7 +53,7 @@ The **Password** or **API key** is sealed in the evals service and never shown a
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
+  <Card title="Choose and build an evaluator" icon="scale" href="/monitor/evals/evaluators">
     Start from a template and test it on real traces.
   </Card>
   <Card title="Run tasks and read scores" icon="list-checks" href="/monitor/evals/tasks-scores">

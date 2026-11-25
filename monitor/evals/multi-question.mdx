@@ -1,0 +1,83 @@
+---
+title: "Multi-question judge"
+description: "One model call answers several typed questions about the same record: true or false, a choice, or a score. Each scored question is its own metric."
+sidebarTitle: "Multi-question judge"
+icon: "list-checks"
+---
+
+<Note>
+**Before you start:** a model connection (see [Connect trace stores and models](/monitor/evals/get-started#connect-trace-stores-and-models)), and the **Operator** role or above.
+</Note>
+
+A **Multi-question judge** asks a model several questions about one record in a single call, and records each answer
+as its own result. Use it when you would otherwise run three or four LLM-as-a-judge evaluators over the same records:
+one call instead of four, and the answers land side by side on each span or dataset row.
+
+The **Answer review** template is one: does the answer address the request, is it free of harmful or personal
+information, what is its tone, and how good is it overall, from one reading.
+
+## State and questions
+
+The judge has two parts.
+
+**State: what the questions ask about.** The record, laid out with its variables, exactly as an LLM-as-a-judge template
+does, without a question:
+
+```text
+[Request]
+{input}
+
+[Answer]
+{output}
+```
+
+**Questions: each answered about the record, in one call.** Every question has a name, a type and its instructions.
+
+| Type | The model answers | Scored as | Add |
+|---|---|---|---|
+| **True / false** | `true` or `false` | 1 or 0 | **True means** and **False means**, one phrase each, so the model knows which way is which |
+| **Choice** | One of the choices you list | Not scored: recorded as a label | At least two **Choices**, comma separated |
+| **Score 0–1** | A number from 0 to 1 | The number | Say what 0 and 1 mean in the instructions |
+
+Rules: at least one question; each name once; every question needs its instructions; a choice needs two choices or
+more. Question names become the names of the metrics, so keep them short and plain: `answers_request`, `safe`,
+`quality`.
+
+## How it is scored
+
+Each question's answer is a result of its own, under the question's name. There is no combined label and no single
+score for the record:
+
+- On the overview and in monitors, every **True / false** and **Score 0–1** question is a metric of its own, with its
+  own trend and threshold. A **Choice** question is recorded with each result and shows as a badge, `tone: casual`,
+  but has no number.
+- Where one number is needed to rank records, for the worst examples a monitor shows or to say whether a row got
+  worse or better against a baseline, the record's **overall** is the mean of its scored answers.
+- A multi-question judge cannot be compared with your labels: your label is one answer, and the judge gives several.
+  Check each question against a plain LLM-as-a-judge first if you want that measurement.
+
+With **Ask for its reasoning** on, the model gives one explanation for all of its answers.
+
+## What the model is asked
+
+One request. With **Strict answers** on, the `record_verdict` tool takes an `answers` object with every question
+required and typed: a boolean, one of the choices, or a number from 0 to 1. With it off, the prompt ends with the state,
+"Answer each question about the above", then one line per question, `- safe (boolean): Is the answer free of…`
+followed by what true and false mean, the choices, or "Give a number from 0 to 1", and the exact JSON object to answer
+with. Any question left unanswered fails the whole verdict, so no record is half judged.
+
+## Test and run
+
+**Test on spans** judges up to five records and shows every answer as a badge beside each. **Create evaluator** saves
+it; **Create and run** starts a task. Each question then appears in **Scores** and on the overview under its own name.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="LLM-as-a-judge" icon="message-square-text" href="/monitor/evals/llm-as-a-judge">
+    One question, one set of labels, compared with yours.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    A threshold per question, alerts on what got worse.
+  </Card>
+</CardGroup>

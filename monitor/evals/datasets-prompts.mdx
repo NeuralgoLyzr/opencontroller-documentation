@@ -1,7 +1,7 @@
 ---
-title: "Build datasets and test prompts"
-description: "Make a versioned test set of examples, write and version a prompt, and run experiments that grade every answer against the last run and keep the agent version they tested."
-sidebarTitle: "Datasets and prompts"
+title: "Build datasets and run experiments"
+description: "Make a versioned test set of examples with your grades, write and version a prompt, and run experiments that answer and grade every row, compare with the last run, hold a version to a pass rule, and keep the agent version they tested."
+sidebarTitle: "Datasets and experiments"
 icon: "table"
 ---
 
@@ -13,14 +13,14 @@ A dataset is a test set in **Monitor** > **Evals** > **Datasets**. Each row is o
 
 Select **Add rows** on a dataset, then one of:
 
-- **Import a CSV or JSON file**: paste a table from a spreadsheet, or choose a `.csv`, `.tsv`, `.json` or `.jsonl` file. The first row names the columns. A column named `expected` is each row's expected answer.
+- **Import a CSV or JSON file**: paste a table from a spreadsheet, or choose a `.csv`, `.tsv`, `.json` or `.jsonl` file. The first row names the columns, and every column needs a name; empty cells are left out. A column named `expected` is each row's expected answer; any other column, such as `expected_label`, can hold the grade you would give (see [Align evaluators with your labels](/monitor/evals/align-with-your-labels)). Rows go up 200 at a time, each batch a version, so a large import makes several.
 
   ```csv
   input,context,output,expected_label
   "When does the plan renew?","Plans renew on the 1st.","On the 1st of each month.",grounded
   ```
 
-- **Capture from traces**: a uniform sample of 1 to 1,000 records from the last 24 hours, 7 days or 30 days becomes rows. Each item is **One step**, a **Whole run** or a **Conversation**. A record already in the dataset is not added again, and **One item per question** captures a question asked many times once. **Seed expected answers from the recorded answers** fills them in for you to review and correct.
+- **Capture from traces**: a uniform sample of 1 to 1,000 records (50 to start) from a range you pick, the last 7 days to start, becomes rows, drawn from up to 20,000 matching records. Each item is **One step**, a **Whole run** or a **Conversation**. A record already in the dataset is not added again, and **One item per question** (on to start) captures a question asked many times once, by the user's message. **Seed expected answers from the recorded answers** (on to start) copies each recorded answer into `expected` for you to review and correct.
 - **Write a row**: fill in **Expected answer (optional)** for graders that compare with one.
 
 {/* SCREENSHOT: evals-dataset | crop | The "support-bot golden set" dataset page, 48 rows: header buttons, the Rows / Experiments switch, and the first rows. */}
@@ -40,13 +40,13 @@ To read an earlier version, choose it in the list beside the dataset's name, for
 
 ## Write and version a prompt
 
-A prompt, in **Evals** > **Prompts**, is what you tell a model, with blanks such as `{input}` and `{context}`. Each blank is filled from the row's column of the same name, or one you choose. **Longest answer, in tokens** under **Advanced** starts at 1,024.
+A prompt, in **Evals** > **Prompts**, is what you tell a model: system, user and assistant messages, with blanks such as `{input}` and `{context}`. Each blank is filled from the row's column of the same name, or one you choose; `{input}` starts on the user's message and `{output}` on the recorded answer. It needs a user message, a model connection, a **Temperature** from 0 to 2, and **Longest answer, in tokens** under **Advanced**, 1 to 16,000, starting at 1,024.
 
 **Try it** runs the prompt as written, saved or not, on the first 5 rows of a dataset or on words typed in. Nothing is kept.
 
 {/* SCREENSHOT: evals-prompt | later | Not taken: preview has no prompts. */}
 
-The first save is v1, and each later change is saved as a new version (**Save as v2**, and so on). Write what changed, so the version history reads as a story.
+The first save is v1, and each change to the messages, model or longest answer is saved as a new version (**Save as v2**, and so on); renaming is not. Write what changed, so the version history reads as a story. An experiment keeps the exact version it ran, even after the prompt is deleted.
 
 ## Run an experiment
 
@@ -54,13 +54,13 @@ Select **Run experiment** on a dataset, or **Use in an experiment** on a prompt.
 
 - **Saved answers**: the answers already in the dataset.
 - **A prompt**: a model writes a fresh answer for each row, from the version you choose (**Latest** to start).
-- **Your agent's latest answers**: what your agent answered the same question lately, read from a trace store.
+- **Your agent's latest answers**: what your agent answered the same question lately, read from a trace store over **Hours back**, 1 to 720, 24 to start. A row is matched on the user's message, and takes the latest answer to it.
 
 With **Your agent's latest answers**, OpenController finds the agent from the project's traces, and the dialog names it after **Agent:**, for example `support-bot`. You do not pick it. The experiment keeps the agent and its version with the results. When the traces name no agent, or come from several agents, no agent is kept. To name one, link the trace project to its agent: see [Make a project](/monitor/guide-trace-an-agent#step-1-make-a-project). Experiments on saved answers or a prompt name no agent.
 
-Each evaluator you switch on grades every row. With saved answers, **Your labels** picks the column with your grades, to show how often the grader agrees with you. **Advanced: pass rules** sets a rule per evaluator, such as **Pass if score is at least** 0.8. The scorecards appear when every row is graded.
+Each evaluator you switch on grades every row, 100 at a time and four at once; a prompt writes its answer first, and the recorded one is kept beside it as `recorded_output`. With saved answers, **Your labels** picks the column with your grades, to show how often the grader agrees with you, with Cohen's κ (see [Align evaluators with your labels](/monitor/evals/align-with-your-labels)); a multi-question judge cannot be compared this way. **Advanced: pass rules** sets a rule per evaluator, **Pass if the score is at least** when higher is better or **at most** when lower is; the experiment then says **Passed** or **Did not pass**, and an evaluator with no direction takes no rule. The scorecards appear when every row is graded: how many were graded, how many had nothing in a column the evaluator reads, how many failed.
 
-When you choose **Compare with** an earlier run, a score badge shows how many rows got worse (▾) or better (▴) than that run. To test the next version, select **Compare a new version** on a finished experiment: it keeps the same answer source and compares with this run.
+When you choose **Compare with** an earlier run on the same dataset, each evaluator's badge shows how many rows got worse (▾) or better (▴) than that run, by each row's score in the evaluator's direction, and whether the change in the mean is significant by a paired test over the rows both runs graded. To test the next version, select **Compare a new version** on a finished experiment: it keeps the same answer source and compares with this run.
 
 An experiment compared with an earlier run grades the rows that run graded, so both scores cover the same rows. When the dataset has changed since, choose which rows to grade:
 
@@ -84,11 +84,14 @@ Every experiment that evaluated an agent is also on the agent's page in [AI Inve
 
 {/* SCREENSHOT: agent-evaluations | crop | The Evaluations tab of support-bot's page: three experiments with Agent version 3 and 4, Dataset "support-bot golden set v2" and "v3", score badges, and Held / Not held. Crop to the tab. */}
 
+Deleting an experiment removes it and its answers, and stops it if it is running; its scores stay. Deleting a dataset
+removes its rows, every version and its experiments.
+
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
-    Test a grader on the dataset's rows.
+  <Card title="Align evaluators with your labels" icon="check-check" href="/monitor/evals/align-with-your-labels">
+    Grade the rows, and measure how often the grader agrees.
   </Card>
   <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
     Keep watching once the new version ships.

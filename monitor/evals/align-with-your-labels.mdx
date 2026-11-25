@@ -1,0 +1,93 @@
+---
+title: "Align evaluators with your labels"
+description: "A grader is only as good as its agreement with you. Label a test set, measure how often the evaluator agrees, read where it does not, and fix the judge before you trust it on thousands of records."
+sidebarTitle: "Align with your labels"
+icon: "check-check"
+---
+
+<Note>
+**Before you start:** a dataset with your grades in a column (see [Build datasets](/monitor/evals/datasets-prompts)), an evaluator that reads it, and the **Operator** role or above.
+</Note>
+
+An evaluator you have not checked against your own judgment measures something, but you do not know what. The check
+is simple: grade a few dozen records yourself, run the evaluator on the same records, and count how often it agrees.
+Do it before the evaluator judges production, and again whenever you change the prompt or the model.
+
+## Your labels are the ground truth
+
+Your labels live in a dataset, as a column of your choosing, one grade per row in the evaluator's own words:
+`hallucinated` or `factual`, `pass` or `fail`. Three ways to get there:
+
+- **Capture from traces**, then grade. Capture a uniform sample of real records into the dataset, read each, and fill
+  in the column. Fifty rows is a sound start; make sure both labels are well represented, and include the near misses,
+  the answers that look right and are not.
+- **Import** a file your reviewers already graded, with the grade as a column. A column named `expected` is the
+  expected answer; your grade can be any other column, such as `expected_label`.
+- **Write rows** by hand for the cases that matter most and come up least: the edge of the policy, the question the
+  agent must refuse.
+
+One rule for the labels: use the evaluator's label names exactly. A row labelled with a word the grader cannot answer
+is reported, not compared.
+
+## Measure agreement
+
+In the evaluator's editor, under **Configuration**, pick the dataset as the data source and set **Compare with your
+labels** to your column. The status line says how many rows carry a label. Then select **Test on 20 rows**.
+
+The result reads **Agrees with you on 18 of 20 rows (90%)**, green at 90% or more, amber at 70%, red below. Under it:
+
+- **The grid**, your label down the side and the grader's across the top. The diagonal is agreement; everything else
+  is a kind of mistake you can name, such as "it calls grounded answers hallucinated".
+- **The disagreements**, each row with your label, the grader's label and its reasoning. This is where the fix is: the
+  reasoning tells you whether the judge misread the record, applied a rule you did not mean, or found something you
+  missed.
+- **More stats**: for each label, **When the grader says it, it is right** (precision) and **Of yours, it finds**
+  (recall), and **Agreement beyond chance (Cohen's κ)**. A grader that always answers the commonest label agrees often
+  by luck; κ counts only what it gets right beyond that. It reads `worse than chance`, `slight`, `fair`, `moderate`,
+  `strong` or `near perfect`, and is not measurable when one label was given throughout.
+
+Rows the grader could not judge, or that have no label of yours, are left out of the count and said so. A test keeps
+nothing; it costs one model call a row for a model judge, and nothing for a code evaluator.
+
+An experiment with **Saved answers** as its source and **Your labels** set measures the same agreement over the whole
+dataset, and keeps it on the experiment's scorecard. A multi-question judge cannot be compared this way: your label is
+one answer and it gives several. Check each question as a plain LLM-as-a-judge first.
+
+## Fix the judge
+
+Work from the disagreements, one cause at a time, and test again after each change.
+
+| What you see | Likely cause | Fix |
+|---|---|---|
+| It marks good answers bad for facts it "knows" | No source of truth, so the model grades on its own knowledge | Give it the context or an expected answer, and say the reference is the whole truth |
+| Two labels both fit many rows | The label definitions overlap | Define each label by what the other is not, in the prompt |
+| It is right for the wrong reason | The question is too broad | Ask one narrower question; move the rest to a multi-question judge |
+| It answers a label you did not offer, or none | A model that cannot call tools, with **Strict answers** on | Turn **Strict answers** off, or change the model |
+| It flips on the same row between tests | Temperature above 0 | Set **Temperature** to 0 |
+| Your reviewers disagree with each other | The rule is unclear to people too | Write the rule down and regrade; a judge cannot agree with a label that is not consistent |
+| High agreement, low κ | One label dominates the set | Add rows of the rarer label before trusting the number |
+| It is good on short answers, wrong on long ones | The record is cut or the question is buried | Put the question at the top and the record under headings; for a run, judge the step rather than the whole trace |
+
+When to stop: agreement you would accept from a new reviewer, with a κ of **strong** or better and no systematic
+mistake left in the grid. Then save, and run the evaluator on traffic.
+
+## Keep it aligned
+
+Agreement decays as the agent, its prompts and its traffic change. Three habits keep it honest:
+
+- **Keep the dataset growing.** When a monitor or a reader finds a new failure, add the record to the dataset with your
+  label, so the next test covers it. **Capture from traces** adds nothing already there.
+- **Retest after any change** to the template, labels, model or temperature. **Update from template** is a change.
+- **Spot-check production.** Read a handful of **Scores** a week, with the reasoning. Where you disagree, that record
+  is a new dataset row.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Build datasets and run experiments" icon="table" href="/monitor/evals/datasets-prompts">
+    Capture, import and version the rows you grade.
+  </Card>
+  <Card title="LLM-as-a-judge" icon="message-square-text" href="/monitor/evals/llm-as-a-judge">
+    The prompt habits that raise agreement.
+  </Card>
+</CardGroup>
