@@ -197,15 +197,16 @@ function evaluate(vars) {
 }
 ```
 
-**A whole run stayed within a tool budget.** Set **Reads** to **Whole run** and read `vars.spans`, the steps one a line
-as `[Kind] Name`.
+**A whole run stayed within a call budget.** Set **Reads** to **Whole run** and read `vars.spans`, the steps one a line
+as `[Kind] Name`. Steps of kind `Client` are the run's calls out, to models and tools alike; match on the step's name
+as well to count only one of them.
 
 ```javascript
 const most = 6
 
 function evaluate(vars) {
-  const calls = vars.spans.split("\n").filter((l) => /^\[(Client|Tool)\]/.test(l)).length
-  return { score: calls <= most ? 1 : 0, explanation: calls + " tool calls" }
+  const calls = vars.spans.split("\n").filter((l) => l.startsWith("[Client]")).length
+  return { score: calls <= most ? 1 : 0, explanation: calls + " calls" }
 }
 ```
 
