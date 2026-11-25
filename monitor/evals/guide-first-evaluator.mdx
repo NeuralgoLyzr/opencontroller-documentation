@@ -27,12 +27,12 @@ In **Monitor** > **Evals**, select **Connections** at the foot of the menu, then
 Secrets are sealed in the evals service and never shown again.
 
 <Tip>
-Judge through the LLM gateway, so the judge's spend has a key and a budget of its own: choose an OpenAI-compatible kind, set **Address** to `https://gateway.example.com/v1`, and give a [virtual key](/secure/virtual-keys) as **API key**. {/* TODO verify: the model kind's exact name for OpenAI-compatible APIs in the Kind list */}
+Judge through the LLM gateway, so the judge's spend has a key and a budget of its own: choose **OpenAI-compatible (Rekori, OpenAI, …)**, set **Address** to `https://gateway.example.com/v1`, and give a [virtual key](/secure/virtual-keys) as **API key**.
 </Tip>
 
 ## Step 2: Start a new evaluator
 
-Select **Evaluators** > **New evaluator**, then a template, or **LLM-as-a-judge** under **Custom eval**. A blank LLM-as-a-judge already checks whether the answer answers the question, with two labels: `pass` (score 1) and `fail` (score 0).
+Select **Evaluators** > **New evaluator**, then a template, or **LLM-as-a-judge** under **Custom eval** (see [Choose and build an evaluator](/monitor/evals/evaluators) for every template). A blank LLM-as-a-judge already checks whether the answer answers the question, with two labels: `pass` (score 1) and `fail` (score 0).
 
 ## Step 3: Write the judge
 
@@ -48,7 +48,7 @@ A judge with no source of truth cannot tell a right fact from a wrong one. To ju
 
 Under **Configuration**:
 
-1. **Pick a data source**: the trace store and the project. {/* TODO verify: what a "project" is in a ClickHouse trace store here (the service name the spans carry, e.g. support-bot, or the Observability project) */}
+1. **Pick a data source**: the trace store and the project. In ClickHouse a project is a service name the spans carry, such as `support-bot`; in Arize it is one of the space's projects. The list shows those with spans in the last 7 days.
 2. **Filter spans** to the ones the judge reads, for example `"status" != 'Error'`. **Matching spans** samples the **Last 7 days** by default; the [time range picker](/monitor/observability#pick-the-time-range) takes any preset, or two times.
 3. **Map variables to data**: point `{input}` and `{output}` at the fields holding the user's message and the agent's answer.
 4. Under **Task configuration**, set the **Sampling rate (%)**: each span judged costs a model call. **Run continuously** judges each new span as it arrives. **One-time backfill** also judges spans already recorded, from a time you choose.
@@ -56,7 +56,7 @@ Under **Configuration**:
 
 ## Step 5: Test, then run
 
-1. Select **Test on spans**. The judge scores a few matching spans without keeping anything. If it is wrong, adjust the template.
+1. Select **Test on spans**. The judge scores up to five matching spans without keeping anything. If it is wrong, adjust the template.
 2. Select **Create and run**. The evaluator is saved and its task starts.
 
 ## Step 6: Read the scores
@@ -71,7 +71,7 @@ Under **Configuration**:
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Score answers with evaluators" icon="scale" href="/monitor/evals/evaluators">
+  <Card title="Choose and build an evaluator" icon="scale" href="/monitor/evals/evaluators">
     Templates, judge types, labels and questions.
   </Card>
   <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">

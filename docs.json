@@ -141,11 +141,28 @@
                   {
                     "group": "Evals",
                     "pages": [
+                      "monitor/evals/what-are-evals",
                       "monitor/evals/get-started",
-                      "monitor/evals/evaluators",
-                      "monitor/evals/tasks-scores",
-                      "monitor/evals/monitors",
-                      "monitor/evals/datasets-prompts",
+                      {
+                        "group": "Build evaluators",
+                        "pages": [
+                          "monitor/evals/evaluators",
+                          "monitor/evals/llm-as-a-judge",
+                          "monitor/evals/multi-question",
+                          "monitor/evals/code",
+                          "monitor/evals/trace-and-session"
+                        ]
+                      },
+                      {
+                        "group": "Run evaluators on your data",
+                        "pages": [
+                          "monitor/evals/tasks-scores",
+                          "monitor/evals/datasets-prompts",
+                          "monitor/evals/monitors"
+                        ]
+                      },
+                      "monitor/evals/align-with-your-labels",
+                      "monitor/evals/results-and-costs",
                       "monitor/evals/guide-first-evaluator"
                     ]
                   },

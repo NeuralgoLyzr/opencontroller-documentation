@@ -1,0 +1,232 @@
+---
+title: "Code evaluators"
+description: "Your own JavaScript scores each record: the evaluate(vars) contract, every return shape, the sandbox and its limits, the five checks that ship, and writing your own."
+sidebarTitle: "Code"
+icon: "code"
+---
+
+<Note>
+**Before you start:** code evaluators switched on in the evals service (self-hosted: [Turn on code evaluators](/self-host/operate#turn-on-code-evaluators)), and the **Operator** role or above. No model connection is needed.
+</Note>
+
+A **Code evaluator** is a JavaScript function that reads a record and returns a verdict. No model is called, so it costs
+nothing, answers in milliseconds, and gives the same answer every time. It is the right kind for anything a program
+can decide: the answer is valid JSON, it matches the expected answer, it contains the order number, it stays under 200
+words, it names a date in the right format, it never mentions a competitor.
+
+## Why code
+
+| | Code evaluator | Model judge |
+|---|---|---|
+| **Decides** | What can be checked: form, content, numbers, matches | What must be understood: grounding, relevance, tone |
+| **Cost** | None | One model call a record |
+| **Speed** | Milliseconds | Seconds |
+| **Repeatable** | Always the same verdict | Nearly, at temperature 0 |
+| **Needs** | A clear rule | A clear definition and, for correctness, a reference |
+| **Explains itself** | If your code returns an explanation | Yes |
+
+A production agent usually wants both: code for the hard rules it must never break, a model for the quality of what it
+says within them.
+
+## The contract
+
+The code defines a function named `evaluate`. It is called once for each record, with one argument.
+
+```javascript
+function evaluate(vars) {
+  return vars.output.trim() === vars.expected.trim()
+}
+```
+
+**`vars`** holds the record's variables, every one a string. A variable exists because your code names it as
+`vars.name`, and the editor maps each name to a field of the record under **Map variables to data**: `vars.input` and
+`vars.output` start on the user's message and the reply, `vars.context` on the retrieved documents, any other name on
+the field called the same. Names are letters, digits and underscores; `vars["x"]` and destructuring are not seen, so
+write `vars.x`.
+
+**What `evaluate` returns** becomes the verdict:
+
+| Return | Label | Score | Example |
+|---|---|---|---|
+| `true` / `false` | `pass` / `fail` | 1 / 0 | `return pattern.test(vars.output)` |
+| A number | none | The number, as it is | `return found / keywords.length` |
+| A string | That label | The label's score, if the evaluator has labels | `return "refund"` |
+| `{ score, label, explanation }` | `label` | `score`, or the label's | `return { score: 0, label: "fail", explanation: e.message }` |
+
+In the object form, any of the three may be left out, but not both `score` and `label`. A `score` given with a `label`
+wins over the label's own score. A boolean `score` also sets `pass` or `fail`. The `explanation` is kept when it is a
+string, and shows beside the result like a model's reasoning.
+
+A number is not clamped: return what you mean to count, and keep it between 0 and 1 so **Quality** and thresholds read
+it like every other score. `NaN`, `Infinity`, `null`, `undefined`, an array or any other type is an error, with a
+message that says what came back. A thrown exception is an error with the exception's own text. Errors are kept with
+the record and counted under **Errors** on the task; they never stop it.
+
+Top-level code runs again for every record, so constants are fine and nothing carries over between records.
+
+## The sandbox
+
+The code runs inside the evals service, in a fresh JavaScript engine for each record, with:
+
+- the ECMAScript built-ins: `JSON`, `Math`, `RegExp`, `Date`, strings, arrays, objects;
+- no `require`, no modules, no network, no files, no `fetch`, no `console`, no timers;
+- **2 seconds** a record, top-level code and `evaluate` together, after which the result is the error "evaluate ran past
+  its time limit";
+- a call stack of **512** frames, so runaway recursion ends with an error rather than the service.
+
+There is no memory limit. An evaluator that builds a very large string can take the service's memory with it, which
+is why code evaluators are switched on only for a cell where every **Operator** is trusted with it. When they are off,
+the **Code evaluator** card is hidden, the **Code checks** templates are left out of the catalog, and saving or testing
+one is refused with "this service cannot run code evaluators".
+
+Saving compiles the code. A syntax error, or no `evaluate`, is refused with the error. **Ask for its reasoning** and
+labels are hidden for this kind: the explanation and the label come from what your code returns.
+
+## The five checks
+
+Each is a starting point you edit. All read `vars.output`, the reply; **Exact match** also reads `vars.expected`.
+
+<AccordionGroup>
+  <Accordion title="Exact match: the answer is the expected one">
+    Passes when the answer equals the dataset row's `expected` answer, spaces at the ends aside. Only a dataset row has an expected answer, so save it and run it in an experiment: a live trace has nothing in `expected`, and is passed over.
+
+    ```javascript
+    // Passes when the answer is the expected one, spaces at the ends aside.
+    function evaluate(vars) {
+      return vars.output.trim() === vars.expected.trim()
+    }
+    ```
+
+    Loosen it as your answers need: lower-case both sides, strip punctuation, or compare numbers after `parseFloat`.
+  </Accordion>
+  <Accordion title="Contains keywords: the answer mentions every word you list">
+    Scores the share of the keywords found, in any case, and names the missing ones in the explanation.
+
+    ```javascript
+    // The words every answer must mention, in any case.
+    const keywords = ["refund", "order number"]
+
+    function evaluate(vars) {
+      const text = vars.output.toLowerCase()
+      const missing = keywords.filter((k) => !text.includes(k.toLowerCase()))
+      return {
+        score: (keywords.length - missing.length) / keywords.length,
+        explanation: missing.length ? "missing: " + missing.join(", ") : "mentions every keyword",
+      }
+    }
+    ```
+
+    Turn it round for words an answer must never contain: score 0 when any is found, and name it.
+  </Accordion>
+  <Accordion title="Matches a pattern: the answer fits a regular expression">
+    Passes when the answer matches the pattern: a date, an order id, a currency amount, a URL on your own domain.
+
+    ```javascript
+    // The pattern an answer must match.
+    const pattern = /\b\d{4}-\d{2}-\d{2}\b/
+
+    function evaluate(vars) {
+      return pattern.test(vars.output)
+    }
+    ```
+  </Accordion>
+  <Accordion title="Valid JSON: a program can read the answer">
+    Passes when the answer parses as JSON, and explains the parse error when it does not.
+
+    ```javascript
+    function evaluate(vars) {
+      try {
+        JSON.parse(vars.output)
+        return { label: "pass", score: 1, explanation: "parses as JSON" }
+      } catch (e) {
+        return { label: "fail", score: 0, explanation: e.message }
+      }
+    }
+    ```
+
+    Go further and check the shape: parse, then test that the fields you need are present and of the right type.
+  </Accordion>
+  <Accordion title="Answer length: the word count stays within bounds">
+    Scores 1 when the answer has between the fewest and the most words, and says how many it had.
+
+    ```javascript
+    // The fewest and most words an answer may have.
+    const fewest = 5
+    const most = 200
+
+    function evaluate(vars) {
+      const words = vars.output.trim().split(/\s+/).filter(Boolean).length
+      return { score: words >= fewest && words <= most ? 1 : 0, explanation: words + " words" }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Write your own
+
+Start a blank **Code evaluator** under **Custom eval**, or edit a check. Three worked examples:
+
+**An answer must carry a valid order number, and the one the user asked about.** Reads the user's message as well as the
+reply.
+
+```javascript
+const order = /\bORD-\d{8}\b/
+
+function evaluate(vars) {
+  const asked = vars.input.match(order)
+  const given = vars.output.match(order)
+  if (!asked) return { score: 1, label: "n/a", explanation: "no order number asked about" }
+  if (!given) return { score: 0, label: "fail", explanation: "the answer names no order number" }
+  if (given[0] !== asked[0]) return { score: 0, label: "fail", explanation: "answered about " + given[0] + ", asked about " + asked[0] }
+  return { score: 1, label: "pass", explanation: "names " + asked[0] }
+}
+```
+
+**A structured answer has the fields the next step needs.**
+
+```javascript
+const required = { intent: "string", confidence: "number" }
+
+function evaluate(vars) {
+  let obj
+  try { obj = JSON.parse(vars.output) } catch (e) { return { score: 0, label: "fail", explanation: e.message } }
+  const bad = Object.keys(required).filter((k) => typeof obj[k] !== required[k])
+  return bad.length
+    ? { score: 0, label: "fail", explanation: "missing or wrong: " + bad.join(", ") }
+    : { score: 1, label: "pass", explanation: "all fields present" }
+}
+```
+
+**A whole run stayed within a call budget.** Set **Reads** to **Whole run** and read `vars.spans`, the steps one a line
+as `[Kind] Name`. Steps of kind `Client` are the run's calls out, to models and tools alike; match on the step's name
+as well to count only one of them.
+
+```javascript
+const most = 6
+
+function evaluate(vars) {
+  const calls = vars.spans.split("\n").filter((l) => l.startsWith("[Client]")).length
+  return { score: calls <= most ? 1 : 0, explanation: calls + " calls" }
+}
+```
+
+Set **A higher score is** **Better** for all three, so a monitor's threshold and an experiment's pass rule read them
+the right way round.
+
+## Test and run
+
+**Test on spans** runs the code on up to five matching records and shows each verdict with its explanation. For a
+dataset, **Test on 20 rows** also says how often it agrees with your labels, which for a code evaluator is a check
+that your rule and your reviewers mean the same thing. Then **Create evaluator**, or **Create and run** to start a task.
+A code evaluator runs in tasks, monitors and experiments like any other, and has no token cost anywhere.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Build datasets and run experiments" icon="table" href="/monitor/evals/datasets-prompts">
+    Give Exact match an expected answer to compare with.
+  </Card>
+  <Card title="Watch production with monitors" icon="radar" href="/monitor/evals/monitors">
+    Run the hard rules on every day's traffic for nothing.
+  </Card>
+</CardGroup>
