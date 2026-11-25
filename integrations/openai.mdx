@@ -17,7 +17,8 @@ apps) has admin keys of its own and is not supported yet.
   - each model called in the last 30 days, with its tokens and requests, the projects it was called from, how many
     API keys called it and the service tiers it ran on;
   - each project, with its members and service accounts, its hard spend limit and whether OpenAI is enforcing it,
-    where its data lives (its residency, shown as the project's region) and how long OpenAI keeps it, and the tiers
+    where its data lives (its residency, shown as the project's region) and how long OpenAI keeps it (where OpenAI
+    has turned retention controls on for the organization), and the tiers
     its requests may run on;
   - the customer's own storage buckets and customer-managed encryption keys, each linked to the projects it stores or
     encrypts;
@@ -26,8 +27,8 @@ apps) has admin keys of its own and is not supported yet.
     are banned (shown as **Disabled**);
   - every enabled project API key, including keys whose owner lost access to the project, with its project, its
     owner (a person or a service account), when it was last used and expires, and its 30-day tokens;
-  - each group, with its members, and the projects it can use or edit; the organization's own roles, and who holds
-    them;
+  - each group, with its members, and the projects it can use or edit;
+  - each **custom role** the organization made, with its permissions and the members and groups that hold it;
   - each workload identity provider and its federation rules: workloads that sign in to a project's service account
     with a token and no API key;
   - the organization's Admin keys, and who made each;
@@ -39,9 +40,9 @@ apps) has admin keys of its own and is not supported yet.
     credentials (name, auth type, MCP server and expiry: never the secret).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
   key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
-- **Control (optional):** block a project, turn its hosted tools and models off and on, share it with members and
-  groups, block an agent or turn its tools off, turn a federation rule off and on, and delete API keys, service
-  accounts, agents and knowledge bases. See
+- **Control (optional):** block a project (and, if you choose, all its agents at once), turn its hosted tools and
+  models off and on, share it with members and groups, block an agent or turn its tools off, turn a federation rule off
+  and on, revoke or delete a custom role, and delete API keys, service accounts, agents and knowledge bases. See
   [Turn on control](#turn-on-control-optional).
 
 To call OpenAI models through the [LLM gateway](/secure/gateway-overview), add OpenAI as a gateway provider instead
@@ -183,12 +184,13 @@ Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory)
 
 | Asset | Actions | Undone by |
 |---|---|---|
-| **Project** | **Block** (below). **Share** with a member or a group of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
+| **Project** | **Block** (below), and choose whether to block all its agents at once. **Share** with a member or a group of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
 | **Project permissions** | Turn each hosted tool (remote MCP servers, web search, file search, code interpreter, image generation) and each model **off** and **on**. | Turning it back on. |
-| **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. A deleted agent cannot be brought back. |
+| **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. Not while its project is blocked. A deleted agent cannot be brought back. |
 | **Knowledge base** | **Delete**: nothing can search it again. Its files stay in the project. Needs the project's control key. | Nothing. |
 | **Federation rule** | **Keyless sign-in** off and on: whether workloads matching the rule can sign in as its service account. | Turning it back on. |
 | **Member** | Change their organization role, the organization's own roles included. | Changing it back. |
+| **Custom role** | **Revoke** it from a member or group that holds it, from the role's **Held by** list. **Delete** it: every member and group that holds it loses it. | Giving it again: from the member's role, or to a group in OpenAI. A deleted role cannot be brought back. |
 | **API key** | **Delete**: every call made with it fails at once. | Nothing. OpenAI cannot turn a key off and on: block its project to stop it for now. |
 | **Service account** | **Delete**, with its API keys. | Nothing. |
 | **Admin key** | None. OpenAI's API cannot turn off or delete an Admin key. Delete one at platform.openai.com. | |
@@ -201,6 +203,16 @@ project_spend_limit_exceeded`), from every API key in it. This is not instant: c
 limit. OpenController keeps the limit the project had before, and **Unblock** puts it back exactly, or removes the
 limit if it had none. A scan shows a blocked project as **Blocked, enforcing** once OpenAI refuses its calls, and
 **Blocked, not yet enforcing** until then (plain **Blocked** when the scan did not read it).
+
+Everything in a blocked project shows as **Stopped** (or **Stopped, not yet enforcing**): its agents, API keys,
+service accounts, automations, knowledge bases, vault credentials, fine-tuned models and federation rules. Each page
+links to the blocked project and still gives the asset's own state. **Block** also pauses the project's automations,
+and **Unblock** resumes only the ones it paused.
+
+Because the limit is not instant, the **Block** dialog can also **block each of the project's agents now**, the way
+each agent's own **Block** does. **Unblock** unblocks only the agents the project's block blocked; an agent blocked
+before stays blocked. While a project is blocked, nothing in it is loosened on its own: you cannot unblock one of its
+agents, or turn an agent's tool on, until you unblock the project. Turning a tool off still works.
 
 **Blocking an agent.** OpenAI's agent tools have no switch. Turning a tool off takes it off the agent, and turning it
 on puts it back exactly as it was. **Block** takes every tool off: the agent still answers, but reaches nothing.
@@ -328,6 +340,7 @@ The new key is verified at once.
 | No models | No API calls in the last 30 days. |
 | No agents, though the project has some | The integration holds no key for that project. Add one in **Project keys**. |
 | Agents: the key of a project is refused | The key is not that project's, or cannot read agents. Replace it in **Project keys**. |
+| An agent's **Unblock** is unavailable: its project is blocked | Unblock the project first. Agents its block blocked are unblocked with it. |
 | **Control write** fails | The control key is read-only. Create an Admin key with write permissions. |
 | A check fails with HTTP 429 | OpenAI's rate limit. Calls are retried; try again later. |
 
