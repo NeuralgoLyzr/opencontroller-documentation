@@ -14,7 +14,7 @@ An identity provider here is an OIDC issuer, such as Okta, Microsoft Entra ID, A
 <Note>
 **Before you start**
 - You need the **Admin** role.
-- The LLM gateway is connected, and it is Rekori. See [Connection](/secure/gateway-overview#connection).
+- The LLM gateway is connected, and it is Rekori. See [Connection](/llm-gateway/overview).
 - In your identity provider, an app or API whose tokens your callers get. You need its issuer address and the audience its tokens carry.
 </Note>
 
@@ -79,7 +79,7 @@ A key that requires sign-in refuses a call with no token, or with a token that n
     Select **Create**. The provider shows in the list with its switch under **On**.
   </Step>
   <Step title="Require it on a virtual key">
-    Go to **LLM Gateway** > **Virtual Keys**, open the key's menu (**⋯**) and select **Edit**. Under **Callers sign in with**, switch on the new provider, then select **Save**. See [Virtual keys](/secure/virtual-keys#create-a-key).
+    Go to **LLM Gateway** > **Virtual Keys**, open the key's menu (**⋯**) and select **Edit**. Under **Callers sign in with**, switch on the new provider, then select **Save**. See [Virtual keys](/llm-gateway/access-and-spend/virtual-keys#create-a-key).
   </Step>
   <Step title="Send the token with each call">
     Each caller sends the key and their token:
@@ -98,7 +98,7 @@ A key that requires sign-in refuses a call with no token, or with a token that n
 ## Check it worked
 
 - In the virtual key's form, the provider shows under **Callers sign in with** with its issuer next to it.
-- A call with a valid token succeeds and shows in [Logs](/secure/logs).
+- A call with a valid token succeeds and shows in [Logs](/llm-gateway/monitor/logs).
 - A call with no token is refused with `identity_token_required`.
 - When a content rule blocks or redacts one of the calls, [Guardrail violations](/secure/who-trips/violations) shows it under the caller's user, not under **No user**.
 
@@ -117,7 +117,7 @@ A key that requires sign-in refuses a call with no token, or with a token that n
   <Card title="See guardrail violations" icon="triangle-alert" href="/secure/who-trips/violations">
     Read violations per user.
   </Card>
-  <Card title="Give apps virtual keys" icon="key" href="/secure/virtual-keys">
+  <Card title="Give apps virtual keys" icon="key" href="/llm-gateway/access-and-spend/virtual-keys">
     Require sign-in on a key.
   </Card>
   <Card title="Auth0" icon="fingerprint" href="/integrations/caller-identity/auth0">

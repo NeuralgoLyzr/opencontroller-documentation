@@ -27,7 +27,7 @@ import { Diagram } from '/snippets/diagrams.mdx'
     </Tab>
     <Tab title="Run">
       <Diagram name="gateway" alt="A call enters the gateway with a virtual key, passes the content rules, reaches a provider and returns checked" />
-      Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block or redact personal data, secrets, prompt injection and off-topic use. [LLM gateway](/secure/gateway-overview) and [Guardrails](/secure/guardrails/list).
+      Applications call the LLM gateway instead of providers. Each gets a virtual key with a budget and rate limits, every call is logged, and guardrails block or redact personal data, secrets, prompt injection and off-topic use. [LLM gateway](/llm-gateway/overview) and [Guardrails](/secure/guardrails/list).
     </Tab>
     <Tab title="Observe">
       <Diagram name="traces" alt="An agent sends traces to the collector, which writes the trace store the pages and evals read" />
@@ -68,7 +68,7 @@ What you can see and change depends on your role: **Viewer**, **Operator**, **Ad
   <Card title="Govern agents" icon="clipboard-check" href="/govern/registry">
     Register agents with an owner and a purpose, approve them in **Approvals**, and keep them in the **Registry**.
   </Card>
-  <Card title="Secure AI traffic" icon="shield-half" href="/secure/gateway-overview">
+  <Card title="Secure AI traffic" icon="shield-half" href="/llm-gateway/overview">
     Send model calls through the **LLM Gateway** with virtual keys, budgets and **Guardrails** that block or redact, and see who trips them.
   </Card>
   <Card title="Posture and compliance" icon="triangle-alert" href="/posture/findings">

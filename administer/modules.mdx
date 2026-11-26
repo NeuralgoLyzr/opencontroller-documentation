@@ -11,7 +11,7 @@ icon: "layout-grid"
 
 ## Connect a module
 
-Go to **Settings** and select the module under **Modules**. Each module's own menu also links there: **Connection** in the LLM gateway, Observability and Fine-tuning menus, **Service** in the Evals menu. For the LLM gateway, follow [Set up the LLM gateway](/secure/set-up-gateway).
+Go to **Settings** and select the module under **Modules**. Each module's own menu also links there: **Connection** in the LLM gateway, Observability and Fine-tuning menus, **Service** in the Evals menu. For the LLM gateway, follow [Set up the LLM gateway](/llm-gateway/get-started/quickstart).
 
 - **Base URL** is where OpenController reaches the module, for example `https://clickhouse.example.com:8443`, or `http://clickhouse:8123` beside a local stack.
 - **Observability** (ClickHouse): **Database** defaults to `otel` and **Traces table** to `otel_traces`. Give OpenController a read-only ClickHouse user: it only reads traces.
@@ -46,7 +46,7 @@ After **Save**, select **Check connection** in the **Connection** box.
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Set up the LLM gateway" icon="route" href="/secure/set-up-gateway">
+  <Card title="Set up the LLM gateway" icon="route" href="/llm-gateway/get-started/quickstart">
     Connect the gateway and add its model providers.
   </Card>
   <Card title="Send traces" icon="activity" href="/monitor/send-traces">

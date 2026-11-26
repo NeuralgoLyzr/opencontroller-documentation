@@ -1,0 +1,55 @@
+---
+title: "Stream responses"
+sidebarTitle: "Streaming"
+description: "Stream tokens as they arrive, and how a streamed call is logged."
+icon: "radio"
+---
+
+Ask for a stream the way the API you use does, and Rekori streams the provider's answer back as it arrives.
+
+<CodeGroup>
+```bash OpenAI-compatible
+curl -N https://rekori.example.com/v1/chat/completions \
+  -H "x-bf-vk: $REKORI_KEY" -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4o-mini", "stream": true,
+       "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+```
+
+```bash Anthropic
+curl -N https://rekori.example.com/anthropic/v1/messages \
+  -H "x-api-key: $REKORI_KEY" -H "Content-Type: application/json" \
+  -d '{"model": "claude-sonnet-4-5", "max_tokens": 200, "stream": true,
+       "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+```
+
+```python OpenAI SDK
+stream = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+    stream=True,
+)
+for chunk in stream:
+    print(chunk.choices[0].delta.content or "", end="")
+```
+</CodeGroup>
+
+For Bedrock, use `converse_stream` or `invoke_model_with_response_stream` on the `/bedrock` route.
+
+## How a streamed call is logged
+
+Rekori collects the pieces as they pass through and writes **one log entry when the stream ends**: the full answer,
+input and output tokens, cost and latency, including time to the first token. A stream that breaks off (the
+caller disconnects, or the provider times out) is still logged, as an error.
+
+## What happens when a stream fails
+
+| When it fails | What Rekori does |
+|---|---|
+| Before the first piece arrives | The same as a normal call: [retry and fall back](/llm-gateway/connect-models/keys-retries-fallbacks) if configured |
+| After pieces have been sent | The stream ends with an error. Nothing can be retried, because the caller already has part of the answer. |
+| The provider stops sending | Rekori ends the stream when no piece arrives for 120 seconds |
+
+<Warning>
+[Content rules](/llm-gateway/protect/content-rules) check a streamed **prompt** like any other, but they do not check a streamed
+**answer**. If answers must be checked, call without streaming.
+</Warning>

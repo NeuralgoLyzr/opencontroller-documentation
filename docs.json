@@ -93,12 +93,7 @@
               {
                 "group": "Secure AI traffic",
                 "pages": [
-                  "secure/gateway-overview",
-                  "secure/set-up-gateway",
-                  "secure/virtual-keys",
-                  "secure/budgets-and-limits",
-                  "secure/routing-and-mcp",
-                  "secure/logs",
+                  "secure/llm-gateway",
                   {
                     "group": "Guardrails",
                     "pages": [
@@ -184,6 +179,112 @@
                   "administer/ask-ctrl-computeragent",
                   "administer/guide-sso-okta",
                   "administer/guide-gateway-sso-okta"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "LLM Gateway",
+            "icon": "route",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "llm-gateway/overview",
+                  "llm-gateway/get-started/quickstart",
+                  "llm-gateway/get-started/concepts"
+                ]
+              },
+              {
+                "group": "Call the gateway",
+                "pages": [
+                  "llm-gateway/call-the-gateway/endpoints-and-sdks",
+                  "llm-gateway/call-the-gateway/authenticate",
+                  "llm-gateway/call-the-gateway/choose-a-model",
+                  "llm-gateway/call-the-gateway/streaming",
+                  "llm-gateway/call-the-gateway/async-jobs",
+                  "llm-gateway/call-the-gateway/coding-tools",
+                  "llm-gateway/call-the-gateway/errors"
+                ]
+              },
+              {
+                "group": "Connect models",
+                "pages": [
+                  "llm-gateway/connect-models/add-a-provider",
+                  "llm-gateway/connect-models/keys-retries-fallbacks",
+                  "llm-gateway/connect-models/models-and-pricing"
+                ]
+              },
+              {
+                "group": "Control access and spend",
+                "pages": [
+                  "llm-gateway/access-and-spend/virtual-keys",
+                  "llm-gateway/access-and-spend/teams-and-customers",
+                  "llm-gateway/access-and-spend/budgets-and-limits",
+                  "llm-gateway/access-and-spend/console-sign-in",
+                  "llm-gateway/access-and-spend/callers-sign-in",
+                  "llm-gateway/access-and-spend/scim-and-roles",
+                  "llm-gateway/access-and-spend/audit-log"
+                ]
+              },
+              {
+                "group": "Route requests",
+                "pages": [
+                  "llm-gateway/routing/routing-rules",
+                  "llm-gateway/routing/complexity-router",
+                  "llm-gateway/routing/semantic-routes",
+                  "llm-gateway/routing/classifier-routing",
+                  "llm-gateway/routing/model-trust",
+                  "llm-gateway/routing/semantic-cache",
+                  "llm-gateway/routing/routing-insights"
+                ]
+              },
+              {
+                "group": "Protect traffic",
+                "pages": [
+                  "llm-gateway/protect/content-rules",
+                  "llm-gateway/protect/external-guardrails",
+                  "llm-gateway/protect/llm-policies",
+                  "llm-gateway/protect/tool-policies",
+                  "llm-gateway/protect/policy-blocks-and-alerts"
+                ]
+              },
+              {
+                "group": "Connect tools (MCP)",
+                "pages": [
+                  "llm-gateway/mcp/add-an-mcp-server",
+                  "llm-gateway/mcp/tools-per-key",
+                  "llm-gateway/mcp/agent-mode",
+                  "llm-gateway/mcp/per-user-sign-in",
+                  "llm-gateway/mcp/connect-claude-code"
+                ]
+              },
+              {
+                "group": "Monitor traffic",
+                "pages": [
+                  "llm-gateway/monitor/logs",
+                  "llm-gateway/monitor/dashboard",
+                  "llm-gateway/monitor/traces",
+                  "llm-gateway/monitor/webhooks"
+                ]
+              },
+              {
+                "group": "Extend Rekori",
+                "pages": [
+                  "llm-gateway/extend/prompts",
+                  "llm-gateway/extend/skills",
+                  "llm-gateway/extend/api-gateway",
+                  "llm-gateway/extend/custom-plugins"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "llm-gateway/guides/set-up-your-organization",
+                  "llm-gateway/guides/move-an-app",
+                  "llm-gateway/guides/claude-code-and-cursor",
+                  "llm-gateway/guides/cut-model-costs",
+                  "llm-gateway/guides/keep-sensitive-data-safe"
                 ]
               }
             ]
@@ -286,7 +387,7 @@
     },
     {
       "source": "/secure/guide-agent-behind-gateway",
-      "destination": "/secure/virtual-keys"
+      "destination": "/llm-gateway/access-and-spend/virtual-keys"
     },
     {
       "source": "/govern/register-agent",
@@ -334,7 +435,7 @@
     },
     {
       "source": "/secure/overview",
-      "destination": "/secure/gateway-overview"
+      "destination": "/llm-gateway/overview"
     },
     {
       "source": "/monitor/evals/overview",
@@ -343,6 +444,30 @@
     {
       "source": "/monitor/overview",
       "destination": "/monitor/observability"
+    },
+    {
+      "source": "/secure/gateway-overview",
+      "destination": "/llm-gateway/overview"
+    },
+    {
+      "source": "/secure/set-up-gateway",
+      "destination": "/llm-gateway/get-started/quickstart"
+    },
+    {
+      "source": "/secure/virtual-keys",
+      "destination": "/llm-gateway/access-and-spend/virtual-keys"
+    },
+    {
+      "source": "/secure/budgets-and-limits",
+      "destination": "/llm-gateway/access-and-spend/budgets-and-limits"
+    },
+    {
+      "source": "/secure/routing-and-mcp",
+      "destination": "/llm-gateway/routing/routing-rules"
+    },
+    {
+      "source": "/secure/logs",
+      "destination": "/llm-gateway/monitor/logs"
     }
   ]
 }

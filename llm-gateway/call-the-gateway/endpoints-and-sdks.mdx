@@ -1,0 +1,148 @@
+---
+title: "Endpoints and SDKs"
+sidebarTitle: "Endpoints and SDKs"
+description: "Point the SDK you already use at Rekori: OpenAI, Anthropic, Bedrock, Gemini, LangChain and more."
+icon: "plug"
+---
+
+Rekori accepts each provider's own API shape, so your code keeps the SDK it uses today. You change two things: the
+base URL, which points at Rekori, and the key, which becomes a [virtual key](/llm-gateway/access-and-spend/virtual-keys).
+
+In these examples Rekori runs at `https://rekori.example.com` and the virtual key is in `REKORI_KEY`.
+
+## Which base URL to use
+
+| You use | Base URL | Where the key goes |
+|---|---|---|
+| OpenAI SDK, or any OpenAI-compatible client | `https://rekori.example.com/v1` | The SDK's API key (sent as `Authorization: Bearer`) |
+| OpenAI SDK, OpenAI's own routes (files, batches, Azure deployment paths) | `https://rekori.example.com/openai` | The SDK's API key |
+| Anthropic SDK | `https://rekori.example.com/anthropic` | The SDK's API key (sent as `x-api-key`) |
+| Google Gen AI SDK (Gemini) | `https://rekori.example.com/genai` | The SDK's API key (sent as `x-goog-api-key`) |
+| AWS SDK for Bedrock | `https://rekori.example.com/bedrock` | An `x-bf-vk` header, added before signing |
+| Cohere SDK | `https://rekori.example.com/cohere` | The SDK's API key |
+| LangChain | `https://rekori.example.com/langchain` | The SDK's API key |
+| LiteLLM | `https://rekori.example.com/litellm` | The SDK's API key |
+| PydanticAI | `https://rekori.example.com/pydanticai/v1` | The SDK's API key |
+
+Rekori recognises a virtual key by its `sk-bf-` prefix in `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or
+`api-key`. You can always send it in the `x-bf-vk` header instead. See [Authentication](/llm-gateway/call-the-gateway/authenticate).
+
+## Call any provider through any SDK
+
+The model name decides which provider answers, not the SDK. Write it as `provider/model`, and the Anthropic SDK can
+call an OpenAI model, or the OpenAI SDK a Claude model on Bedrock:
+
+<CodeGroup>
+```python OpenAI SDK
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://rekori.example.com/v1", api_key=os.environ["REKORI_KEY"])
+
+for model in ["openai/gpt-4o-mini", "anthropic/claude-sonnet-4-5", "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0"]:
+    reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": "One word: hello"}])
+    print(model, reply.choices[0].message.content)
+```
+
+```python Anthropic SDK
+import os
+import anthropic
+
+client = anthropic.Anthropic(base_url="https://rekori.example.com/anthropic", api_key=os.environ["REKORI_KEY"])
+
+reply = client.messages.create(
+    model="claude-sonnet-4-5",            # no prefix: Anthropic
+    max_tokens=200,
+    messages=[{"role": "user", "content": "One word: hello"}],
+)
+reply = client.messages.create(
+    model="openai/gpt-4o-mini",           # with a prefix: any provider
+    max_tokens=200,
+    messages=[{"role": "user", "content": "One word: hello"}],
+)
+```
+
+```python Google Gen AI SDK
+import os
+from google import genai
+from google.genai.types import HttpOptions
+
+client = genai.Client(api_key=os.environ["REKORI_KEY"], http_options=HttpOptions(base_url="https://rekori.example.com/genai"))
+reply = client.models.generate_content(model="gemini-2.5-flash", contents="One word: hello")
+```
+
+```python LangChain
+import os
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="openai/gpt-4o-mini", openai_api_base="https://rekori.example.com/langchain", openai_api_key=os.environ["REKORI_KEY"])
+print(llm.invoke("One word: hello").content)
+```
+</CodeGroup>
+
+On a provider's native route (`/anthropic`, `/genai`, `/bedrock`), a model name without a prefix goes to that
+provider. See [Models](/llm-gateway/call-the-gateway/choose-a-model).
+
+## Bedrock: add the key before signing
+
+The AWS SDK signs every request with AWS credentials, which Rekori does not use. Give the client placeholder
+credentials and add the virtual key as a header before the request is signed:
+
+```python
+import os
+import boto3
+
+def add_rekori_key(request, **kwargs):
+    request.headers.add_header("x-bf-vk", os.environ["REKORI_KEY"])
+
+client = boto3.client(
+    "bedrock-runtime",
+    endpoint_url="https://rekori.example.com/bedrock",
+    region_name="us-east-1",
+    aws_access_key_id="placeholder",
+    aws_secret_access_key="placeholder",
+)
+client.meta.events.register_first("before-sign.bedrock-runtime.*", add_rekori_key)
+
+reply = client.converse(
+    modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
+    messages=[{"role": "user", "content": [{"text": "One word: hello"}]}],
+)
+```
+
+Rekori calls Bedrock with the provider key stored for the **bedrock** provider, not with your AWS credentials.
+
+## Everything the OpenAI-compatible API offers
+
+Under `/v1`, Rekori serves:
+
+| Kind | Endpoints |
+|---|---|
+| Text | `/v1/chat/completions`, `/v1/responses`, `/v1/completions` |
+| Embeddings and search | `/v1/embeddings`, `/v1/rerank` |
+| Audio | `/v1/audio/speech`, `/v1/audio/transcriptions` |
+| Images and video | `/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`, `/v1/videos` |
+| Documents | `/v1/ocr` |
+| Batches and files | `/v1/batches`, `/v1/files` |
+| Realtime | `/v1/realtime` (WebSocket and WebRTC) |
+| Models | `GET /v1/models` |
+| Long jobs | `/v1/async/…`. See [Async jobs](/llm-gateway/call-the-gateway/async-jobs). |
+
+Which ones work depends on the provider behind the model. A provider that does not offer a kind of request returns
+an error that says so.
+
+## Pass a request straight through
+
+For provider features Rekori does not model, a passthrough route forwards the request as it is, with Rekori's key
+check and logging: `/openai_passthrough`, `/anthropic_passthrough`, `/azure_passthrough` and `/genai_passthrough`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key-round" href="/llm-gateway/call-the-gateway/authenticate">
+    Keys, sign-in tokens, or both.
+  </Card>
+  <Card title="Coding tools" icon="terminal" href="/llm-gateway/call-the-gateway/coding-tools">
+    Claude Code, Cursor and Codex through Rekori.
+  </Card>
+</CardGroup>

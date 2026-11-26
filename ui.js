@@ -10,6 +10,9 @@
 // 7. "Download PDF" in every page's menu, after Copy page and View as Markdown, prints it: the
 //    browser's own print dialog saves the page as a PDF, with the stylesheet's print rules keeping
 //    the page alone, so it works wherever the site runs, the customer's own cell included.
+// 8. "LLM Gateway" under Secure AI traffic opens the gateway's own docs in their tab, with their
+//    sidebar. A page listed in two tabs keeps the first one's sidebar, so the entry is a page of its
+//    own (secure/llm-gateway) that this sends on; without the script, its card links there.
 (function () {
   "use strict";
   if (window.__ocUi) return;
@@ -337,6 +340,19 @@
     var s = e.target.closest && e.target.closest(".oc-upgrade select");
     if (s) showUpgrade(s.closest(".oc-upgrade"), s.value);
   });
+
+  var HOP = /\/secure\/llm-gateway\/?$/;
+  function gatewayDocs(path) { return path.replace(HOP, "/llm-gateway/overview"); }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("a[href]");
+    if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || !HOP.test(url.pathname)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    location.assign(gatewayDocs(url.pathname));
+  }, true);
+  if (HOP.test(location.pathname)) location.replace(gatewayDocs(location.pathname));
 
   var pending;
   function run() {

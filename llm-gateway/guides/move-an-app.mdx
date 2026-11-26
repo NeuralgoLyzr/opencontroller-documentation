@@ -1,0 +1,105 @@
+---
+title: "Move an existing app to Rekori"
+sidebarTitle: "Move an app to Rekori"
+description: "Change two lines in an app and gain keys, limits, fallbacks and logs."
+icon: "arrow-right-left"
+---
+
+You have an app that calls OpenAI (or Anthropic, or Bedrock) directly. This guide moves it behind Rekori without
+rewriting it. You change the base URL and the key; the rest of the code stays. In return the app gets its own key and
+budget, a fallback when the provider fails, and every call in the logs.
+
+<Note>
+You need: a provider added in Rekori ([Add a provider](/llm-gateway/connect-models/add-a-provider)), and a virtual key for the
+app with that provider allowed ([Virtual keys](/llm-gateway/access-and-spend/virtual-keys)). The examples use the OpenAI Python
+SDK; other SDKs are in [Endpoints and SDKs](/llm-gateway/call-the-gateway/endpoints-and-sdks).
+</Note>
+
+<Steps>
+  <Step title="Point the client at Rekori">
+    Before:
+
+    ```python
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    reply = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+    ```
+
+    After:
+
+    ```python
+    client = OpenAI(base_url="https://rekori.example.com/v1", api_key=os.environ["REKORI_KEY"])
+    reply = client.chat.completions.create(model="openai/gpt-4o-mini", messages=messages)
+    ```
+
+    Three changes: `base_url`, the key (now a virtual key, `sk-bf-…`), and the model name with its provider prefix.
+    Remove the provider key from the app's environment: it lives in Rekori now.
+  </Step>
+  <Step title="Keep streaming as it is">
+    `stream=True` works unchanged. A stream that fails before its first piece is retried like any call; once pieces
+    have reached the app, it can't be. See [Streaming](/llm-gateway/call-the-gateway/streaming).
+  </Step>
+  <Step title="Handle Rekori's errors">
+    Rekori adds its own refusals to the provider's errors. Read `type`, then `error.type`:
+
+    ```python
+    import openai
+
+    try:
+        reply = client.chat.completions.create(model="openai/gpt-4o-mini", messages=messages)
+    except openai.APIStatusError as e:
+        body = e.body or {}
+        kind = body.get("type") or (body.get("error") or {}).get("type")
+        if e.status_code in (429, 500, 502, 503, 504):
+            ...  # retry with backoff
+        elif kind == "budget_exceeded":
+            ...  # tell the user the app is over its budget for now
+        else:
+            raise  # 401, 403, 446: retrying won't help
+    ```
+
+    The full list is in [Errors](/llm-gateway/call-the-gateway/errors).
+  </Step>
+  <Step title="Add a fallback">
+    For one call, add `fallbacks` to the request. With the OpenAI SDK, pass it in `extra_body`:
+
+    ```python
+    reply = client.chat.completions.create(
+        model="openai/gpt-4o-mini",
+        messages=messages,
+        extra_body={"fallbacks": ["anthropic/claude-haiku-4-5"]},
+    )
+    ```
+
+    The key must allow the fallback's provider too. To give every app the same fallback without code, use a
+    [routing rule](/llm-gateway/routing/routing-rules) instead. See [Retries and fallbacks](/llm-gateway/connect-models/keys-retries-fallbacks).
+  </Step>
+  <Step title="Send long jobs asynchronously">
+    For calls that take minutes (long documents, many calls from a script), use `/v1/async/…`, which answers at once
+    with a job ID. Ask for the result later, or get a [webhook](/llm-gateway/monitor/webhooks) when it is done. See
+    [Async jobs](/llm-gateway/call-the-gateway/async-jobs).
+  </Step>
+</Steps>
+
+## Test it
+
+Run the app's normal flow, then send one call that Rekori must refuse, for example a model the key doesn't allow:
+
+```bash
+curl https://rekori.example.com/v1/chat/completions \
+  -H "x-bf-vk: $REKORI_KEY" -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4o", "messages": [{"role": "user", "content": "Hi"}]}'
+```
+
+```json
+{
+  "type": "model_blocked",
+  "status_code": 403,
+  "error": { "message": "Model 'gpt-4o' is not allowed for virtual key 'support-bot'" }
+}
+```
+
+## The result
+
+**Traffic** > **Requests** shows every call from the app, with cost and latency; filter by its virtual key. Add a
+[budget](/llm-gateway/access-and-spend/budgets-and-limits) to the key to cap its spend, and send `x-bf-lh-*` headers to tag calls
+with your own fields (see [Logs](/llm-gateway/monitor/logs#tag-calls-with-your-own-fields)).

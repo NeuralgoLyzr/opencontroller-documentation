@@ -41,7 +41,7 @@ CATEGORIES = [
     ("iam", "Identity and access", "Whose credentials an agent acts with", [["People and spend", "/discover/people-and-spend"], ["Access and sharing", "/discover/asset-details#access-and-sharing"]]),
     ("agy", "Agency", "What an agent can do on its own", [["Access and sharing", "/discover/asset-details#access-and-sharing"], ["Findings", "/posture/findings"]]),
     ("obs", "Observability", "Whether anyone traces and scores an agent", [["Observability", "/monitor/observability"], ["Evals", "/monitor/evals/get-started"]]),
-    ("rt", "Runtime protection", "Whether calls pass a gateway or a guardrail", [["LLM gateway", "/secure/gateway-overview"], ["Guardrails", "/secure/guardrails/list"]]),
+    ("rt", "Runtime protection", "Whether calls pass a gateway or a guardrail", [["LLM gateway", "/llm-gateway/overview"], ["Guardrails", "/secure/guardrails/list"]]),
     ("dat", "Data and secrets", "Credentials in the open, and paths out", [["Findings", "/posture/findings"], ["Guardrails", "/secure/guardrails/list"]]),
     ("sup", "Supply chain", "Components from outside the registry", [["Registry", "/govern/registry"], ["Security policies", "/posture/security-policies"]]),
 ]
