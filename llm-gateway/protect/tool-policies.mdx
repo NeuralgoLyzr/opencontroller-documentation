@@ -1,0 +1,41 @@
+---
+title: "Tool policies"
+sidebarTitle: "Tool policies"
+description: "Decide which tools a call may use, across LLM, MCP and the API gateway."
+icon: "wrench"
+---
+
+A tool policy decides which tools a call may use, wherever the tool comes from: tools an app passes to a model,
+tools Rekori offers from [MCP servers](/llm-gateway/mcp/add-an-mcp-server), and tools exposed through the
+[API gateway](/llm-gateway/extend/api-gateway). One policy covers all three.
+
+Tool policies are on **Routing** > **API Gateway**, under **Tool Policies**:
+
+| Field | What to enter |
+|---|---|
+| **Name** | For example `no-deletes` |
+| **Tools (comma-separated; * = all, glob ok)** | For example `delete_*, drop_table` |
+| **MCP servers (csv; empty = any server)** | Limit the policy to tools from these servers |
+| **Effect** | **deny**, **allow**, or **external (OPA decides)** |
+| **Mode (deny only)** | **deny_whole** refuses the whole call. **strip** removes the tools and lets the call continue without them. |
+| **Surfaces (none = all)** | Which of LLM, MCP and the API gateway it applies to |
+| **Virtual key names (csv)**, **Team names (csv)**, **Any of scopes (csv)** | Who it applies to. Empty means everyone. |
+| **Priority** | Order among policies |
+
+Select **Add / update tool policy**.
+
+## Which to choose
+
+| You want | Use |
+|---|---|
+| A tool must never run, and callers should know | **deny** with **deny_whole** |
+| A tool must never run, but the rest of the call should go on | **deny** with **strip** |
+| Only some keys or teams may use a tool | **allow** for them, scoped by **Virtual key names** or **Team names** |
+| The decision depends on your own data | **external (OPA decides)**, with the decision path `rekori/tools/decision` |
+
+Every refusal and every stripped tool is listed in [Policy Blocks](/llm-gateway/protect/policy-blocks-and-alerts).
+
+<Note>
+Which MCP tools a key may use at all is set on the key itself. See [Tools per key](/llm-gateway/mcp/tools-per-key). Tool policies
+add company-wide rules on top.
+</Note>

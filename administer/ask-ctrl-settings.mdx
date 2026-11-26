@@ -56,7 +56,7 @@ The note under the field also says when the gateway has nothing to offer:
 
 | The note says | What it means |
 |---|---|
-| **The gateway lists no models for this provider: check its keys' Models. Type the model's ID.** | The provider's keys in the LLM gateway serve no models. Type the ID, or check each key's **Allowed Models** (see [Add a model provider](/secure/set-up-gateway#add-a-model-provider)). |
+| **The gateway lists no models for this provider: check its keys' Models. Type the model's ID.** | The provider's keys in the LLM gateway serve no models. Type the ID, or check each key's **Allowed Models** (see [Add a model provider](/llm-gateway/connect-models/add-a-provider)). |
 | **The gateway would not list this provider's models. Type the model's ID.** | The gateway did not answer the request for the list. Type the ID. |
 
 {/* TODO verify: that "its keys' Models" in the first note is the provider key's Allowed Models field in LLM Gateway > Providers. */}
@@ -126,7 +126,7 @@ When an answer fails, Ctrl says why. The common reasons:
 | "Ask Ctrl's gateway could not be reached: …" | Check the address under **Gateway**, and that OpenController can reach it. |
 | "Ask Ctrl's gateway has an address that is not valid: …" | Correct the address under **Gateway**. |
 | "Ask Ctrl's gateway answered 401: …" (or another code) | The gateway refused the call, for the reason shown. A `401` or `403` is usually the key: set or rotate it under **Gateway**. Otherwise check **Model**: an ID the gateway does not list is sent as typed. |
-| "The LLM gateway's guardrails blocked this request: …" | A content rule in your LLM gateway blocked Ask Ctrl's call, for the reason shown, for example "detected PII". An **Admin** reviews the rule in [Content rules](/secure/routing-and-mcp#content-rules). |
+| "The LLM gateway's guardrails blocked this request: …" | A content rule in your LLM gateway blocked Ask Ctrl's call, for the reason shown, for example "detected PII". An **Admin** reviews the rule in [Content rules](/llm-gateway/protect/content-rules). |
 | "This answer called the model as often as one answer may: …" | Ask a narrower question, or raise **Steps per answer**. |
 | "the answer took too long; try a narrower question" | An answer may take 2 minutes (`DISCOVERY_CHAT_TIMEOUT`). Ask a narrower question. |
 
@@ -161,7 +161,7 @@ Whoever runs your OpenController sets each default in its configuration. A setti
   <Card title="MCP server" icon="plug" href="/administer/mcp-server">
     Connect Claude Code, Cursor or Codex to OpenController.
   </Card>
-  <Card title="Set up the LLM gateway" icon="route" href="/secure/set-up-gateway">
+  <Card title="Set up the LLM gateway" icon="route" href="/llm-gateway/get-started/quickstart">
     Connect the gateway Ask Ctrl calls its model through.
   </Card>
 </CardGroup>

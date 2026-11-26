@@ -174,9 +174,9 @@ Removes the agent from its cloud for good. Type the agent's name to confirm. **D
 
 ## Route through gateway
 
-Sends an agent's model calls through the [LLM gateway](/secure/gateway-overview), where virtual keys, budgets, guardrails and logs apply. Today this works for **Microsoft Foundry prompt agents**, with the **LLM Gateway** module. On the **LLM gateway** card, select **Route through gateway**: OpenController makes a virtual key and publishes a new agent version that calls its model through the gateway. **Take off gateway** undoes it. Needs the **Admin** role.
+Sends an agent's model calls through the [LLM gateway](/llm-gateway/overview), where virtual keys, budgets, guardrails and logs apply. Today this works for **Microsoft Foundry prompt agents**, with the **LLM Gateway** module. On the **LLM gateway** card, select **Route through gateway**: OpenController makes a virtual key and publishes a new agent version that calls its model through the gateway. **Take off gateway** undoes it. Needs the **Admin** role.
 
-For any other agent, point the agent's model address at the gateway and give it a [virtual key](/secure/virtual-keys).
+For any other agent, point the agent's model address at the gateway and give it a [virtual key](/llm-gateway/access-and-spend/virtual-keys).
 
 ## Claude actions
 
@@ -213,7 +213,7 @@ Why some actions show — in the table:
   <Card title="Connect your accounts" icon="plug" href="/discover/connect-accounts">
     Add an integration and its Control credential.
   </Card>
-  <Card title="Route through the gateway" icon="route" href="/secure/gateway-overview">
+  <Card title="Route through the gateway" icon="route" href="/llm-gateway/overview">
     Put an agent's model calls behind keys, limits and guardrails.
   </Card>
 </CardGroup>

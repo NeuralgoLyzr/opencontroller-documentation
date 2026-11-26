@@ -1,0 +1,62 @@
+---
+title: "Choose a model"
+sidebarTitle: "Models"
+description: "Name the provider and model in a call, and what decides whether the key may use it."
+icon: "boxes"
+---
+
+## Name the model
+
+Write the model as `provider/model`:
+
+| You send | Provider | Model |
+|---|---|---|
+| `openai/gpt-4o-mini` | OpenAI | `gpt-4o-mini` |
+| `anthropic/claude-sonnet-4-5` | Anthropic | `claude-sonnet-4-5` |
+| `azure/gpt-4o` | Azure | your deployment of `gpt-4o` |
+| `bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0` | Bedrock | that Bedrock model ID |
+| `vertex/gemini-2.5-pro` | Vertex AI | `gemini-2.5-pro` |
+
+The provider part is the provider's name under **Routing** > **Providers**, including custom providers you add.
+
+### Without a prefix
+
+- On a provider's own route (`/anthropic`, `/genai`, `/bedrock`, …) a plain model name goes to that provider.
+- On `/v1`, Rekori looks the model up in its model catalog and picks the provider that offers it.
+
+Use the prefix whenever more than one provider offers the same model, so the call goes where you expect.
+
+## What decides whether the key may use it
+
+A [virtual key](/llm-gateway/access-and-spend/virtual-keys) allows nothing until you say so:
+
+1. The provider must be listed under the key's **Provider Configurations**, or **Allow all providers** must be on.
+2. The model must be in that provider's allowed models on the key. `*` allows every model; an empty list allows none.
+3. A model on the provider's blocked list is refused even when it is otherwise allowed.
+
+A call outside these is refused with `403` `provider_blocked` or `403` `model_blocked`, before any provider is
+called.
+
+<Note>
+A [routing rule](/llm-gateway/routing/routing-rules) can change the provider or model before this check. The check applies to
+where the call is actually going.
+</Note>
+
+## See the models you may call
+
+```bash
+curl https://rekori.example.com/v1/models -H "x-bf-vk: $REKORI_KEY"
+```
+
+Add `-H "x-bf-model-provider: anthropic"` to list one provider's models only.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Virtual keys" icon="key" href="/llm-gateway/access-and-spend/virtual-keys">
+    Allow providers and models on a key.
+  </Card>
+  <Card title="Routing rules" icon="git-branch" href="/llm-gateway/routing/routing-rules">
+    Send calls to another model automatically.
+  </Card>
+</CardGroup>

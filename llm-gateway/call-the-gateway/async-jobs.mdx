@@ -1,0 +1,62 @@
+---
+title: "Run long jobs asynchronously"
+sidebarTitle: "Async jobs"
+description: "Send a request now, collect the answer later with a job ID."
+icon: "hourglass"
+---
+
+For calls that take long (large documents, image or audio generation, many calls fired at once by a script), send
+them as jobs. Rekori answers at once with a job ID, runs the call in the background, and keeps the result until you
+collect it.
+
+## Send a job
+
+Put `/async` in front of the usual path:
+
+```bash
+curl https://rekori.example.com/v1/async/chat/completions \
+  -H "x-bf-vk: $REKORI_KEY" -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-4o-mini",
+       "messages": [{"role": "user", "content": "Summarise this 40-page contract: …"}]}'
+```
+
+Rekori answers `202 Accepted`:
+
+```json
+{
+  "id": "6f1c2a1e-…",
+  "status": "pending",
+  "created_at": "2026-11-25T10:00:00Z"
+}
+```
+
+Jobs work for `/v1/async/chat/completions`, `/responses`, `/completions`, `/embeddings`, `/rerank`, `/ocr`,
+`/audio/speech`, `/audio/transcriptions`, `/images/generations`, `/images/edits` and `/images/variations`.
+Streaming is not supported for jobs.
+
+## Collect the result
+
+Ask for the job on the same path, with its ID, and **the same virtual key**:
+
+```bash
+curl https://rekori.example.com/v1/async/chat/completions/6f1c2a1e-… -H "x-bf-vk: $REKORI_KEY"
+```
+
+| Status | Answer | Means |
+|---|---|---|
+| `202` | `"status": "pending"` or `"processing"` | Not finished. Ask again later. |
+| `200` | `"status": "completed"` and `result` | Done. `result` is the normal response. |
+| `200` | `"status": "failed"` and `error` | The call failed. `error` says why. |
+| `404` | | No such job for this key, or the result has expired |
+
+## How long results are kept
+
+Results are kept for **3600 seconds (one hour)** after the job finishes, then deleted.
+
+- To change the default, an admin sets **Async Job Result TTL (seconds)** under **System** > **Client Settings**.
+- To change it for one job, send `x-bf-async-job-result-ttl: <seconds>` with the job.
+
+## Get told when a job finishes
+
+Instead of asking again and again, register a webhook for `async_job.completed` and `async_job.failed`. See
+[Webhooks](/llm-gateway/monitor/webhooks).
