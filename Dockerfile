@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # The documentation as a container: the site exported by Mintlify's CLI
-# (pre-rendered pages, nothing of Mintlify's at runtime), served by
-# unprivileged nginx with the rules the export asks for (docker/nginx.conf).
+# (pre-rendered pages, nothing of Mintlify's at runtime), served by nginx as
+# an unprivileged user with the rules the export asks for (docker/nginx.conf).
 # A cell runs it beside the console where the internet is not at hand, and
 # the console's sidebar links to it.
 
@@ -31,7 +31,20 @@ RUN find /out -type f \( -name '*.html' -o -name '*.css' \) -exec sed -i \
 RUN elsewhere=$(find /out -type f \( -name '*.html' -o -name '*.txt' -o -name '*.css' \) -exec grep -lE '"/fonts/|https?://(fonts\.(googleapis|gstatic)\.com|preview\.opencontroller\.sh)' {} +); \
     if [ -n "$elsewhere" ]; then echo "addresses elsewhere in:" $elsewhere >&2; exit 1; fi
 
-FROM nginxinc/nginx-unprivileged:1.30-alpine@sha256:56b8272e43a0525f67aed68d1e0794a712d10e3e45a563e118e9a77c817e6f86
+# nginx 1.30.8 fixes the HTTP/2, HTTP/3, resolver and mail-proxy flaws
+# disclosed on 2026-11-18 (CVE-2026-123007, CVE-2026-123633 and others).
+# The unprivileged image has no build of it yet, so the official one is
+# made unprivileged here as that image does it: no user directive, the
+# pid and temp files under /tmp, its config writable by the nginx user
+# (uid 101) for the start-up scripts, and that uid to run as.
+FROM nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
+RUN sed -i -e '/^user /d' -e 's,^pid .*,pid /tmp/nginx.pid;,' /etc/nginx/nginx.conf \
+    && printf '%s\n' 'client_body_temp_path /tmp/client_temp;' 'proxy_temp_path /tmp/proxy_temp;' \
+         'fastcgi_temp_path /tmp/fastcgi_temp;' 'uwsgi_temp_path /tmp/uwsgi_temp;' 'scgi_temp_path /tmp/scgi_temp;' \
+         > /etc/nginx/conf.d/00-unprivileged.conf \
+    && chown -R 101:0 /var/cache/nginx /etc/nginx \
+    && chmod -R g+w /var/cache/nginx /etc/nginx
+USER 101
 LABEL org.opencontainers.image.title="opencontroller-documentation" \
       org.opencontainers.image.source="https://github.com/NeuralgoLyzr/opencontroller-documentation"
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
