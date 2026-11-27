@@ -235,9 +235,11 @@ Salesforce at once, and is kept in the asset's **Change history** and the [audit
 | MCP server | **Delete** | Removes the server's registration, for good. Its credentials, and the permission set Salesforce made for it, stay |
 
 Not offered, because Salesforce has no API for it: deleting an agent (delete it in Agentforce Studio), turning off one
-action of an agent (that needs a new version), and a switch for everyone in the org. Activating or deactivating a
-prompt template is not offered either. An agent Salesforce itself runs, an agent of another provider and an Einstein
-Bot take no action from OpenController.
+action of an agent (that needs a new version), and a switch for everyone in the org. An agent Salesforce itself
+runs, an agent of another provider and an Einstein Bot take no action from OpenController.
+
+Activating or deactivating a prompt template is not part of this integration. In Salesforce that is a metadata
+deployment, not an action on one asset. Do it in Prompt Builder.
 
 <Note>
 The MCP server actions use Salesforce's API Catalog, which is in preview at Salesforce. They need **Customize
