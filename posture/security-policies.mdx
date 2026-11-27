@@ -34,6 +34,14 @@ Select a policy's name to open its panel: **Detector** (the on/off switch), **Cl
 
 The policy **SUP-3**, *Models from providers the organization does not allow*, runs only once you set the providers your organization allows. Open **SUP-3** and, under **Allowed model providers**, select each provider to allow, or type one in **Another provider** and select **Allow**. A model from any other provider is then a finding. With none allowed, this policy does not run. Changing the list needs the **Admin** role.
 
+### Salesforce's Security Health Check
+
+The policy **GOV-7**, *Organizations whose platform calls their security settings a high risk*, reads Salesforce's
+own Security Health Check of a connected org. It finds nothing until the integration user can read the Health
+Check: add the system permission **View Health Check** to the user's permission set in Salesforce. The other
+Salesforce policies need no more access than the integration already has. See
+[Salesforce: Security posture](/integrations/salesforce#security-posture).
+
 ## Policies by framework
 
 Each row is a category of policies, as Findings groups them, and each number counts the controls in one framework that the category's policies answer. Pick a framework to see its controls. What each framework is, and every control it maps to, is on [Frameworks](/posture/frameworks).
