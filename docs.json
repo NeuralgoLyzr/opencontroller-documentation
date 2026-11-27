@@ -200,7 +200,8 @@
                   "integrations/microsoft",
                   "integrations/databricks",
                   "integrations/snowflake",
-                  "integrations/cloudera"
+                  "integrations/cloudera",
+                  "integrations/salesforce"
                 ]
               },
               {

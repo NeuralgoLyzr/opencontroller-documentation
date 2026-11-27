@@ -36,6 +36,11 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | Model endpoint | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — | — |
 | | Project | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera on cloud) | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera on cloud) | — | — | — | — | — | — |
 | | Environment | <Icon icon="check" size={16} color="#2f855a" /> (Cloudera AI roles) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | — | — | — |
+| **Salesforce** | Agentforce agent | <Icon icon="check" size={16} color="#2f855a" /> (to a permission set, use only) | <Icon icon="check" size={16} color="#2f855a" /> | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | User an agent runs as | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Freeze** / **Unfreeze**) | — | — | — |
+| | Permission set | <Icon icon="check" size={16} color="#2f855a" /> (to a person) | <Icon icon="check" size={16} color="#2f855a" /> (**Revoke**) | — | — | — | — | — | — |
+| | External Client App | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — |
+| | MCP server | — | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | — | — |
 | **Anthropic (Claude)** | Managed Agent | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | Workspace | <Icon icon="check" size={16} color="#2f855a" /> | <Icon icon="check" size={16} color="#2f855a" /> | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
 | | Deployment | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (**Pause**) | <Icon icon="check" size={16} color="#2f855a" /> (archive) | — | — |
@@ -43,16 +48,16 @@ OpenController can change an agent in its own cloud: share it, take access away,
 | | Member | — | — | — | — | — | <Icon icon="check" size={16} color="#2f855a" /> (remove from the organization) | — | — |
 | **Databricks** | Any | — | — | — | — | — | — | — | — |
 
-Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**, **Block in Claude** for an MCP server and **Change role** for a member. See [Claude actions](#claude-actions).
+Claude also has actions of its own: **Stop sessions**, **Turn tools off or on**, **Block in Claude** for an MCP server and **Change role** for a member. See [Claude actions](#claude-actions). A Salesforce MCP server has **Turn tools off or on** too. See [Salesforce](/integrations/salesforce#what-control-can-change).
 
 ## Before you take an action
 
 <Steps>
   <Step title="Turn on control for the provider">
-    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional), [Cloudera](/integrations/cloudera#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
+    Every action needs the provider's **Control** credential, which is separate from the read-only one used for discovery. Each integration page says how to add it: [AWS](/integrations/aws#turn-on-control-optional), [Microsoft](/integrations/microsoft#turn-on-control-optional), [Google Cloud](/integrations/gcp#turn-on-control-optional), [Snowflake](/integrations/snowflake#turn-on-control-optional), [Cloudera](/integrations/cloudera#turn-on-control-optional), [Salesforce](/integrations/salesforce#turn-on-control-optional). For Anthropic, add a control key: an Admin API key, or, for Managed Agents, deployments and MCP servers, a key linked to a service account with the admin role that is in each workspace.
   </Step>
   <Step title="Register the agent and get it approved">
-    Where your deployment runs the registry, every action waits until the agent is registered **and an Admin has approved the registration**. This includes **Unblock**. A shadow or pending agent's controls show dimmed; selecting one opens **Register this agent first**. Assets your registry policy doesn't govern, such as Claude members, aren't held to this. See [Registry](/govern/registry) and [Approvals](/govern/approvals).
+    Where your deployment runs the registry, every action waits until the agent is registered **and an Admin has approved the registration**. This includes **Unblock**. A shadow or pending agent's controls show dimmed; selecting one opens **Register it first**. Assets your registry policy doesn't govern, such as Claude members, aren't held to this. See [Registry](/govern/registry) and [Approvals](/govern/approvals).
   </Step>
   <Step title="Open the agent's Access card">
     In [AI Inventory](/discover/ai-inventory), select the agent, open the **Identity & access** tab and find the **Access** card. Every action on this page is a button on that card, except **Route through gateway**, which is on the **LLM gateway** card below it.
@@ -90,6 +95,10 @@ Gives a person, group or role access to the agent. In the **Share this agent** d
     - **Environment:** **Can use** gives them **MLUser**, **Can edit** **MLAdmin**, on the environment.
     - Choose people and groups from the account's directory. A model endpoint and a project name a person by their workload username, which Cloudera gives once users are synchronized to the environment.
   </Tab>
+  <Tab title="Salesforce">
+    - **Agentforce agent:** use only; grants the agent to a **permission set**. Everyone who holds the set can use the agent. Salesforce grants an agent to permission sets only, never to a person. Choose the set from the org's own list.
+    - **Permission set:** assigns the set to a **person**, who can then use every agent it grants. Choose from the org's active users.
+  </Tab>
   <Tab title="Anthropic">
     **Workspace:** **Can use** adds the person as a workspace developer, **Can edit** as a workspace admin. Not the Default workspace. Organization admins, billing members and owners are in every workspace already.
   </Tab>
@@ -105,6 +114,7 @@ Takes a person's, group's or role's access away. Select the remove icon next to 
   <Tab title="Google Cloud">Removes every role the person holds on the agent. Roles they hold on the whole project stay; OpenController's log of the change names the ones that still let them call the agent.</Tab>
   <Tab title="Snowflake">Runs `REVOKE` of every privilege the role or user holds on the agent or MCP server. The owner role is refused. Grants inherited from the schema, database or account stay; the log names them.</Tab>
   <Tab title="Cloudera">Model endpoint: takes every access the person holds on it; what the owner and the environment's roles give stays. Project: removes them as a collaborator. Environment: removes every Cloudera AI role they hold there; a role a group gives them stays.</Tab>
+  <Tab title="Salesforce">Agentforce agent: deletes the grant to that permission set. People who hold another permission set or a profile that grants the agent can still use it. Permission set: **Revoke**, next to a person under **Held by**, takes the set from them.</Tab>
   <Tab title="Anthropic">Removes the person from the workspace; they stay in the organization. Organization admins, billing members and owners are in every workspace through their organization role, so they can't be removed here: change their role instead.</Tab>
 </Tabs>
 
@@ -130,7 +140,7 @@ Makes the agent's latest changes reach the people using it. Select **Publish**, 
 
 ## Block and Unblock
 
-Makes the agent unusable, and can be undone. **Unblock** brings it back as it was. The button's words depend on the agent: **Block** / **Unblock**, **Disable** / **Enable** (Foundry hosted agents), **Disable** / **Re-enable** (Claude API keys), **Pause** / **Resume** (Claude deployments), **Stop** / **Start** (Cloudera models and applications), **Suspend** / **Resume** (Cloudera workbenches) and **Block in Claude** / **Unblock in Claude** (MCP servers, see [Claude actions](#claude-actions)).
+Makes the agent unusable, and can be undone. **Unblock** brings it back as it was. The button's words depend on the agent: **Block** / **Unblock**, **Disable** / **Enable** (Foundry hosted agents), **Disable** / **Re-enable** (Claude API keys), **Pause** / **Resume** (Claude deployments), **Stop** / **Start** (Cloudera models and applications), **Suspend** / **Resume** (Cloudera workbenches), **Freeze** / **Unfreeze** (Salesforce users) and **Block in Claude** / **Unblock in Claude** (MCP servers, see [Claude actions](#claude-actions)).
 
 <Tabs>
   <Tab title="AWS">
@@ -153,6 +163,11 @@ Makes the agent unusable, and can be undone. **Unblock** brings it back as it wa
     - **Workbench:** **Suspend** stops everything in it, its models and applications with it, and nobody can open it; **Resume** brings it back. Cloudera documents suspending for its cloud only.
     - Needs the control machine user's API key of the workbench, and **MLAdmin** on the environment.
   </Tab>
+  <Tab title="Salesforce">
+    - **Agentforce agent:** deactivates the agent's active version, as Agentforce Studio does. Nobody can talk to it, in any channel. **Unblock** activates that same version again, not a later one nobody had activated. Only an agent OpenController blocked is unblocked here; one deactivated in Salesforce is activated in Agentforce Studio. The agent's own actions then show **Stopped**.
+    - **User an agent runs as:** **Freeze** stops the user from signing in, and a service agent that runs as it stops answering; the agent shows **Stopped**. **Unfreeze** lets it in again at once. OpenController's own control user is never frozen.
+    - **External Client App:** turns the app off in its policies, so nobody signs in to the org through it. Its settings and keys stay. An app the integration itself signs in through is never blocked.
+  </Tab>
   <Tab title="Anthropic">
     - **Managed Agent:** turns all its tools off, pauses its deployments and stops its open sessions. **Unblock** turns back on exactly the tools the block turned off and resumes the deployments it paused; stopped sessions stay stopped. Custom tools stay on, and a session started while blocked can still talk but use no tool. Needs the service-account control key, in the agent's workspace.
     - **API key:** **Disable** sets the key inactive; **Re-enable** turns it back on (not for an expired key). Disabling a member's Claude Code key stops their Claude Code.
@@ -170,6 +185,7 @@ Removes the agent from its cloud for good. Type the agent's name to confirm. **D
 - **Microsoft, Agent Builder:** deletes the agent (published or draft) and its catalog entry. Needs a Global, AI or Power Platform administrator signed in. No cascade.
 - **Microsoft, Foundry agents:** deletes the agent; **Delete with cascade** also deletes its Azure Bot Services.
 - **Microsoft, Entra agent identity:** deletes the identity in Entra, which keeps it restorable for 30 days in the Entra admin center; after that it is gone for good. The agent that runs as it stays but cannot sign in: a Foundry agent refuses every request within minutes, until the identity is restored. To stop the agent, use **Disable sign-in** instead. To remove the agent, delete the agent: Microsoft deletes its identity with it. No cascade.
+- **Salesforce, MCP server:** removes the server's registration from the org. Every tool of it the org allowed its agents goes with it, and an agent's action that calls one stops working. Its credentials, and the permission set Salesforce made for it, stay. No cascade.
 - **Anthropic:** archives the API key, workspace, Managed Agent, deployment, vault, environment or memory store (a custom skill is deleted). Deleting a member removes them from the organization. Archiving a workspace archives its API keys; removing a member archives their personal keys. The Default workspace can't be archived, and admins and owners can't be removed.
 
 ## Route through gateway
@@ -198,6 +214,7 @@ Why some actions show — in the table:
 - **Google Cloud:** Google has no switch that stops one Agent Runtime agent, so there is no Block. A CX Agent Studio app has no access of its own and no off switch: turn off public web access instead.
 - **Snowflake:** agents cannot be deleted, because Snowflake cannot undo a drop. MCP servers can't be blocked: remove their roles, or block the agents that call them.
 - **Cloudera:** nothing is deleted from OpenController, because Cloudera can undo no delete. A model endpoint, a project and an environment are not stopped: remove who may use them, or stop what they run. On premises, projects have no collaborators API.
+- **Salesforce:** an agent cannot be deleted from OpenController, because Salesforce deletes one only in Agentforce Studio. One action of an agent cannot be turned off: that needs a new version. There is no switch for everyone in the org. An MCP server has no switch of its own: turn its tools off, or delete it. The MCP server actions need a broad permission. See [Salesforce](/integrations/salesforce#what-control-can-change).
 - **Anthropic:** Managed Agents, deployments and the rest are shared through their workspace, not on their own. Workspaces and members can't be paused. Nothing is shared organization-wide or published.
 - **Databricks:** no actions yet.
 

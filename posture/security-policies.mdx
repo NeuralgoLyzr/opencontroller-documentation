@@ -34,6 +34,14 @@ Select a policy's name to open its panel: **Detector** (the on/off switch), **Cl
 
 The policy **SUP-3**, *Models from providers the organization does not allow*, runs only once you set the providers your organization allows. Open **SUP-3** and, under **Allowed model providers**, select each provider to allow, or type one in **Another provider** and select **Allow**. A model from any other provider is then a finding. With none allowed, this policy does not run. Changing the list needs the **Admin** role.
 
+### Salesforce's Security Health Check
+
+The policy **GOV-7**, *Organizations whose platform calls their security settings a high risk*, reads Salesforce's
+own Security Health Check of a connected org. It finds nothing until the integration user can read the Health
+Check: add the system permission **View Health Check** to the user's permission set in Salesforce. The other
+Salesforce policies need no more access than the integration already has. See
+[Salesforce: Security posture](/integrations/salesforce#security-posture).
+
 ## Policies by framework
 
 Each row is a category of policies, as Findings groups them, and each number counts the controls in one framework that the category's policies answer. Pick a framework to see its controls. What each framework is, and every control it maps to, is on [Frameworks](/posture/frameworks).
@@ -59,38 +67,44 @@ Each row is a category of policies, as Findings groups them, and each number cou
 
 | ID | Policy | Category | Severity | Clouds | Framework items |
 |---|---|---|---|---|---|
-| EXP-1 | Assets anyone can use without signing in | Exposure | High | Microsoft, Databricks, Google Cloud, External | LLM01, ASI01, ASI03, AML.T0049, MS-2.7 |
+| EXP-1 | Assets anyone can use without signing in | Exposure | High | Microsoft, Databricks, Google Cloud, Salesforce, External | LLM01, ASI01, ASI03, AML.T0049, MS-2.7 |
 | EXP-2 | Gateways without inbound authentication | Exposure | High | AWS | ASI04, ASI07, AML.T0049, BedrockAgentCore.2 |
 | EXP-3 | Assets reachable from the internet | Exposure | Medium | Microsoft, Google Cloud, Databricks, AWS | LLM01, AML.T0049, MS-2.7 |
 | EXP-4 | Runtimes and projects on public networking | Exposure | Medium | AWS, Microsoft | MS-2.7, BedrockAgentCore.1 |
 | EXP-5 | Assets shared with the whole organization | Exposure | Medium | Microsoft, Databricks, Google Cloud | LLM02, ASI03, A.9.4 |
 | EXP-6 | Agents that read the open web | Exposure | Low | Microsoft, AWS | LLM01, ASI01, AML.T0051 |
 | IAM-1 | Agents acting with their maker's credentials | Identity and access | High | Microsoft | ASI03, LLM06, AML.T0012 |
-| IAM-2 | Assets that share one identity | Identity and access | Medium | AWS, Microsoft, Google Cloud | ASI03, A.3.2 |
+| IAM-2 | Assets that share one identity | Identity and access | Medium | AWS, Microsoft, Google Cloud, Salesforce | ASI03, A.3.2 |
 | IAM-3 | API keys that never expire | Identity and access | Medium | Anthropic | AML.T0055, MS-2.7 |
 | IAM-4 | API keys unused for 30 days | Identity and access | Medium | Anthropic | GV-1.7, AML.T0055 |
 | IAM-5 | API keys made by someone who is not a member | Identity and access | High | Anthropic | GV-2.1, ASI10, AML.T0055 |
 | IAM-6 | Tools signing in with a static API key | Identity and access | Medium | Google Cloud, Microsoft | ASI03, AML.T0055 |
+| IAM-7 | Agents running as a user who can read or change everything | Identity and access | High | Salesforce | ASI03, LLM06, AML.T0012 |
+| IAM-8 | Apps whose tokens never expire, or that skip IP restrictions | Identity and access | Medium | Salesforce | AML.T0055, MS-2.7, ASI03 |
 | DAT-1 | Credentials in environment variables | Data and secrets | High | AWS, Microsoft, Google Cloud, Databricks | LLM02, AML.T0083, AML.T0055 |
-| DAT-2 | Credentials written into instructions | Data and secrets | High | Microsoft, Google Cloud | LLM07, LLM02, AML.T0083 |
+| DAT-2 | Credentials written into instructions | Data and secrets | High | Microsoft, Google Cloud, Salesforce | LLM07, LLM02, AML.T0083 |
 | DAT-3 | Outside input, private data and a way to act, in one agent | Data and secrets | Critical | AWS, Microsoft, Google Cloud | LLM01, ASI01, ASI02, AML.T0051, AML.T0086 |
+| DAT-4 | Trusted URLs that trust every site of a domain | Data and secrets | Medium | Salesforce | LLM01, LLM02, AML.T0086 |
 | AGY-1 | Destructive tools, and the agents that can call them | Agency | High | AWS, Microsoft, Google Cloud, Databricks | LLM06, ASI02, AML.T0101, Art. 26 |
-| AGY-2 | Generative agents with little or no instructions | Agency | Medium | Microsoft | LLM01, ASI01 |
+| AGY-2 | Generative agents with little or no instructions | Agency | Medium | Microsoft, Salesforce | LLM01, ASI01 |
 | AGY-3 | Agents that run code they write | Agency | Medium | AWS, Microsoft, Google Cloud | ASI05, AML.T0105, BedrockAgentCore.7 |
 | AGY-4 | Agents that call other agents | Agency | Low | Microsoft, Databricks | ASI07, ASI08 |
-| SUP-1 | Agents using MCP servers outside the registry | Supply chain | High | AWS, Microsoft, Google Cloud, Databricks | LLM03, ASI04, GV-6.1, A.10.3, AML.T0104 |
-| SUP-2 | Tools, servers and models reached without TLS | Supply chain | Medium | AWS, Microsoft, Google Cloud, Databricks, External | ASI04, ASI07 |
+| SUP-1 | Agents using MCP servers outside the registry | Supply chain | High | AWS, Microsoft, Google Cloud, Databricks, Salesforce | LLM03, ASI04, GV-6.1, A.10.3, AML.T0104 |
+| SUP-2 | Tools, servers and models reached without TLS | Supply chain | Medium | AWS, Microsoft, Google Cloud, Databricks, Salesforce, External | ASI04, ASI07 |
 | SUP-3 | Models from providers the organization does not allow | Supply chain | Medium | Microsoft, Databricks, AWS, Google Cloud | LLM03, GV-6.1, A.10.3 |
 | RT-1 | Agents with no guardrail and no gateway | Runtime protection | Medium | AWS, Microsoft, Google Cloud | LLM01, LLM02, MS-2.4, Art. 26 |
 | RT-2 | Agents calling models around the gateway | Runtime protection | Low | AWS, Microsoft, Google Cloud | LLM10, MS-2.4 |
-| GOV-1 | Shadow assets | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks | GV-1.6, A.4.2 |
-| GOV-2 | Assets nobody answers for | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks, External | GV-2.1, A.3.2 |
+| RT-3 | AI settings that let through what the platform holds back | Runtime protection | Medium | Salesforce | LLM01, MS-2.4 |
+| GOV-1 | Shadow assets | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks, Salesforce | GV-1.6, A.4.2 |
+| GOV-2 | Assets nobody answers for | Governance | Medium | AWS, Microsoft, Google Cloud, Databricks, Salesforce, External | GV-2.1, A.3.2 |
 | GOV-3 | Assets whose owner has left | Governance | High | AWS, Microsoft, Google Cloud, Databricks | GV-2.1, A.3.2, ASI10 |
 | GOV-4 | Published agents nobody uses | Governance | Medium | Microsoft | GV-1.7, MG-2.4 |
 | GOV-5 | Agents published from the default environment | Governance | Low | Microsoft | A.6.2.5 |
 | GOV-6 | Assets whose owner no longer has access | Governance | Low | AWS, Microsoft, Google Cloud, Databricks | GV-2.1 |
+| GOV-7 | Organizations whose platform calls their security settings a high risk | Governance | High | Salesforce | MS-2.7, GV-1.6 |
 | OBS-1 | Agents nobody traces | Observability | Medium | AWS, Microsoft, Google Cloud | A.6.2.8, MS-2.4, Art. 26 |
 | OBS-2 | Traced agents nobody evaluates | Observability | Low | AWS, Microsoft, Google Cloud | LLM09, MS-2.5, A.6.2.4 |
+| OBS-3 | Organizations that keep no record of what their AI did | Observability | Medium | Salesforce | A.6.2.8, MS-2.4, Art. 26 |
 
 {/* TODO verify: this list matches the catalogue served by GET /v1/posture on the release being documented (taken from services/platform/internal/posture/checks.go) */}
 
