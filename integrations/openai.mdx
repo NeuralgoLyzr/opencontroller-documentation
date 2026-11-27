@@ -14,20 +14,35 @@ apps) has admin keys of its own and is not supported yet.
 ## What it unlocks
 
 - **[AI Inventory](/discover/ai-inventory):**
-  - each model called in the last 30 days, with its tokens and requests, the projects it was called from and how many
-    API keys called it;
-  - each project, with its members and service accounts;
-  - each project API key, with its project, its owner (a person or a service account), when it was last used and
-    expires, and its 30-day tokens;
+  - each model called in the last 30 days, with its tokens and requests, the projects it was called from, how many
+    API keys called it and the service tiers it ran on;
+  - each project, with its members and service accounts, its hard spend limit and whether OpenAI is enforcing it,
+    where its data lives (its residency, shown as the project's region) and how long OpenAI keeps it (where OpenAI
+    has turned retention controls on for the organization), and the tiers
+    its requests may run on;
+  - the customer's own storage buckets and customer-managed encryption keys, each linked to the projects it stores or
+    encrypts;
+  - fine-tuned models, in their project and derived from their base model;
+  - each member: their role, whether SCIM manages them, when a key of theirs last called OpenAI, and whether they
+    are banned (shown as **Disabled**);
+  - every enabled project API key, including keys whose owner lost access to the project, with its project, its
+    owner (a person or a service account), when it was last used and expires, and its 30-day tokens;
+  - each group, with its members, and the projects it can use or edit;
+  - each **custom role** the organization made, with its permissions and the members and groups that hold it;
+  - each workload identity provider and its federation rules: workloads that sign in to a project's service account
+    with a token and no API key;
   - the organization's Admin keys, and who made each;
   - each project's permissions: which hosted tools (remote MCP servers, web search, file search, code interpreter,
     image generation) and which models its keys may use;
   - with a key of a project, that project's **agents** (the Agents API), their MCP servers, functions and built-in
-    tools, and its **knowledge bases** (vector stores).
+    tools (a tool that is turned off is a property of the agent, not a tool it uses), whether they may create
+    subagents, their **automations** (scheduled runs), its **knowledge bases** (vector stores), and its vault
+    credentials (name, auth type, MCP server and expiry: never the secret).
 - **[Spend](/discover/people-and-spend):** each project's bill by day and line item, and whose each dollar was: the API
   key it was called with, and the member when the key is their own. OpenAI reports this, so nothing is estimated.
-- **Control (optional):** block a project, turn its hosted tools and models off and on, share it, block an agent or
-  turn its tools off, and delete API keys, service accounts, agents and knowledge bases. See
+- **Control (optional):** block a project (and, if you choose, all its agents at once), turn its hosted tools and
+  models off and on, share it with members and groups, block an agent or turn its tools off, turn a federation rule off
+  and on, revoke or delete a custom role, and delete API keys, service accounts, agents and knowledge bases. See
   [Turn on control](#turn-on-control-optional).
 
 To call OpenAI models through the [LLM gateway](/secure/gateway-overview), add OpenAI as a gateway provider instead
@@ -96,8 +111,14 @@ are two ways to give the keys.
     | `opencontroller-discovery` | Read only (`api.all.read`) | Reading agents and knowledge bases |
     | `opencontroller-control` | Read and write agents and knowledge bases | Blocking agents, turning their tools off, deleting |
 
-    Each key is stored in your secrets manager. OpenAI never shows its value again. A new project gets its keys after
-    the scan that first finds it, and its agents are read from the next scan on.
+    Each key is made with its permissions from the start, and stored in your secrets manager. OpenAI never shows its
+    value again. A new project gets its keys after the scan that first finds it, and its agents are read from the
+    next scan on.
+
+    - **Key lifetime, in days** (optional, 1 to 365): every key made from then on expires after that many days. Set
+      it when a project's key policy refuses keys without an expiry; the error says so. A key within 7 days of
+      expiry is replaced at the next scan and the old key deleted, each replacement in the audit log. The list shows
+      when each made key expires and when it was last replaced.
 
     - **Only these projects:** project IDs (`proj_…`), separated by commas. Only these get keys. Start with a few
       before turning it on for the whole organization. Left empty, every project gets them.
@@ -163,13 +184,15 @@ Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory)
 
 | Asset | Actions | Undone by |
 |---|---|---|
-| **Project** | **Block** (below). **Share** with a member of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
+| **Project** | **Block** (below), and choose whether to block all its agents at once. **Share** with a member or a group of the organization, as a member (*can use*) or an owner (*can edit*), and **Remove** them. **Delete** archives it. | **Unblock**; sharing again. An archived project cannot be brought back. |
 | **Project permissions** | Turn each hosted tool (remote MCP servers, web search, file search, code interpreter, image generation) and each model **off** and **on**. | Turning it back on. |
-| **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. A deleted agent cannot be brought back. |
+| **Agent** | **Block** (below). Turn each tool (an MCP server, a function, web search, computer use) **off** and **on**. **Delete**. Needs the project's control key. | **Unblock**; turning it back on. Not while its project is blocked. A deleted agent cannot be brought back. |
 | **Knowledge base** | **Delete**: nothing can search it again. Its files stay in the project. Needs the project's control key. | Nothing. |
+| **Federation rule** | **Keyless sign-in** off and on: whether workloads matching the rule can sign in as its service account. | Turning it back on. |
+| **Member** | Change their organization role, the organization's own roles included. | Changing it back. |
+| **Custom role** | **Revoke** it from a member or group that holds it, from the role's **Held by** list. **Delete** it: every member and group that holds it loses it. | Giving it again: from the member's role, or to a group in OpenAI. A deleted role cannot be brought back. |
 | **API key** | **Delete**: every call made with it fails at once. | Nothing. OpenAI cannot turn a key off and on: block its project to stop it for now. |
 | **Service account** | **Delete**, with its API keys. | Nothing. |
-| **Member** | Change their organization role (**owner**, **reader**). **Delete** removes them from the organization. | Changing it back; inviting them again. |
 | **Admin key** | None. OpenAI's API cannot turn off or delete an Admin key. Delete one at platform.openai.com. | |
 
 {/* TODO verify: the exact button labels on each OpenAI asset's page (Block, Share, Delete, the tool and model switches). */}
@@ -178,13 +201,26 @@ Changes are made from the asset's page in [AI Inventory](/discover/ai-inventory)
 limit to one cent. Once the project has spent anything this month, OpenAI refuses its calls (`429
 project_spend_limit_exceeded`), from every API key in it. This is not instant: calls stop once OpenAI applies the
 limit. OpenController keeps the limit the project had before, and **Unblock** puts it back exactly, or removes the
-limit if it had none. A scan shows a blocked project as **Blocked**.
+limit if it had none. A scan shows a blocked project as **Blocked, enforcing** once OpenAI refuses its calls, and
+**Blocked, not yet enforcing** until then (plain **Blocked** when the scan did not read it).
+
+Everything in a blocked project shows as **Stopped** (or **Stopped, not yet enforcing**): its agents, API keys,
+service accounts, automations, knowledge bases, vault credentials, fine-tuned models and federation rules. Each page
+links to the blocked project and still gives the asset's own state. **Block** also pauses the project's automations,
+and **Unblock** resumes only the ones it paused.
+
+Because the limit is not instant, the **Block** dialog can also **block each of the project's agents now**, the way
+each agent's own **Block** does. **Unblock** unblocks only the agents the project's block blocked; an agent blocked
+before stays blocked. While a project is blocked, nothing in it is loosened on its own: you cannot unblock one of its
+agents, or turn an agent's tool on, until you unblock the project. Turning a tool off still works.
 
 **Blocking an agent.** OpenAI's agent tools have no switch. Turning a tool off takes it off the agent, and turning it
 on puts it back exactly as it was. **Block** takes every tool off: the agent still answers, but reaches nothing.
 **Unblock** puts back what the block took off; a tool you turned off by itself stays off. The agent's metadata says
 what OpenController took off (`opencontroller_tools_off`, `opencontroller_blocked`), so anyone reading the agent in
-OpenAI sees it.
+OpenAI sees it. **Block** also pauses the agent's automations, which would otherwise keep running it on schedule, and
+**Unblock** resumes only the ones the block paused. A session or an automation may still pass an inline agent of its
+own, which no block reaches; the agent's page says so.
 
 **Models.** A project's model policy is an allow list (only these) or a deny list (all but these). Turning a model off
 adds it to the deny list, or takes it out of the allow list. The last model of an allow list cannot be turned off:
@@ -201,15 +237,17 @@ turn it off in the project.
 
 After each scan (at most every six hours), once a day, and on **Refresh**, OpenController reads the last 35 days of the
 organization's cost report with the read Admin key. It needs no other key: spend uses only what discovery already
-reads, and never the control key. Two sources appear under **Spend** > **Sources**:
+reads, and never the control key. Three sources appear under **Spend** > **Sources**:
 
 | Source | What it is |
 |---|---|
-| **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`batch`, `flex`, `priority`, `fast mode`). Web search calls show as the service **Web search**. A model's tokens the Agents API used show as the service **Agents API**; its tools' calls stay under each tool. Spend outside every project is the **Organization**'s. These rows are **billed**. |
-| **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs, even after it is deleted: its spend shows on them on **People**, still under the key. A service account's key belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. |
+| **OpenAI API bill** | Each project's line items each day, in US dollars: the model, what was metered (input, cached input, output, audio), and the tier (`batch`, `flex`, `priority`, `fast mode`). A tool's calls show as that tool's service, whatever product made them: **Web search**, **File search**, **Code interpreter**. A model's tokens the Agents API used show as the service **Agents API**. Calls made by OpenAI's evals show as the service **Evals**. A fine-tuned model (`ft-…`) is named, but links no model asset yet. Spend outside every project is the **Organization**'s; a project archived since keeps its name. These rows are **billed**. |
+| **OpenAI bill by key and person** | The same bill by the API key it was called with. A member's own key is theirs, even after it is deleted: its spend shows on them on **People**, still under the key. A service account's key belongs to no person. These rows are **attributed**: they say whose the spend was, and never add to a total. Both sources split the bill the same way: if OpenAI cannot report the Agents API apart for your organization, neither does. If OpenAI refuses the report by user, the shares are still read, and only keys deleted since name no person; the source's status says how many rows. |
+| **OpenAI file search by knowledge base** | The bill's **File search** line split over the knowledge bases that were searched, by their calls: file search is billed per call, so each knowledge base's share is exact. A knowledge base's **Spend** tab shows it, with the keys that searched it. Calls on no knowledge base stay on none, and the source's status says so. These rows are **attributed**, and name no person: the bill by key already does. |
 
 On **Spend**, pick **OpenAI** in **Provider**, then select **OpenAI's own page**. It breaks the bill down by
-organization, project, API key, person and model, and lists every API key with its share of the bill. Each project
+organization, project, API key, person and model, and lists every API key with its share of the bill. Every share
+counts as in the bill: OpenAI bills nothing outside it. Each project
 and key is listed by its name, and told apart by its id: two keys of one name are two lines. A key opens its own
 page, with how to rotate it.
 
@@ -220,11 +258,19 @@ The **OpenAI API** panel, on that page and on the **Spend** overview, shows:
   price, less what they cost. Both prices come from the same bill, because OpenAI's discount is different for each
   model.
 - **Batch**, **Flex** and **Saved by batch and flex, estimated:** batch and flex cost half the standard price, so
-  each saved what it cost.
+  each saved what it cost. **Flex** and **Fast mode** say which projects allow them, each a link to the project.
 - **Priority:** costs more than standard, so it saves nothing.
 - **Agents API:** what the Agents API's models cost.
 
-OpenAI does not report spend per agent or per knowledge base, so OpenController cannot show it.
+**Limits.** OpenAI's own spend limits are read with the bill: the organization's and each project's monthly hard
+limit, whether OpenAI is enforcing it, and the spend alerts with who they go to. On **Spend** > **OpenAI**, **This
+month so far** shows each project and the organization against its limit ("$812 of $1,000 this month, enforcing")
+and its alerts. A limit read from OpenAI replaces one typed into OpenController for the same organization: its field
+under **Spend** settings reads **Set in OpenAI**. The forecast and the **Over its limit** signal use the read limits,
+and a project over its own limit opens a signal of its own. A project blocked by OpenController (its one-cent limit)
+is never shown as a limit.
+
+OpenAI does not report spend per agent, so OpenController cannot show it; the Agents API's spend is one line.
 
 ## Permissions it uses
 
@@ -239,6 +285,14 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 | `/v1/organization/projects/{project}/hosted_tool_permissions`, `/model_permissions` | What each project allows. |
 | `/v1/organization/projects/{project}/users`, `/service_accounts` | Each project's members and service accounts. |
 | `/v1/organization/users` | Members' names, emails and roles, for the inventory's projects, control, and whose each key's spend is. |
+| `/v1/organization/groups`, `/groups/{group}/users`, `/projects/{project}/groups` and their roles | Groups, their members and their access to projects. |
+| `/v1/organization/roles`, `/users/{user}/roles`, `/groups/{group}/roles` | The organization's own roles and who holds them. |
+| `/v1/organization/workload_identity_providers` and their `/federation_rules` | Workload identity. |
+| `/v1/organization/data_retention`, `/projects/{project}/data_retention` | How long data is kept. |
+| `/v1/organization/external_storage`, `/v1/organization/external_keys` | The customer's own buckets and encryption keys. Never a key's material. |
+| `/v1/organization/projects/{project}/spend_limit`, `/spend_alerts`, `/v1/organization/spend_limit`, `/spend_alerts` | Spend limits and alerts. |
+| `/v1/organization/projects/{project}/service_tier_settings` | Which tiers a project's requests may run on. |
+| `/v1/organization/usage/file_search_calls` | File search calls by knowledge base, for spend. |
 | `/v1/organization/admin_api_keys` | Admin keys. |
 | `/v1/organization/usage/completions` | Tokens by day, model, project and API key: the models in use. |
 | `/v1/organization/costs` | The bill by day, project, line item, API key, user and source (Agents API or other). |
@@ -249,12 +303,16 @@ An Admin key reads the whole organization. OpenController calls only `https://ap
 |---|---|
 | `/v1/agents` | The project's agents. |
 | `/v1/vector_stores` | The project's knowledge bases. Their files' contents are never read. |
+| `/v1/agents/automations`, `/v1/agents/sessions/{session}` | The project's automations, and which agent each runs. |
+| `/v1/vaults`, `/v1/vaults/{vault}/credentials` | Vault credentials' names, auth types, MCP servers and expiries. The secrets are never read. |
+| `/v1/fine_tuning/jobs`, `/v1/models` | Fine-tuned models and their base models. |
 
 ### Control Admin key (optional)
 
 Used only for the changes in [What control can change](#what-control-can-change), each made by a person in
 OpenController and recorded. With **Make the keys for me** on, it also makes and deletes the
-`opencontroller-discovery` and `opencontroller-control` service accounts, and nothing else.
+`opencontroller-discovery` and `opencontroller-control` service accounts and their keys, replaces a key before it
+expires, and nothing else.
 
 <Warning>
 An Admin key with write permissions can change the whole organization: its projects, keys and members. Treat it as an
@@ -282,6 +340,7 @@ The new key is verified at once.
 | No models | No API calls in the last 30 days. |
 | No agents, though the project has some | The integration holds no key for that project. Add one in **Project keys**. |
 | Agents: the key of a project is refused | The key is not that project's, or cannot read agents. Replace it in **Project keys**. |
+| An agent's **Unblock** is unavailable: its project is blocked | Unblock the project first. Agents its block blocked are unblocked with it. |
 | **Control write** fails | The control key is read-only. Create an Admin key with write permissions. |
 | A check fails with HTTP 429 | OpenAI's rate limit. Calls are retried; try again later. |
 
