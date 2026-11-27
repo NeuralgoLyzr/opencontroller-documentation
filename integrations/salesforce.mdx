@@ -1,0 +1,339 @@
+---
+title: "Salesforce"
+description: "Connect a Salesforce org so OpenController finds its Agentforce agents, their actions, MCP servers, prompt templates and who may use each agent, and can block an agent, freeze its user and change who holds access."
+icon: "cloud"
+---
+
+OpenController reads a Salesforce org as the **integration user** of an **External Client App** you create for it.
+One integration is one org. A sandbox is an org of its own, with an integration of its own. It uses up to two apps:
+
+- **The read app** (required): discovery and Verify sign in as its integration user. That user's permission set
+  changes nothing.
+- **The control app** (optional): changes OpenController makes are made as its user, which is another user with a
+  permission set of its own. Discovery never signs in as it.
+
+Each app signs in one of two ways:
+
+- **With a key made here** (recommended): OpenController generates a key pair. The private half goes straight into your
+  secrets manager and is never shown. You upload the public half, a certificate, to the app. There is no client
+  secret, and the app is pre-authorized for one user alone.
+- **With the app's own keys**: you paste the app's consumer secret, and the app's **Run As** user is the integration
+  user. Use it where your organization manages integrations by consumer key and secret, or cannot upload a certificate.
+
+## What it unlocks
+
+- **[AI Inventory](/discover/ai-inventory):** Agentforce agents and Einstein Bots, with their versions, the version
+  that is active, their subagents and their actions; the agents Salesforce itself runs in the org; agents registered
+  from another provider; MCP servers and their tools; prompt templates; models; the org's generative AI settings; and
+  External Client Apps.
+- **[Shadow AI](/discover/shadow-ai):** the permission sets and profiles each agent is granted to, the people who hold
+  those permission sets, and the user each service agent runs as.
+- **What stops what:** an asset that cannot work because another is off shows **Stopped**, with the reason and a link.
+  See [What a block stops](#what-a-block-stops).
+- **Control (optional):** block and unblock an agent, change which permission sets may use it, freeze the user it runs
+  as, give a permission set to a person, block an External Client App, and allow an MCP server's tools to agents or
+  delete the server.
+
+The integration user never creates, changes, activates or deletes anything in Salesforce, never talks to an agent, and
+reads no customer record: no accounts, contacts, cases, conversations or files.
+
+## What is discovered
+
+| In Salesforce | In AI Inventory |
+|---|---|
+| An **Agentforce agent**: name, type (service agent or employee agent), versions, which version is active, its subagents | An agent. **ACTIVE** when a version is active, **INACTIVE** when none is |
+| An **Einstein Bot** | An agent |
+| An agent's **actions**: a flow, an Apex class, a prompt template, a tool of an MCP server, a standard action | A tool each, which the agent uses, with the name of what it calls |
+| The **user a service agent runs as** | An identity the agent runs as. **INACTIVE** when the user is not active or is frozen. An employee agent has none: it runs as whoever talks to it |
+| An agent **Salesforce runs in the org**, such as Setup with Agentforce | An agent |
+| An agent **registered from another provider** (Agent2Agent) | An agent, with where it is reached |
+| The org's **agent registry** | A registry, which registers every agent it lists |
+| An **MCP server** registered with Agentforce, and its **tools** | An MCP server, with its address and whether it asks for authentication, and a tool each, with whether the org allows it to its agents |
+| The **external credential** an MCP server is called with | A credential provider. Never its secrets |
+| A **permission set** or **profile** an agent is granted to | An identity the agent can be used by |
+| The **people who hold** such a permission set, at most 500 of a set | An identity each |
+| The org's **generative AI settings**: whether generative AI is on, which model providers are allowed | A policy engine, which every agent the org runs is governed by |
+| A **prompt template** the org made | A skill, **ACTIVE** or **INACTIVE**. Templates Salesforce ships with every org are left out |
+| A **model** of Data Cloud's Model Builder | A model |
+| An **External Client App** | An identity, with its scopes and sign-in flows. Never its consumer key or secret |
+
+An agent is described by its active version, or by its latest version when none is active.
+
+Not discovered:
+
+- **The model an agent uses.** An Agentforce agent names no model: Salesforce chooses it.
+- **Draft agents.** Salesforce makes the agent when a version is committed. Commit a version in Agentforce Builder.
+- **Data libraries** and **Connected Apps.** Salesforce lists them only to a user who may change the org.
+- **Salesforce's own hosted MCP servers.** A read-only user gets no list of them.
+- **Conversations and session traces.**
+
+## Before you start
+
+- A Salesforce **System Administrator**, to create the user, the permission set and the External Client App.
+- The **Admin** role in OpenController.
+- A secrets manager configured for OpenController.
+- Outbound HTTPS from OpenController to your org's My Domain address, `https://your-domain.my.salesforce.com`.
+  Salesforce never calls OpenController.
+
+## Connect a Salesforce org
+
+<Steps>
+  <Step title="Create the integration user">
+    In Salesforce **Setup**, as a System Administrator:
+
+    1. Go to **Permission Sets** > **New**. Name it, for example `opencontroller read`. Under **System Permissions**,
+       turn on **API Enabled**, **View Setup and Configuration** and **View all External Client Apps**, and nothing
+       else.
+    2. Go to **Users** > **New User**. Create a user for OpenController, for example `opencontroller@example.com`. A
+       **Salesforce Integration** licence is enough where your org has one. Note its username.
+    3. Assign the permission set to the user. To read prompt templates too, also assign Salesforce's own permission set
+       **Prompt Template User**.
+  </Step>
+  <Step title="Create the External Client App">
+    <Tabs>
+      <Tab title="With a key made here">
+        Go to **External Client App Manager** > **New External Client App**. Name it, give a contact email, and turn
+        on **Enable OAuth**. Give any callback URL, for example `https://localhost/callback`: Salesforce requires one
+        and this flow never calls it. Select the scopes **Manage user data via APIs (api)** and **Perform requests at
+        any time (refresh_token, offline_access)**. Select **Create**.
+
+        Then open the app's **Settings** > **OAuth Settings** > **Consumer Key and Secret** and copy the **consumer
+        key**. The consumer secret is not used.
+      </Tab>
+      <Tab title="With the app's own keys">
+        Go to **External Client App Manager** > **New External Client App**. Name it, give a contact email, and turn
+        on **Enable OAuth**. Give any callback URL. Select the scope **Manage user data via APIs (api)**, turn on
+        **Enable Client Credentials Flow**, and select **Create**.
+
+        Edit the app's **Policies**: turn on **Enable Client Credentials Flow** and set **Run As** to the integration
+        user. Then open the app's **Settings** > **OAuth Settings** > **Consumer Key and Secret** and copy the
+        **consumer key** and the **consumer secret**.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Connect it">
+    Go to **Integrations** > **Connect** > **Salesforce**. Fill in:
+
+    | Field | What to enter |
+    |---|---|
+    | **Name** | A name for the org, for example `production`. |
+    | **Sign in** | **With a key made here (recommended)** or **With the app's own keys**. |
+    | **Salesforce org** | Your org's My Domain address, for example `your-domain.my.salesforce.com`. The address of any page of the org works too. |
+    | **Consumer key** | The app's consumer key. |
+    | **Username** | With a key made here: the integration user's username. |
+    | **Consumer secret** | With the app's own keys: the app's consumer secret. It goes to your secrets manager and is never shown again. |
+
+    Select **Connect**. The **Let opencontroller into Salesforce** dialog opens with what is left to do in Salesforce.
+  </Step>
+  <Step title="Finish the app in Salesforce">
+    <Tabs>
+      <Tab title="With a key made here">
+        1. **Certificate:** in the dialog, select **Download the certificate**. In **External Client App Manager**,
+           open the app and edit its **Settings**. Under **Flow Enablement**, turn on **Enable JWT Bearer Flow**,
+           upload the certificate, and save.
+        2. **Permitted users:** edit the app's **Policies**. Under **OAuth Policies**, set **Permitted Users** to
+           **Admin approved users are pre-authorized**.
+        3. **Permission set:** under **App Policies**, select the integration user's permission set, and save. No
+           other user can then sign in through the app.
+      </Tab>
+      <Tab title="With the app's own keys">
+        Nothing more to do. The dialog lists what to check: **Enable Client Credentials Flow** is on, on the app's
+        **Settings** and on its **Policies**, and **Run As** is the integration user.
+      </Tab>
+    </Tabs>
+
+    <Note>A new app, or a change to one, can take up to ten minutes to take effect in Salesforce.</Note>
+  </Step>
+  <Step title="Verify">
+    Select **Verify** on the row. The **Access** badge reads **Verified** when every required check passes.
+
+    | Check | Passes when |
+    |---|---|
+    | **Sign in** | The org issued a token. The detail says who signed in. A failure says what Salesforce answered. |
+    | **Agents** | The user can read the org's agents; the check shows how many. |
+    | **Agent registry**, **MCP servers**, **Agent access**, **AI settings**, **Models**, **External Client Apps**, **Prompt templates** | Optional. Each shows how much the user sees. An org that does not have one, or does not show it to the user, says so, and the agents are read all the same. |
+
+    Then select **Run scan**.
+  </Step>
+</Steps>
+
+## Scans
+
+A Salesforce org is scanned **once an hour**, not every 5 minutes, and whenever you select **Run scan**. Every call
+counts against the org's API requests for the day, which all its integrations share. A scan makes about fifty calls
+for an org, whatever the number of agents. To change the interval, see
+[Scans and the scan schedule](/discover/scans).
+
+Eight sources are read per org: `agents`, `agent_registry`, `mcp_servers`, `access`, `settings`, `models`, `apps` and
+`prompt_templates`. A source the org does not have shows as **skipped**, not failed.
+
+## Turn on control (optional)
+
+Control is a second External Client App, with a user of its own. It is never the read app.
+
+<Warning>
+The control user's permission set can change the org. **Manage Profiles and Permission Sets** lets its holder change
+any permission set. **Modify Metadata Through Metadata API Functions** and **Customize Application** are broad too.
+Give only the permissions for the actions you want from OpenController, and keep the control app's key in
+OpenController alone.
+</Warning>
+
+<Steps>
+  <Step title="Create the control user">
+    In Salesforce **Setup**:
+
+    1. Go to **Permission Sets** > **New**. Name it, for example `opencontroller control`. Turn on **API Enabled**,
+       **View Setup and Configuration**, **Manage AI Agents** and **Manage Profiles and Permission Sets**. Add the
+       permission of each other action you want, from the table under
+       [Control permission set](#control-permission-set-optional).
+    2. Go to **Users** > **New User**. Create a second user, with a **Salesforce** licence: the Salesforce Integration
+       licence does not allow **Manage AI Agents**. Assign it the permission set licence **Agent platform builder**,
+       then the permission set.
+  </Step>
+  <Step title="Create the control app">
+    Create a second External Client App, as you made the read app. With the app's own keys, set **Run As** to the
+    control user on its **Policies**.
+  </Step>
+  <Step title="Give it to the integration">
+    On the org's row, select **Turn on** next to **Control: off**. Choose **Sign in**, and fill in **Control app:
+    consumer key** and **Control user: username** (or **Control app: consumer secret**). Save.
+
+    With a key made here, open **Setup** on the row, select **Download the control certificate**, and do the same three
+    steps on the control app as on the read app: upload the certificate, pre-authorize, and select the control
+    permission set.
+  </Step>
+  <Step title="Verify">
+    Select **Verify**. It also runs:
+
+    | Check | Passes when |
+    |---|---|
+    | **Control sign in** | The control app signs in. |
+    | **Control agents** | The control user holds **Manage AI Agents**. |
+    | **Control access** | It holds **Manage Profiles and Permission Sets**. |
+    | **Control users**, **Control permission sets**, **Control apps**, **Control MCP servers** | Optional. Each says whether the control user holds that action's permission. One that is missing names it, and only that action is not offered. |
+  </Step>
+</Steps>
+
+### What control can change
+
+Every change is on the asset's **Access** card, under **Identity & access**. It asks for a **Reason**, takes effect in
+Salesforce at once, and is kept in the asset's **Change history** and the [audit log](/administer/audit-log).
+
+| Asset | Action | What runs in Salesforce |
+|---|---|---|
+| Agentforce agent | **Block** | Deactivates the agent's active version, as Agentforce Studio does. Nobody can talk to the agent, in any channel. OpenController keeps which version was active |
+| Agentforce agent | **Unblock** | Activates that same version again, not a later one nobody had activated. Only for an agent OpenController blocked |
+| Agentforce agent | **Share** | Grants the agent to a **permission set**. Everyone who holds the set can use the agent. Salesforce grants an agent to permission sets only, never to a person |
+| Agentforce agent | **Remove** | Deletes that grant. People who hold another permission set or a profile that grants the agent can still use it |
+| User | **Freeze** | Freezes the user's sign-in. A service agent that runs as it stops answering. The user's permission sets and records stay. OpenController's own control user is never frozen |
+| User | **Unfreeze** | Lets the user sign in again, at once |
+| Permission set | **Share** | Assigns the set to a **person**. They can then use every agent the set grants |
+| Permission set | **Revoke** | Takes the set from one of the people listed under **Held by** |
+| External Client App | **Block** | Turns the app off in its policies. Nobody signs in to the org through it. Its settings and keys stay. An app this integration signs in through is never blocked |
+| External Client App | **Unblock** | Turns the app on again |
+| MCP server | **Turn tools off or on** | Allows a tool to the org's agents, or takes it back. A tool that an agent's action calls is not turned off: remove the action first |
+| MCP server | **Delete** | Removes the server's registration, for good. Its credentials, and the permission set Salesforce made for it, stay |
+
+Not offered, because Salesforce has no API for it: deleting an agent (delete it in Agentforce Studio), turning off one
+action of an agent (that needs a new version), and a switch for everyone in the org. Activating or deactivating a
+prompt template is not offered either. An agent Salesforce itself runs, an agent of another provider and an Einstein
+Bot take no action from OpenController.
+
+<Note>
+The MCP server actions use Salesforce's API Catalog, which is in preview at Salesforce. They need **Customize
+Application** on the control user. To turn a tool on or off, Salesforce asks the server for its tools as the control
+user, so also assign that user the permission set Salesforce made for the server, named *server name* **- Permission
+Set**.
+</Note>
+
+### What a block stops
+
+Some assets cannot work while another is off. Each such asset shows **Stopped** on its page, with the reason and a
+link to what stops it. It keeps its own status.
+
+| When this is off | These show Stopped |
+|---|---|
+| The org's **generative AI** | Every agent the org runs, and all their actions |
+| The **user a service agent runs as** (frozen, or not active) | That agent, and all its actions |
+| An **agent** (blocked, deactivated, or never activated) | The agent's own actions |
+| An **MCP server** (not connected) | Each action that calls one of its tools |
+| A **prompt template** (not active) | Each action that runs it |
+
+Blocking an agent changes nothing else. The MCP servers, prompt templates and permission sets it uses, and the user it
+runs as, stay as they are, because other agents may use them.
+
+## Rotate a key
+
+- **A key made here:** the certificate is valid for two years. Before it expires, open **Setup** on the row and select
+  **Generate a new key**, then upload the new certificate to the app in place of the old one. The integration signs in
+  with the new key at once, so upload it straight away.
+- **The app's own keys:** a consumer secret does not expire by itself. When you replace it in Salesforce, give the
+  integration the new one.
+
+## Permissions it uses
+
+### Read permission set
+
+| Permission | What it allows |
+|---|---|
+| **API Enabled** | Call Salesforce's API at all. |
+| **View Setup and Configuration** | Read setup objects, which is where Salesforce keeps agents, their subagents and their actions. It grants no write. |
+| **View all External Client Apps** | List the org's External Client Apps and their policies. It grants no write. Without it, **External Client Apps** is skipped. |
+| Optional: Salesforce's permission set **Prompt Template User** | List prompt templates. It holds **Execute Prompt Templates**: its holder could run a template, which uses the org's AI credits. OpenController only lists them. Without it, **Prompt templates** is skipped. |
+
+With these, the user can change nothing in Salesforce and can read none of your customer records.
+
+### Control permission set (optional)
+
+| Permission | Needed for |
+|---|---|
+| **API Enabled**, **View Setup and Configuration** | Everything. |
+| **Manage AI Agents**, with the permission set licence **Agent platform builder** | Block and unblock an agent. |
+| **Manage Profiles and Permission Sets** | Share an agent with a permission set, and remove it. |
+| **Freeze Users** | Freeze and unfreeze a user. |
+| **Assign Permission Sets** | Give a permission set to a person, and revoke it. |
+| **Modify Metadata Through Metadata API Functions**, **View all External Client Apps** and the permission to edit their policies | Block and unblock an External Client App. |
+| **Customize Application**, which Salesforce gives only with **Manage Custom Permissions** and **Manage Translation** | Turn an MCP server's tools off or on, and delete the server. |
+| The MCP server's own permission set | Turn that server's tools off or on. |
+
+An action whose permission the control user does not hold is not offered, and its row on the **Access** card says
+which permission is missing.
+
+What each app signs in with is stored in your secrets manager: the private key, or the consumer secret. The API
+returns only the certificate.
+
+## Troubleshooting
+
+| Salesforce answers | What to change |
+|---|---|
+| `invalid_grant: user hasn't approved this consumer` | The user is not pre-authorized. On the app's **Policies**, set **Permitted Users** to **Admin approved users are pre-authorized**, and select the user's permission set. |
+| `invalid_client_id: client identifier invalid` | The consumer key is wrong, or the app is new: wait up to ten minutes. |
+| `invalid_grant: invalid assertion` | The app does not hold this integration's certificate. Upload it under **Flow Enablement**. After **Generate a new key**, upload the new one. |
+| `invalid_grant` naming the user | The username is wrong, the user is inactive or frozen, or it is a user of another org. |
+| `invalid_client: invalid client credentials` | The consumer secret is wrong, or was replaced in Salesforce. Give the integration the current one. |
+| `invalid_grant: no client credentials user enabled` | The app has no **Run As** user. Set it on the app's **Policies**. |
+| `API_DISABLED_FOR_ORG` | Give the user **API Enabled**. |
+| `INVALID_TYPE` or `NOT_FOUND` on **Agents** | Agentforce is not turned on in the org, or the user lacks **View Setup and Configuration**. |
+| `REQUEST_LIMIT_EXCEEDED` | The org's API requests for the day are spent. Scan less often. |
+
+An agent that is missing from AI Inventory is most often a draft: commit a version of it in Agentforce Builder.
+
+## Remove the integration
+
+Removing it deletes the stored key or consumer secret from your secrets manager and stops scans. Then, in Salesforce,
+delete the External Client Apps, deactivate the integration user and the control user, and delete their permission
+sets.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Find shadow AI" icon="eye" href="/discover/shadow-ai">
+    See which permission sets and people can use each agent.
+  </Card>
+  <Card title="Register an agent" icon="list-checks" href="/govern/registry#register-an-agent">
+    Register the agents you approve, so actions can be taken on them.
+  </Card>
+  <Card title="Actions by provider" icon="table-2" href="/govern/actions-by-provider">
+    What OpenController can change in Salesforce and in each other provider.
+  </Card>
+</CardGroup>

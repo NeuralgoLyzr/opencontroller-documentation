@@ -26,6 +26,7 @@ Each integration connects one account, tenant or workspace with a read credentia
 | **Snowflake** | A service user | Cortex Agents and their tools, MCP servers, Cortex Search and the AI Gateway; with a warehouse, their use, and the AI credits and whose they were |
 | **OpenAI** | An Admin key, used only to read; project keys for agents | Agents, models, project API keys and what each project allows; the bill and whose it was |
 | **GitHub** | A GitHub App the organization installs, or an owner's token | GitHub Copilot, its cloud agent and custom agents, what people use with Copilot; the bill, seats and whose use it was |
+| **Salesforce** | An External Client App's integration user | Agentforce agents and Einstein Bots, their actions, MCP servers and prompt templates, and the permission sets and people who may use each agent |
 | **Cloudera** | A machine user, on cloud or on premises | Cloudera AI workbenches, Agent Studio workflows and the agents inside them, model endpoints and registries; the compute cost, at the prices you set, and whose it was |
 
 Each has a setup guide with every field and the role, permissions or SQL to create on the provider's side:
@@ -58,6 +59,9 @@ Each has a setup guide with every field and the role, permissions or SQL to crea
   <Card title="Cloudera" icon="cloud-cog" href="/integrations/cloudera">
     A Cloudera account, on cloud or on premises.
   </Card>
+  <Card title="Salesforce" icon="cloud" href="/integrations/salesforce">
+    A Salesforce org, as an External Client App.
+  </Card>
 </CardGroup>
 
 {/* SCREENSHOT: int-add | crop | Reuses the quickstart's qs-connect-choose: the "What are you connecting?" dialog with its six cards and the Setup guides links. */}
@@ -70,7 +74,7 @@ Secrets you enter go to the organization's secrets manager. They are never shown
 - **Verify checks each permission separately.** A missing one fails only its own part; everything else is still read, and what the last good scan found is kept.
 - **Control is optional.** It is a second credential, kept apart, that changes are made as (blocking or sharing an agent). Without it, OpenController changes nothing.
 - **Guardrail credentials** for a cloud's own guardrails (AWS Bedrock Guardrails, Azure AI Content Safety, Google Model Armor) are kept on that cloud's integration. See [Cloud guardrail providers](/secure/guardrails/cloud-providers).
-- **Scans** run every 5 minutes per provider. Until an AWS account is connected, they read the service's own AWS account. See [Scans and the scan schedule](/discover/scans).
+- **Scans** run every 5 minutes per provider; a Salesforce org is scanned once an hour. Until an AWS account is connected, they read the service's own AWS account. See [Scans and the scan schedule](/discover/scans).
 - **Removing an integration** deletes its stored secrets. Discovered assets stay until later scans retire them, and the role or app in the provider stays for you to remove.
 
 ## Who can use it
