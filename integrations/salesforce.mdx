@@ -33,8 +33,8 @@ Each app signs in one of two ways:
 - **Control (optional):** block and unblock an agent, change which permission sets may use it, freeze the user it runs
   as, give a permission set to a person, block an External Client App, and allow an MCP server's tools to agents or
   delete the server.
-- **[Spend](/discover/people-and-spend) (optional):** what the org's agents and prompts used, as an estimated cost,
-  with each agent's, model's and person's share; and the AI licences people hold. See
+- **[Spend](/discover/people-and-spend) (optional):** what the org's agents and prompts used and what it cost, from
+  the org's Digital Wallet where it has one, with each agent's, model's and person's share; and the AI licences people hold. See
   [Read usage and spend](#read-usage-and-spend-optional).
 
 The integration user never creates, changes, activates or deletes anything in Salesforce, never talks to an agent, and
@@ -173,7 +173,7 @@ Not discovered:
     |---|---|
     | **Sign in** | The org issued a token. The detail says who signed in. A failure says what Salesforce answered. |
     | **Agents** | The user can read the org's agents; the check shows how many. |
-    | **Usage and spend** | Optional. The user can read the org's Agentforce usage, which Spend prices. When it cannot, the check says why: the user has no access to Data Cloud or to its data space, or the org does not collect the usage yet. See [Read usage and spend](#read-usage-and-spend-optional). |
+    | **Usage and spend** | Optional. The user can read the org's Agentforce usage, which Spend prices. The check says what the usage is priced by: the org's Digital Wallet, or Salesforce's rate card. When the user cannot read the usage, the check says why: the user has no access to Data Cloud or to its data space, or the org does not collect the usage yet. See [Read usage and spend](#read-usage-and-spend-optional). |
     | **Agent registry**, **MCP servers**, **Agent access**, **AI settings**, **Models**, **External Client Apps**, **Prompt templates** | Optional. Each shows how much the user sees. An org that does not have one, or does not show it to the user, says so, and the agents are read all the same. |
 
     Then select **Run scan**.
@@ -209,6 +209,13 @@ Salesforce makes and fills the table itself. You do not build it. For it to exis
    permission set: in Setup, go to **Permission Sets**, open the set, and select **Data Cloud Data Space
    Management**. {/* TODO verify: the smallest permission set that works, on an org that has Data Cloud User */}
 
+4. **If your org pays for Agentforce:** let the integration user read your Digital Wallet's usage. Salesforce keeps
+   the credits it draws down from your contract in a Data Cloud table named `TenantEnrichedUsageEvent`, which it
+   makes when Digital Wallet is set up. Add that table to the data space from step 3, as Salesforce's Digital Wallet
+   help describes. In Digital Wallet's setup, also opt in to data sharing: Salesforce's reference says that this is
+   what puts the agent on each usage event. A Developer Edition has no Digital Wallet: skip this step.
+   {/* TODO verify: the steps to add TenantEnrichedUsageEvent to a data space, on an org that has Digital Wallet */}
+
 To see the table yourself, open **Data Explorer** in Salesforce, set **Object** to **Data Model Object**, and search
 **AI Agent Generative AI Usage**.
 
@@ -225,27 +232,48 @@ Every 6 hours by default (**Settings** > **Spend schedule**), the **Agentforce u
 | The **user** it ran for | The person of the share. The user a service agent runs as is not a person: its usage is the agent's |
 | A **prompt template** someone ran outside an agent | The service **Einstein generative AI**, under the user who ran it |
 
-Each day has one total for each usage type and model. Under it, each agent, model and person has a share. The shares
+Each day has one total for each usage type. Under it, each agent, model and person has a share. The shares
 add up to the totals, so nothing counts twice.
 
 **Spend** > **Provider** > **Salesforce's own page** breaks the cost down by org, agent, person and model.
 
 ### How it is priced
 
-The table counts units, not money, so every Salesforce row is **estimated**:
+The usage table counts units, not credits and not money. Where the credits come from depends on your org. The
+**Usage and spend** check of **Verify** says which case applies.
 
-- A unit is priced in Flex Credits, at Salesforce's rate card.
-- A credit is priced at the **Credit price** on the integration, in its **Currency** (US dollars unless set). Enter
-  what your org pays for one Flex Credit, from your contract: select **Setup** on the org's row, then **Usage and
-  spend**.
-- With no credit price set, a credit is priced at Salesforce's list price, $0.005.
+| Your org | The credits | The rows |
+|---|---|---|
+| Has a **Digital Wallet** that the integration user can read (step 4) | What Salesforce drew down, by the multipliers of your contract | **Billed** when a credit price is set. **Estimated** until then |
+| Has no Digital Wallet, as a Developer Edition | Each unit at Salesforce's public rate card: the table above | **Estimated** |
 
-Your org's monthly statement in Salesforce's Digital Wallet is what settles the cost. A usage type that the rate card
-does not cover is counted and costs nothing here.
+A credit is priced at the **Credit price** on the integration, in its **Currency** (US dollars unless set). Enter
+what your org pays for one Flex Credit, from your contract: select **Setup** on the org's row, then **Usage and
+spend**. With no credit price set, a credit is priced at Salesforce's list price, $0.005.
 
-The estimate assumes your org pays by Flex Credits. If your org pays by the conversation, or holds per-user licences
-that include employees' use of agents, Salesforce bills it another way. Read the estimate then as how much was used,
-at the rate card's prices, not as what the invoice will say.
+**With a Digital Wallet**
+
+- A day that the wallet has your org's usage for takes its totals from the wallet only. A day that the wallet does
+  not have yet, such as today, is priced at the rate card until the wallet has it.
+- The wallet says how many credits an agent used. It does not name the model or the person. Spend divides each
+  amount between that agent's usage of the same day, in proportion.
+- An amount that matches no usage stays in the total, under no agent. **Sources** then shows how many amounts were
+  left so. Spend never puts one agent's usage under another agent.
+- Usage that Salesforce marks as not billable costs nothing.
+- A sandbox's usage draws on the production org's wallet. It shows as a total under the sandbox's own org ID, with
+  no shares. If the sandbox is also connected and collects its own usage, that usage is counted on both.
+- The credit price applies to every unit that the wallet counts for AI. The name of the wallet's card is on each
+  total. If your AI is on a card that is not Flex Credits, such as conversations, the quantity is right and the
+  cost is not.
+
+{/* TODO verify: the Digital Wallet path on a paying org. It is built from Salesforce's reference for the table. */}
+
+**Without a Digital Wallet**
+
+A usage type that the rate card does not cover is counted and costs nothing here. The estimate assumes your org
+pays by Flex Credits. If your org pays by the conversation, or holds per-user licences that include employees' use
+of agents, Salesforce bills it another way. Read the estimate then as how much was used, at the rate card's prices,
+not as what the invoice will say.
 
 ### Licences
 
@@ -263,6 +291,8 @@ person.
 |---|---|
 | **Needs a permission**: access to Data Cloud and to its default data space | Do step 3 above. |
 | **Not set up**: Agentforce usage data in the org's Data Cloud | Do steps 1 and 2 above. |
+| The usage is read, and an org that pays shows only estimates | **Verify** says that the Digital Wallet is not read: do step 4 above. Then set the credit price. |
+| The usage is read, with a note that some rows are **unattributed** | The wallet has amounts that match no usage of that agent and day. The totals are right. |
 
 Spend reads counts from the usage table only. It does not read the audit tables beside it, which hold the text of
 prompts and answers, or the session tables, which hold the text of conversations.
@@ -382,7 +412,7 @@ runs as, stay as they are, because other agents may use them.
 | **View Setup and Configuration** | Read setup objects, which is where Salesforce keeps agents, their subagents and their actions. It grants no write. |
 | **View all External Client Apps** | List the org's External Client Apps and their policies. It grants no write. Without it, **External Client Apps** is skipped. |
 | Optional: Salesforce's permission set **Prompt Template User** | List prompt templates. It holds **Execute Prompt Templates**: its holder could run a template, which uses the org's AI credits. OpenController only lists them. Without it, **Prompt templates** is skipped. |
-| Optional: a Data Cloud permission set, such as Salesforce's **Data Cloud User**, with the **default** data space on for it | Read the org's Agentforce usage in Data Cloud, for **Spend**. Without it, the **Agentforce usage** source shows **Needs a permission**, and everything else is read. See [Read usage and spend](#read-usage-and-spend-optional). |
+| Optional: a Data Cloud permission set, such as Salesforce's **Data Cloud User**, with the **default** data space on for it | Read the org's Agentforce usage in Data Cloud, and its Digital Wallet's usage where the org has one, for **Spend**. Without it, the **Agentforce usage** source shows **Needs a permission**, and everything else is read. See [Read usage and spend](#read-usage-and-spend-optional). |
 
 With these, the user can change nothing in Salesforce and can read none of your customer records. The control app's
 user needs nothing for Spend.
