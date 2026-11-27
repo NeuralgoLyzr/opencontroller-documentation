@@ -239,17 +239,26 @@ add up to the totals, so nothing counts twice.
 
 ### How it is priced
 
-The usage table counts units, not credits and not money. Where the credits come from depends on your org. The
-**Usage and spend** check of **Verify** says which case applies.
+Salesforce sells Agentforce by more than one plan. Spend handles each plan that Salesforce sells today. Your org's
+**Digital Wallet** says which plan the usage is on.
 
-| Your org | The credits | The rows |
+| Your plan | Counted in | Priced at |
 |---|---|---|
-| Has a **Digital Wallet** that the integration user can read (step 4) | What Salesforce drew down, by the multipliers of your contract | **Billed** when a credit price is set. **Estimated** until then |
-| Has no Digital Wallet, as a Developer Edition | Each unit at Salesforce's public rate card: the table above | **Estimated** |
+| **Flex Credits**: each action and each prompt costs credits | Credits | The **Price of a Flex Credit** on the integration. With none, Salesforce's list price, $0.005 |
+| **Conversations**: a fixed price for each conversation | Conversations | The **Price of a conversation** on the integration. With none, Salesforce's list price, $2 |
+| **Einstein Requests**: older contracts, and each call of a model in a conversation | Requests | The **Price of an Einstein Request** on the integration. Salesforce has no list price for it: with none, the requests are counted and cost nothing |
+| **User licences that include usage** | Seats | The licence's monthly price. See [Licences](#licences) |
 
-A credit is priced at the **Credit price** on the integration, in its **Currency** (US dollars unless set). Enter
-what your org pays for one Flex Credit, from your contract: select **Setup** on the org's row, then **Usage and
-spend**. With no credit price set, a credit is priced at Salesforce's list price, $0.005.
+Salesforce sells Flex Credits or conversations into an org, not both. To set your plan, select **Setup** on the
+org's row, then **Usage and spend**. Pick **Flex Credits** or **Conversations** in **Plan**, enter what your org
+pays for one unit, from your contract, and its **Currency** (US dollars unless set).
+
+A cost at a price that you entered is **billed**. A cost at Salesforce's list price is **estimated**.
+
+If your org has no Digital Wallet, as a Developer Edition, or the integration user cannot read it (step 4), Spend
+prices the usage as Flex Credits at Salesforce's public rate card, the table above, and marks it **estimated**. In
+that case an org on conversations shows counts with no cost, because only the wallet counts conversations. The
+**Usage and spend** check of **Verify** says whether the wallet is read.
 
 **With a Digital Wallet**
 
@@ -262,18 +271,14 @@ spend**. With no credit price set, a credit is priced at Salesforce's list price
 - Usage that Salesforce marks as not billable costs nothing.
 - A sandbox's usage draws on the production org's wallet. It shows as a total under the sandbox's own org ID, with
   no shares. If the sandbox is also connected and collects its own usage, that usage is counted on both.
-- The credit price applies to every unit that the wallet counts for AI. The name of the wallet's card is on each
-  total. If your AI is on a card that is not Flex Credits, such as conversations, the quantity is right and the
-  cost is not.
+- Each total shows the name of the wallet's card that it is on, and is in that card's unit.
 
-{/* TODO verify: the Digital Wallet path on a paying org. It is built from Salesforce's reference for the table. */}
+{/* TODO verify: the Digital Wallet path on a paying org, and the names of the wallet's cards. Both are from Salesforce's documentation. */}
 
 **Without a Digital Wallet**
 
-A usage type that the rate card does not cover is counted and costs nothing here. The estimate assumes your org
-pays by Flex Credits. If your org pays by the conversation, or holds per-user licences that include employees' use
-of agents, Salesforce bills it another way. Read the estimate then as how much was used, at the rate card's prices,
-not as what the invoice will say.
+A usage type that the rate card does not cover is counted and costs nothing here. Usage that a user licence
+includes is not metered, and is left out.
 
 ### Licences
 
@@ -291,7 +296,8 @@ person.
 |---|---|
 | **Needs a permission**: access to Data Cloud and to its default data space | Do step 3 above. |
 | **Not set up**: Agentforce usage data in the org's Data Cloud | Do steps 1 and 2 above. |
-| The usage is read, and an org that pays shows only estimates | **Verify** says that the Digital Wallet is not read: do step 4 above. Then set the credit price. |
+| The usage is read, and an org that pays shows only estimates | **Verify** says that the Digital Wallet is not read: do step 4 above. Then set the price of your plan. |
+| The usage is read, with a note that some rows are **unpriced** | The usage is on a plan with no price: Einstein Requests with no price set, conversations with no wallet to count them, or a plan that Spend does not know yet. Set the price. For a plan that Spend does not know, contact support. |
 | The usage is read, with a note that some rows are **unattributed** | The wallet has amounts that match no usage of that agent and day. The totals are right. |
 
 Spend reads counts from the usage table only. It does not read the audit tables beside it, which hold the text of
