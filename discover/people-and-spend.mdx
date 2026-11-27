@@ -21,15 +21,15 @@ Two pages show what your organization spends on AI:
 - Bills settle a day or two late, so the latest days run low.
 - **Unusual days** lists days a service cost at least three times its daily average over the week before, and 10 more in the currency it is billed in. It shows only when there is one.
 - In **Top agents and models**, an agent that costs money and is not registered is the one to look at. **not in inventory** means a bill names it but discovery has not found it. Azure and Databricks bills do not name agents yet.
-- **One provider's spend:** pick it in **Provider**. Anthropic, OpenAI and Snowflake have a page of their own: select **Anthropic's own page**, **OpenAI's own page** or **Snowflake's own page**. Anthropic's breaks the bill down by workspace, API key, person and model, and OpenAI's by project, API key and model, with every API key's share of it. Snowflake's breaks the AI credits down by account, user, person and object, and shows each Cortex Agent's cost against its use. Each workspace, project and key is listed by its name and told apart by its id: two keys of one name are two lines.
-- **A key's spend is the key's.** Spend through an API key, a service account or a Snowflake service user shows under the key on its provider's page, never on the person who made it. Only use a person runs up themselves is theirs on **People**. One exception: an OpenAI key that a member owns is their own key, so its spend is theirs. An OpenAI service account's key belongs to no one.
+- **One provider's spend:** pick it in **Provider**. Anthropic, OpenAI, Snowflake and Salesforce have a page of their own: select **Anthropic's own page**, **OpenAI's own page**, **Snowflake's own page** or **Salesforce's own page**. Anthropic's breaks the bill down by workspace, API key, person and model, and OpenAI's by project, API key and model, with every API key's share of it. Snowflake's breaks the AI credits down by account, user, person and object, and shows each Cortex Agent's cost against its use. Salesforce's breaks the estimated cost of Agentforce down by org, agent, person and model. Each workspace, project and key is listed by its name and told apart by its id: two keys of one name are two lines.
+- **A key's spend is the key's.** Spend through an API key, a service account or a Snowflake service user shows under the key on its provider's page, never on the person who made it. Only use a person runs up themselves is theirs on **People**. Salesforce has no API keys: an agent's usage shows under the agent. One exception: an OpenAI key that a member owns is their own key, so its spend is theirs. An OpenAI service account's key belongs to no one.
 - **Licences:** licence APIs carry no prices, so an Admin sets each seat's monthly price with **Set prices**. **People** uses the same prices. Over a period, licence costs are prorated by calendar month: a month's seats cost that month's price, and a part of a month its share of the days.
 
 ### Sources
 
 **Sources** shows whether each source of spend is read. A source that lacks a permission says **Needs a permission** and names it, instead of showing nothing spent. Grant it, then select **Refresh**.
 
-Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **billed** where the read role reads the organization's bill, and **estimated** otherwise: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. Cloudera's rows are always **estimated**: Cloudera prices nothing through an API, so its compute is priced at the prices set on the integration. See [Cloudera spend](/integrations/cloudera#spend). GitHub Copilot and Salesforce Agentforce are not read yet.
+Spend is read after each discovery scan, at most every six hours (once a day where reading costs money), and on **Refresh**. Snowflake's rows are **billed** where the read role reads the organization's bill, and **estimated** otherwise: credits priced at the connection's credit price or the organization's rate sheet, as [its guide](/integrations/snowflake#read-usage-and-spend-optional) explains. Cloudera's rows are always **estimated**: Cloudera prices nothing through an API, so its compute is priced at the prices set on the integration. See [Cloudera spend](/integrations/cloudera#spend). Salesforce's rows are always **estimated** too: its usage is priced at Salesforce's rate card and the integration's credit price. See [Salesforce spend](/integrations/salesforce#read-usage-and-spend-optional).
 
 ### Read a connection back
 
@@ -130,7 +130,7 @@ only in the Claude Console. So an Admin enters each connection's monthly limit i
 [spend policy](/govern/policies#spend-policy). OpenController enforces nothing: the limit is what the month is
 forecast against, and what opens **Over its limit**.
 
-At the top of Anthropic's, OpenAI's and Snowflake's own pages, a panel named for the month (for example **November so
+At the top of Anthropic's, OpenAI's, Snowflake's and Salesforce's own pages, a panel named for the month (for example **November so
 far**) shows each connection's bill this month, where it is headed at the last seven days' pace, and its limit. When
 the pace passes the limit, it says around which day the limit is reached. An Admin selects **Enter its limit** or
 **Change** there to open the spend policy.
