@@ -59,9 +59,28 @@ reads no customer record: no accounts, contacts, cases, conversations or files.
 
 An agent is described by its active version, or by its latest version when none is active.
 
+### What the Configuration tab shows
+
+On an asset's page, the **Configuration** tab shows how the asset is set up in Salesforce.
+
+| Asset | Configuration shows |
+|---|---|
+| Agent | Its instructions (what its subagents are told), its language and tone, who made it and who last changed it |
+| Action | The subagent it is in, and what it calls |
+| MCP server | The server's own name, version and instructions, and who registered it |
+| Tool of an MCP server | The inputs it takes, and which of them it needs |
+| Prompt template | The model it names, its version, the inputs it takes, and its text |
+| User | Its type, and when it last signed in |
+| Permission set | Its type and licence, and who made it |
+| External Client App | How long its refresh token lasts, and its IP and session rules |
+
+Instructions and prompt text are kept up to 4,000 characters, and anything in them that looks like a credential is
+masked. An agent that Salesforce runs shows little, because Salesforce shows nothing else about its own agents.
+
 Not discovered:
 
-- **The model an agent uses.** An Agentforce agent names no model: Salesforce chooses it.
+- **The model an agent uses.** An Agentforce agent names no model: Salesforce chooses it. A prompt template does
+  name one, and its Configuration tab shows it.
 - **Draft agents.** Salesforce makes the agent when a version is committed. Commit a version in Agentforce Builder.
 - **Data libraries** and **Connected Apps.** Salesforce lists them only to a user who may change the org.
 - **Salesforce's own hosted MCP servers.** A read-only user gets no list of them.
