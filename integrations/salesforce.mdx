@@ -173,6 +173,7 @@ Not discovered:
     |---|---|
     | **Sign in** | The org issued a token. The detail says who signed in. A failure says what Salesforce answered. |
     | **Agents** | The user can read the org's agents; the check shows how many. |
+    | **Usage and spend** | Optional. The user can read the org's Agentforce usage, which Spend prices. When it cannot, the check says why: the user has no access to Data Cloud or to its data space, or the org does not collect the usage yet. See [Read usage and spend](#read-usage-and-spend-optional). |
     | **Agent registry**, **MCP servers**, **Agent access**, **AI settings**, **Models**, **External Client Apps**, **Prompt templates** | Optional. Each shows how much the user sees. An org that does not have one, or does not show it to the user, says so, and the agents are read all the same. |
 
     Then select **Run scan**.
@@ -241,6 +242,10 @@ The table counts units, not money, so every Salesforce row is **estimated**:
 
 Your org's monthly statement in Salesforce's Digital Wallet is what settles the cost. A usage type that the rate card
 does not cover is counted and costs nothing here.
+
+The estimate assumes your org pays by Flex Credits. If your org pays by the conversation, or holds per-user licences
+that include employees' use of agents, Salesforce bills it another way. Read the estimate then as how much was used,
+at the rate card's prices, not as what the invoice will say.
 
 ### Licences
 
@@ -378,7 +383,10 @@ runs as, stay as they are, because other agents may use them.
 | **View all External Client Apps** | List the org's External Client Apps and their policies. It grants no write. Without it, **External Client Apps** is skipped. |
 | Optional: Salesforce's permission set **Prompt Template User** | List prompt templates. It holds **Execute Prompt Templates**: its holder could run a template, which uses the org's AI credits. OpenController only lists them. Without it, **Prompt templates** is skipped. |
 
-With these, the user can change nothing in Salesforce and can read none of your customer records.
+| Optional: a Data Cloud permission set, such as Salesforce's **Data Cloud User**, with the **default** data space on for it | Read the org's Agentforce usage in Data Cloud, for **Spend**. Without it, the **Agentforce usage** source shows **Needs a permission**, and everything else is read. See [Read usage and spend](#read-usage-and-spend-optional). |
+
+With these, the user can change nothing in Salesforce and can read none of your customer records. The control app's
+user needs nothing for Spend.
 
 ### Control permission set (optional)
 
