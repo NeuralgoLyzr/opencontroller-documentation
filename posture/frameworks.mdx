@@ -15,10 +15,10 @@ The most widely used list of risks in applications built on large language model
 
 | Item | Policies |
 |---|---|
-| LLM01 Prompt injection | EXP-1, EXP-3, EXP-6, DAT-3, AGY-2, RT-1 |
-| LLM02 Sensitive information disclosure | EXP-5, DAT-1, DAT-2, RT-1 |
+| LLM01 Prompt injection | EXP-1, EXP-3, EXP-6, DAT-3, DAT-4, AGY-2, RT-1, RT-3 |
+| LLM02 Sensitive information disclosure | EXP-5, DAT-1, DAT-2, DAT-4, RT-1 |
 | LLM03 Supply chain | SUP-1, SUP-3 |
-| LLM06 Excessive agency | IAM-1, AGY-1 |
+| LLM06 Excessive agency | IAM-1, IAM-7, AGY-1 |
 | LLM07 System prompt leakage | DAT-2 |
 | LLM09 Misinformation | OBS-2 |
 | LLM10 Unbounded consumption | RT-2 |
@@ -31,7 +31,7 @@ OWASP's list for systems where a model plans and acts: calls tools, holds creden
 |---|---|
 | ASI01 Agent goal hijack | EXP-1, EXP-6, DAT-3, AGY-2 |
 | ASI02 Tool misuse and exploitation | DAT-3, AGY-1 |
-| ASI03 Identity and privilege abuse | EXP-1, EXP-5, IAM-1, IAM-2, IAM-6 |
+| ASI03 Identity and privilege abuse | EXP-1, EXP-5, IAM-1, IAM-2, IAM-6, IAM-7, IAM-8 |
 | ASI04 Agentic supply chain | EXP-2, SUP-1, SUP-2 |
 | ASI05 Unexpected code execution | AGY-3 |
 | ASI07 Insecure inter-agent communication | EXP-2, AGY-4, SUP-2 |
@@ -44,12 +44,12 @@ MITRE's knowledge base of adversary tactics and techniques against AI systems, i
 
 | Technique | Policies |
 |---|---|
-| AML.T0012 Valid accounts | IAM-1 |
+| AML.T0012 Valid accounts | IAM-1, IAM-7 |
 | AML.T0049 Exploit public-facing application | EXP-1, EXP-2, EXP-3 |
 | AML.T0051 LLM prompt injection | EXP-6, DAT-3 |
-| AML.T0055 Unsecured credentials | IAM-3, IAM-4, IAM-5, IAM-6, DAT-1 |
+| AML.T0055 Unsecured credentials | IAM-3, IAM-4, IAM-5, IAM-6, IAM-8, DAT-1 |
 | AML.T0083 Credentials from AI agent configuration | DAT-1, DAT-2 |
-| AML.T0086 Exfiltration via AI agent tool invocation | DAT-3 |
+| AML.T0086 Exfiltration via AI agent tool invocation | DAT-3, DAT-4 |
 | AML.T0101 Data destruction via AI agent tool invocation | AGY-1 |
 | AML.T0104 Publish poisoned AI agent tool | SUP-1 |
 | AML.T0105 Escape to host | AGY-3 |
@@ -60,13 +60,13 @@ The United States standard for managing AI risk, published as NIST AI 100-1, wit
 
 | Subcategory | Policies |
 |---|---|
-| GV-1.6 Inventory of AI systems | GOV-1 |
+| GV-1.6 Inventory of AI systems | GOV-1, GOV-7 |
 | GOVERN 1.7 Decommissioning AI systems | IAM-4, GOV-4 |
 | GOVERN 2.1 Roles and responsibilities | IAM-5, GOV-2, GOV-3, GOV-6 |
 | GOVERN 6.1 Third-party risk policies | SUP-1, SUP-3 |
-| MS-2.4 Production monitoring | RT-1, RT-2, OBS-1 |
+| MS-2.4 Production monitoring | RT-1, RT-2, RT-3, OBS-1, OBS-3 |
 | MEASURE 2.5 Validity and reliability | OBS-2 |
-| MEASURE 2.7 Security and resilience | EXP-1, EXP-3, EXP-4, IAM-3 |
+| MEASURE 2.7 Security and resilience | EXP-1, EXP-3, EXP-4, IAM-3, IAM-8, GOV-7 |
 | MG-2.4 Disengage or deactivate | GOV-4 |
 </Accordion>
 
@@ -79,7 +79,7 @@ The international standard for an AI management system, the AI counterpart of IS
 | A.4.2 Resource documentation | GOV-1 |
 | A.6.2.4 AI system verification and validation | OBS-2 |
 | A.6.2.5 AI system deployment | GOV-5 |
-| A.6.2.8 AI system recording of event logs | OBS-1 |
+| A.6.2.8 AI system recording of event logs | OBS-1, OBS-3 |
 | A.9.4 Intended use of the AI system | EXP-5 |
 | A.10.3 Suppliers | SUP-1, SUP-3 |
 </Accordion>
@@ -89,7 +89,7 @@ Regulation (EU) 2024/1689, in force since August 1, 2024, with obligations phase
 
 | Article | Policies |
 |---|---|
-| Art. 26 Obligations of deployers: oversight and monitoring | AGY-1, RT-1, OBS-1 |
+| Art. 26 Obligations of deployers: oversight and monitoring | AGY-1, RT-1, OBS-1, OBS-3 |
 </Accordion>
 
 <Accordion title="AWS Security Hub">

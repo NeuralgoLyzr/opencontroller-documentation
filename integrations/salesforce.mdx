@@ -36,6 +36,9 @@ Each app signs in one of two ways:
 - **[Spend](/discover/people-and-spend) (optional):** what the org's agents and prompts used and what it cost, from
   the org's Digital Wallet where it has one, with each agent's, model's and person's share; and the AI licences people hold. See
   [Read usage and spend](#read-usage-and-spend-optional).
+- **[Posture](/posture/security-policies):** security policies that judge the org's agents and settings, such as an
+  agent whose user can change all data, or a Trusted URL with a wildcard. See
+  [Security posture](#security-posture).
 
 The integration user never creates, changes, activates or deletes anything in Salesforce, never talks to an agent, and
 reads no customer record: no accounts, contacts, cases, conversations or files.
@@ -173,6 +176,7 @@ Not discovered:
     |---|---|
     | **Sign in** | The org issued a token. The detail says who signed in. A failure says what Salesforce answered. |
     | **Agents** | The user can read the org's agents; the check shows how many. |
+    | **Security settings** | Optional. How many of the org's three security settings the user can read: its Trusted URLs, its Security Health Check, and whether it collects AI audit data. It says when the Health Check is not read. See [Security posture](#security-posture). |
     | **Usage and spend** | Optional. The user can read the org's Agentforce usage, which Spend prices. The check says what the usage is priced by: the org's Digital Wallet, or Salesforce's rate card. When the user cannot read the usage, the check says why: the user has no access to Data Cloud or to its data space, or the org does not collect the usage yet. See [Read usage and spend](#read-usage-and-spend-optional). |
     | **Agent registry**, **MCP servers**, **Agent access**, **AI settings**, **Models**, **External Client Apps**, **Prompt templates** | Optional. Each shows how much the user sees. An org that does not have one, or does not show it to the user, says so, and the agents are read all the same. |
 
@@ -303,6 +307,35 @@ person.
 Spend reads counts from the usage table only. It does not read the audit tables beside it, which hold the text of
 prompts and answers, or the session tables, which hold the text of conversations.
 
+## Security posture
+
+[Posture](/posture/security-policies) runs its security policies over the org after each scan. You do not set
+anything up, with one exception: the Security Health Check needs one more permission.
+
+| Policy | What it finds in Salesforce |
+|---|---|
+| **IAM-7** Agents running as a user who can read or change everything | An agent whose user holds an organization-wide permission, such as **Modify All Data** or **View All Data** |
+| **IAM-8** Apps whose tokens never expire, or that skip IP restrictions | An External Client App whose refresh token is valid until revoked, or whose policy relaxes IP restrictions |
+| **DAT-4** Trusted URLs that trust every site of a domain | A Trusted URL with a wildcard, such as `*.example.com` |
+| **RT-3** AI settings that let through what the platform holds back | Generative AI settings that allow unsafe changes to prompt template inputs, or beta models |
+| **GOV-7** Organizations whose platform calls their security settings a high risk | A Security Health Check with one or more high-risk settings. The finding names each one |
+| **OBS-3** Organizations that keep no record of what their AI did | An org that does not collect its AI audit data: **Audit and Feedback** is off |
+| **AGY-2** Generative agents with little or no instructions | An Agentforce agent whose subagents are told fewer than 100 characters in all |
+| **EXP-1**, **IAM-2**, **DAT-2**, **SUP-1**, **SUP-2**, **GOV-1**, **GOV-2** | As for every cloud: an MCP server with no sign-in, agents that share one user, a credential in instructions, an MCP server outside the registry or without TLS, shadow assets, and assets with no owner |
+
+To read the **Security Health Check**, add the system permission **View Health Check** to the integration user's
+permission set. It reads the score and the list of settings, and changes nothing. Without it, everything else is
+read, **GOV-7** finds nothing, and the **Security settings** check of **Verify** says that the Health Check is not
+read. {/* TODO verify: the Health Check read on an org where the integration user holds View Health Check */}
+
+Posture does not judge these:
+
+- **Whether the agent's calls go through the LLM Gateway, and whether OpenController traces it.** Salesforce runs
+  an Agentforce agent's model calls itself, so those policies do not apply.
+- **The Trust Layer's data masking and toxicity settings.** Salesforce serves them through no API.
+- **Password, session and network settings one by one.** The Security Health Check judges them, and **GOV-7** shows
+  its verdict.
+
 ## Turn on control (optional)
 
 Control is a second External Client App, with a user of its own. It is never the read app.
@@ -418,6 +451,7 @@ runs as, stay as they are, because other agents may use them.
 | **View Setup and Configuration** | Read setup objects, which is where Salesforce keeps agents, their subagents and their actions. It grants no write. |
 | **View all External Client Apps** | List the org's External Client Apps and their policies. It grants no write. Without it, **External Client Apps** is skipped. |
 | Optional: Salesforce's permission set **Prompt Template User** | List prompt templates. It holds **Execute Prompt Templates**: its holder could run a template, which uses the org's AI credits. OpenController only lists them. Without it, **Prompt templates** is skipped. |
+| Optional: the system permission **View Health Check** | Read the org's Security Health Check, for the posture policy **GOV-7**. It grants no write. Without it, the rest of the security settings are read. See [Security posture](#security-posture). |
 | Optional: a Data Cloud permission set, such as Salesforce's **Data Cloud User**, with the **default** data space on for it | Read the org's Agentforce usage in Data Cloud, and its Digital Wallet's usage where the org has one, for **Spend**. Without it, the **Agentforce usage** source shows **Needs a permission**, and everything else is read. See [Read usage and spend](#read-usage-and-spend-optional). |
 
 With these, the user can change nothing in Salesforce and can read none of your customer records. The control app's
