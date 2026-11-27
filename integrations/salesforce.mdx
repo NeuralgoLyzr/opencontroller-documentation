@@ -382,7 +382,6 @@ runs as, stay as they are, because other agents may use them.
 | **View Setup and Configuration** | Read setup objects, which is where Salesforce keeps agents, their subagents and their actions. It grants no write. |
 | **View all External Client Apps** | List the org's External Client Apps and their policies. It grants no write. Without it, **External Client Apps** is skipped. |
 | Optional: Salesforce's permission set **Prompt Template User** | List prompt templates. It holds **Execute Prompt Templates**: its holder could run a template, which uses the org's AI credits. OpenController only lists them. Without it, **Prompt templates** is skipped. |
-
 | Optional: a Data Cloud permission set, such as Salesforce's **Data Cloud User**, with the **default** data space on for it | Read the org's Agentforce usage in Data Cloud, for **Spend**. Without it, the **Agentforce usage** source shows **Needs a permission**, and everything else is read. See [Read usage and spend](#read-usage-and-spend-optional). |
 
 With these, the user can change nothing in Salesforce and can read none of your customer records. The control app's
